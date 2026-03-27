@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400">
+  <defs>
+    <marker id="arrowShift" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+    <marker id="arrowResponse" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="400" fill="#ffffff"/>
+
+  <!-- Header -->
+  <text x="400" y="34" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1e293b" text-anchor="middle">Core Web Vitals</text>
+
+  <!-- Column dividers -->
+  <line x1="267" y1="50" x2="267" y2="390" stroke="#e2e8f0" stroke-width="1.5"/>
+  <line x1="534" y1="50" x2="534" y2="390" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- ===== Column 1: LCP — Loading ===== -->
+  <text x="133" y="62" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">LCP — Loading</text>
+
+  <!-- Page frame -->
+  <rect x="44" y="80" width="178" height="130" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Content loading bars (simulating LCP) -->
+  <rect x="56" y="92" width="154" height="20" rx="4" fill="#e2e8f0"/>
+  <!-- Filled portion showing content loading -->
+  <rect x="56" y="92" width="154" height="20" rx="4" fill="#3b82f6" opacity="0.3"/>
+
+  <rect x="56" y="120" width="154" height="12" rx="3" fill="#e2e8f0"/>
+  <rect x="56" y="120" width="120" height="12" rx="3" fill="#3b82f6" opacity="0.5"/>
+
+  <rect x="56" y="140" width="154" height="12" rx="3" fill="#e2e8f0"/>
+  <rect x="56" y="140" width="80" height="12" rx="3" fill="#3b82f6" opacity="0.7"/>
+
+  <!-- Hero image box with loading indicator -->
+  <rect x="56" y="162" width="154" height="36" rx="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="133" y="184" font-family="system-ui, sans-serif" font-size="12" fill="#3b82f6" text-anchor="middle">Largest Contentful Paint</text>
+
+  <!-- Progress bar below frame -->
+  <rect x="44" y="222" width="178" height="14" rx="7" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="44" y="222" width="100" height="14" rx="7" fill="#22c55e"/>
+  <text x="133" y="252" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">loading progress</text>
+
+  <text x="133" y="290" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#22c55e" text-anchor="middle">Good: &lt; 2.5s</text>
+  <text x="133" y="310" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">Time to largest visible</text>
+  <text x="133" y="325" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">element is painted</text>
+
+  <!-- ===== Column 2: CLS — Visual Stability ===== -->
+  <text x="400" y="62" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">CLS — Visual Stability</text>
+
+  <!-- Before shift -->
+  <rect x="285" y="80" width="230" height="60" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+  <text x="310" y="98" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280">Before:</text>
+  <rect x="295" y="104" width="100" height="28" rx="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="345" y="122" font-family="system-ui, sans-serif" font-size="11" fill="#3b82f6" text-anchor="middle">Button</text>
+
+  <!-- Shift arrow -->
+  <line x1="400" y1="152" x2="400" y2="166" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowShift)"/>
+  <text x="440" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#ef4444">shift!</text>
+
+  <!-- After shift -->
+  <rect x="285" y="170" width="230" height="70" rx="8" fill="#fff1f2" stroke="#ef4444" stroke-width="2"/>
+  <text x="310" y="188" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280">After (ad loads):</text>
+  <!-- Ad banner that pushed button down -->
+  <rect x="295" y="193" width="210" height="18" rx="3" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
+  <text x="400" y="206" font-family="system-ui, sans-serif" font-size="10" fill="#ef4444" text-anchor="middle">Ad banner (unexpected!)</text>
+  <!-- Button shifted down -->
+  <rect x="295" y="216" width="100" height="16" rx="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="345" y="228" font-family="system-ui, sans-serif" font-size="10" fill="#3b82f6" text-anchor="middle">Button moved</text>
+
+  <!-- Displacement arrow -->
+  <line x1="420" y1="122" x2="420" y2="222" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowShift)"/>
+
+  <text x="400" y="290" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#22c55e" text-anchor="middle">Good: &lt; 0.1</text>
+  <text x="400" y="310" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">Cumulative layout shift</text>
+  <text x="400" y="325" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">score (lower is better)</text>
+
+  <!-- ===== Column 3: INP — Interactivity ===== -->
+  <text x="667" y="62" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1e293b" text-anchor="middle">INP — Interactivity</text>
+
+  <!-- Hand cursor clicking button -->
+  <rect x="555" y="82" width="224" height="80" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Button being clicked -->
+  <rect x="580" y="98" width="120" height="40" rx="8" fill="#3b82f6"/>
+  <text x="640" y="122" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">Click me</text>
+
+  <!-- Cursor / hand pointer -->
+  <text x="720" y="145" font-family="system-ui, sans-serif" font-size="24" text-anchor="middle">👆</text>
+
+  <!-- Response time indicator -->
+  <rect x="555" y="175" width="224" height="60" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+  <text x="667" y="196" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">Input delay + processing</text>
+
+  <!-- Timeline bar -->
+  <rect x="570" y="204" width="194" height="16" rx="4" fill="#e2e8f0"/>
+  <!-- Fast response zone -->
+  <rect x="570" y="204" width="60" height="16" rx="4" fill="#22c55e"/>
+  <text x="600" y="216" font-family="system-ui, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">fast</text>
+  <!-- Acceptable zone -->
+  <rect x="630" y="204" width="60" height="16" fill="#fbbf24"/>
+  <text x="660" y="216" font-family="system-ui, sans-serif" font-size="9" fill="#1e293b" text-anchor="middle">ok</text>
+  <!-- Slow zone -->
+  <rect x="690" y="204" width="74" height="16" rx="4" fill="#ef4444"/>
+  <text x="727" y="216" font-family="system-ui, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">slow</text>
+
+  <!-- Response arrow -->
+  <line x1="570" y1="235" x2="570" y2="245" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="600" y="255" font-family="system-ui, sans-serif" font-size="10" fill="#3b82f6">0ms</text>
+  <text x="720" y="255" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280">500ms+</text>
+
+  <text x="667" y="290" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#22c55e" text-anchor="middle">Good: &lt; 200ms</text>
+  <text x="667" y="310" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">Interaction to Next Paint</text>
+  <text x="667" y="325" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">responsiveness metric</text>
+
+  <!-- Bottom note -->
+  <text x="400" y="370" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">Measured by Chrome's field data (CrUX) and lab tools (Lighthouse, WebPageTest)</text>
+</svg>

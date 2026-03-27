@@ -1,0 +1,353 @@
+---
+title: "Empty, Loading, and Error States for Dashboards"
+slug: "03-empty-loading-error-states"
+moduleSlug: "10-data-dense-ui"
+order: 3
+hiringSignal: true
+hiringSignalCategory: "Data-Dense UI"
+estimatedHours: 1.5
+tasks:
+  - "Build a skeleton loader that matches the shape of a table row"
+  - "Build an empty state component with an illustration and a CTA"
+  - "Build an error state with a retry button and an error message"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+dashboard+empty+state+skeleton+loader"
+      label: "Dashboard Empty and Loading States"
+  docs:
+    - url: "https://web.dev/patterns/web-vitals-patterns"
+      label: "web.dev Web Vitals Patterns"
+---
+
+## Goal
+
+Design and build the three non-data states every dashboard table needs — loading, empty, and error — so that users always understand what is happening and what to do next.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+A table that shows nothing when data is loading, an empty search result, or a network failure looks broken — even if the code is technically correct. Users interpret a blank screen as an error. Hiring managers reviewing a take-home project specifically look for whether the candidate handled these states. Building all three well signals mature product thinking and attention to the complete user experience, not just the happy path.
+
+Skeleton loaders are the modern replacement for spinners in data-dense contexts. Empty states are opportunities to guide users rather than leave them confused. Error states build trust by being honest about what went wrong and giving users a clear recovery action.
+
+## What you will produce
+
+Three components: `SkeletonRow` (repeated to fill the table during loading), `EmptyState` (an icon or illustration with a heading, subtext, and optional call-to-action button), and `ErrorState` (a message describing what went wrong with a retry button). Each is wired to a data-fetching state machine in the table page.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all component files
+- **Your Next.js project** — the `components/` directory for the three new components
+- **Browser** — to verify each state renders correctly and transitions to the data state
+
+## Concept overview
+
+### Three types of "empty"
+
+Not all empty states are the same, and each requires a different message:
+
+1. **No data yet (first-time user):** The user has not created anything yet. The message should encourage the first action: "You have no users yet. Add your first user to get started."
+2. **No search results:** The user applied a filter that matched nothing. The message should be specific to the filter: "No users match 'acme'. Try a different search term or clear your filters."
+3. **Error:** Something went wrong during the fetch. Be specific about the failure category (network error, permission denied, server error) and provide a retry action.
+
+Using the same generic "No results" message for all three cases is a common mistake that leaves users confused about why the table is empty and what they can do about it.
+
+### Skeleton loader design
+
+A skeleton loader is a placeholder that mimics the visual structure of the content it represents. For a table, this means rendering the correct number of rows, each with shimmer-animated gray bars in roughly the same positions as the real data columns.
+
+Key design rules for skeleton rows:
+- Match the height of a real table row.
+- Use column widths that reflect the real content (the name column bar should be wider than the status badge column bar).
+- Use a shimmer animation (a gradient that slides left-to-right) to communicate that loading is happening.
+- Render the same number of skeleton rows as your `pageSize` so the layout does not shift when data loads.
+
+### Empty state anatomy
+
+A well-designed empty state has four parts:
+
+1. **Illustration or icon** — communicates the context visually. A search icon for no results; a folder or inbox icon for an empty list.
+2. **Heading** — a short, direct summary of the situation ("No results found").
+3. **Subtext** — one sentence explaining why and what to do ("Try adjusting your search term or clearing your filters.").
+4. **Call to action (optional)** — a button that takes the user directly to the recovery action. Not every empty state needs one; "no search results" does not need a button, but "no users yet" does.
+
+### Error state best practices
+
+Be specific about the category of error, not just "Something went wrong." Users can act on specifics:
+- "Could not connect to the server. Check your internet connection and try again." — network error
+- "You do not have permission to view this data." — authorization error
+- "The server returned an unexpected response. Our team has been notified." — server error
+
+Always provide a retry button for transient errors (network, server). For permanent errors (permission denied), provide a link to the relevant documentation or contact.
+
+<VideoEmbed
+  title="Dashboard Empty and Loading States"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=react+dashboard+empty+state+skeleton+loader"
+  suggestedTerms="react dashboard skeleton loader empty state error state tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Build the SkeletonRow component
+
+**What:** Create a `SkeletonRow` component that renders a table row with animated placeholder bars matching the shape of a real data row.
+
+**Where:** Create `components/SkeletonRow.tsx` in Cursor.
+
+**How:** Create a row with shimmer-animated cells:
+
+```tsx
+interface SkeletonRowProps {
+  columnCount: number;
+}
+
+export function SkeletonRow({ columnCount }: SkeletonRowProps) {
+  return (
+    <tr aria-hidden="true">
+      {Array.from({ length: columnCount }).map((_, i) => (
+        <td key={i}>
+          <div
+            style={{
+              height: '1rem',
+              width: i === 0 ? '60%' : '40%',
+              borderRadius: '4px',
+              background: 'linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.5s infinite',
+            }}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+}
+```
+
+Add the shimmer keyframe to your global CSS:
+
+```css
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+```
+
+**Why:** `aria-hidden="true"` on the skeleton row tells screen readers to skip the placeholder content. Screen readers should wait for the real content, which you will signal with an `aria-live` region in the table wrapper. Varying the width of the skeleton bars by column position makes the placeholder look closer to the real layout.
+
+**Check:** Render `<SkeletonRow columnCount={4} />` inside a table and confirm the shimmer animation plays in the browser.
+
+---
+
+### Step 2 — Render skeleton rows during the loading state
+
+**What:** In your table page, show a fixed number of `SkeletonRow` components while data is loading instead of showing an empty table or a spinner.
+
+**Where:** In your page or table component where the data-fetching state is managed.
+
+**How:** Add a `status` type and conditional rendering:
+
+```tsx
+type TableStatus = 'loading' | 'empty' | 'error' | 'success';
+
+// In the table body:
+{status === 'loading' && (
+  Array.from({ length: pageSize }).map((_, i) => (
+    <SkeletonRow key={i} columnCount={columns.length} />
+  ))
+)}
+{status === 'success' && (
+  pagedRows.map((row, i) => (
+    <tr key={i}>
+      {columns.map((col) => (
+        <td key={String(col.key)}>{String(row[col.key] ?? '')}</td>
+      ))}
+    </tr>
+  ))
+)}
+```
+
+**Why:** Rendering exactly `pageSize` skeleton rows means the table has the same height during loading as when data is present, which eliminates layout shift. Using a union type for `status` makes the state machine exhaustive — TypeScript will warn if you add a new status without handling it.
+
+**Check:** Simulate a loading state by setting `status = 'loading'` and confirm the skeleton rows fill the table. Then switch to `status = 'success'` and confirm the real rows appear.
+
+---
+
+### Step 3 — Build the EmptyState component
+
+**What:** Create a reusable `EmptyState` component that accepts a context-specific heading, subtext, and optional CTA.
+
+**Where:** Create `components/EmptyState.tsx` in Cursor.
+
+**How:** Design a flexible component:
+
+```tsx
+interface EmptyStateProps {
+  icon?: React.ReactNode;
+  heading: string;
+  subtext: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+}
+
+export function EmptyState({ icon, heading, subtext, action }: EmptyStateProps) {
+  return (
+    <div role="status" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+      {icon && <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{icon}</div>}
+      <h2 style={{ marginBottom: '0.5rem' }}>{heading}</h2>
+      <p style={{ color: '#6b7280', marginBottom: action ? '1.5rem' : 0 }}>{subtext}</p>
+      {action && (
+        <button type="button" onClick={action.onClick}>
+          {action.label}
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+**Why:** `role="status"` on the wrapper announces to screen readers that the region contains status information. The `action` prop is typed as an optional object so the button only renders when a CTA is needed — callers do not need to conditionally render children. A generic icon slot accepts any React node (an emoji, an SVG, or an image).
+
+**Check:** Render three variants: one with an icon and a CTA button, one with just text for a "no search results" case, and one with different copy for a "no permission" case.
+
+---
+
+### Step 4 — Build the ErrorState component
+
+**What:** Create an `ErrorState` component that shows a specific error message and a retry button.
+
+**Where:** Create `components/ErrorState.tsx` in Cursor.
+
+**How:** Accept an error message and retry callback:
+
+```tsx
+interface ErrorStateProps {
+  message: string;
+  onRetry: () => void;
+}
+
+export function ErrorState({ message, onRetry }: ErrorStateProps) {
+  return (
+    <div role="alert" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+      <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚠</div>
+      <h2 style={{ marginBottom: '0.5rem' }}>Something went wrong</h2>
+      <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>{message}</p>
+      <button type="button" onClick={onRetry}>
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+**Why:** `role="alert"` on the error state causes screen readers to announce it immediately when it appears — this is the correct role for an urgent, unexpected status change. The `onRetry` callback lets the parent component handle the retry logic (re-fetch, reset state) without the `ErrorState` knowing about data fetching.
+
+**Check:** Simulate an error state by setting `status = 'error'`. Confirm the error state renders. Click "Try again" and confirm the `onRetry` callback fires (log to the console for now).
+
+---
+
+### Step 5 — Wire all states to the table and verify transitions
+
+**What:** Connect all four states (loading, success, empty, error) to the table so the correct component renders in each case.
+
+**Where:** In the page or table wrapper component that manages `status`.
+
+**How:** Add a `tbody`-level conditional that covers all four states:
+
+```tsx
+<tbody>
+  {status === 'loading' && (
+    Array.from({ length: pageSize }).map((_, i) => (
+      <SkeletonRow key={i} columnCount={columns.length} />
+    ))
+  )}
+  {status === 'success' && pagedRows.length > 0 && (
+    pagedRows.map((row, i) => (
+      <tr key={i}>
+        {columns.map((col) => (
+          <td key={String(col.key)}>{String(row[col.key] ?? '')}</td>
+        ))}
+      </tr>
+    ))
+  )}
+  {status === 'success' && pagedRows.length === 0 && (
+    <tr>
+      <td colSpan={columns.length}>
+        <EmptyState
+          heading="No results found"
+          subtext="Try adjusting your search or clearing your filters."
+        />
+      </td>
+    </tr>
+  )}
+  {status === 'error' && (
+    <tr>
+      <td colSpan={columns.length}>
+        <ErrorState
+          message="Could not load data. Check your connection and try again."
+          onRetry={handleRetry}
+        />
+      </td>
+    </tr>
+  )}
+</tbody>
+```
+
+**Why:** Placing `EmptyState` and `ErrorState` inside `td` elements with `colSpan` keeps them within the table structure, which is correct semantically. They span all columns so they fill the full table width.
+
+**Check:** Cycle through all four states manually (set `status` in code) and confirm: loading shows skeleton rows with shimmer, success with data shows real rows, success with empty results shows the empty state, and error shows the error state with a working retry button.
+
+## If stuck
+
+- **Shimmer animation not playing** — confirm the `@keyframes shimmer` rule is in a global CSS file that is imported by your layout or page. Scoped CSS modules do not work for keyframes referenced in inline styles.
+- **EmptyState or ErrorState not filling the table width** — confirm the wrapping `td` has `colSpan` set to the number of columns. Without `colSpan`, the cell only spans one column.
+- **role="alert" not announcing on first render** — the alert role only fires when content is dynamically inserted after the initial page load. If you render the error state on the initial render, add `aria-live="assertive"` to the wrapper instead.
+- **Skeleton rows cause layout shift** — ensure you render exactly `pageSize` skeleton rows. If you render fewer, the table will shift when full data loads and fills more rows.
+
+## Common mistakes
+
+- Using a generic "No results" message for all three empty contexts. Each context (no data yet, no search results, permission error) needs a specific message and possibly a different CTA.
+- Using `role="alert"` on the empty state (which is not urgent) when `role="status"` is the correct choice for non-urgent status messages.
+- Not including `aria-hidden="true"` on skeleton rows, causing screen readers to announce placeholder content.
+- Forgetting `colSpan` on the `td` wrapping the empty or error state, which causes the content to be confined to a single narrow column.
+- Making the retry button call the original fetch function without resetting the error state first, leaving the error UI visible while a retry is in progress.
+
+<KeyTerms terms={[
+  "Skeleton loader: A placeholder UI that mimics the shape and layout of the real content while data is loading, reducing perceived wait time compared to a spinner.",
+  "Shimmer animation: A CSS animation that moves a light gradient across a skeleton element to communicate that loading is actively happening.",
+  "Empty state: A component shown when a data container has no content to display. Different causes (no data yet, no search results, error) require different messages.",
+  "Error state: A component shown when a data fetch fails, including a specific error message and a recovery action such as a retry button.",
+  "role='status': An ARIA role that announces a non-urgent status change to screen readers when the content of the region changes.",
+  "role='alert': An ARIA role that announces an urgent, unexpected status change to screen readers immediately when the content appears.",
+  "colSpan: An HTML attribute on a td or th element that makes it span multiple columns, used to make empty and error states fill the full table width.",
+  "aria-hidden='true': An attribute that hides an element and all its children from the accessibility tree, used on skeleton rows so screen readers skip placeholder content.",
+  "State machine: A model for UI that defines a fixed set of states (loading, success, empty, error) and clear transitions between them, preventing impossible states.",
+  "Call to action (CTA): A button or link in an empty state that gives users a direct path to the action that will fill the empty container."
+]} />
+
+<QuickSummary points={[
+  "There are three distinct types of empty: no data yet (first-time user), no search results, and error. Each requires a different message and possibly a different CTA.",
+  "Skeleton rows should match the height and column structure of real rows, render exactly pageSize rows, and use aria-hidden='true' so screen readers skip them.",
+  "Use role='status' on non-urgent empty states and role='alert' on error states so screen readers announce them with the appropriate urgency.",
+  "Place EmptyState and ErrorState inside td elements with colSpan equal to the total column count so they span the full table width.",
+  "The ErrorState component should accept an onRetry callback and a specific message — not a generic 'Something went wrong' that gives users no guidance.",
+  "Model data-fetching state as a union type ('loading' | 'success' | 'empty' | 'error') so TypeScript enforces that all states are handled."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Create three distinct empty state variants for three different contexts: a first-time user who has no data yet (with a CTA to create the first item), a search with no results (with a CTA to clear filters), and a permission error (with a link to request access). Each should use different copy and a different icon.
+
+**Definition of done:**
+
+- Each empty state variant communicates clearly both why the table is empty and what the user should do next.
+- The loading state renders exactly `pageSize` skeleton rows so the table height does not shift when data loads.
+- The error state uses `role="alert"` and the retry button resets the error state before re-fetching.
+- Screen readers skip skeleton rows (aria-hidden) and announce the error state immediately when it appears (role="alert").

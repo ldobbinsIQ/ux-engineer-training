@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400">
+  <!-- Background -->
+  <rect width="800" height="400" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="400" y="36" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1e293b" text-anchor="middle">Git Branching</text>
+
+  <!-- Main branch line -->
+  <line x1="80" y1="260" x2="720" y2="260" stroke="#1e293b" stroke-width="3"/>
+
+  <!-- Main branch label -->
+  <text x="60" y="290" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#1e293b" text-anchor="middle">main</text>
+
+  <!-- Main branch commits -->
+  <!-- Commit 1 -->
+  <circle cx="180" cy="260" r="12" fill="#3b82f6" stroke="#ffffff" stroke-width="2"/>
+  <text x="180" y="245" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">c1</text>
+
+  <!-- Commit 2 (branch point) -->
+  <circle cx="360" cy="260" r="12" fill="#3b82f6" stroke="#ffffff" stroke-width="2"/>
+  <text x="360" y="245" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">c2</text>
+
+  <!-- Commit 3 (merge point) -->
+  <circle cx="600" cy="260" r="12" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+  <text x="600" y="245" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">c5</text>
+
+  <!-- Commit 4 (after merge) -->
+  <circle cx="700" cy="260" r="12" fill="#3b82f6" stroke="#ffffff" stroke-width="2"/>
+  <text x="700" y="245" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">c6</text>
+
+  <!-- Feature branch line: fork from c2 up, two commits, merge to c5 -->
+  <!-- Branch fork line from c2 up-right to first feature commit -->
+  <line x1="360" y1="248" x2="430" y2="140" stroke="#22c55e" stroke-width="3"/>
+  <!-- Feature branch horizontal line -->
+  <line x1="430" y1="140" x2="540" y2="140" stroke="#22c55e" stroke-width="3"/>
+  <!-- Merge line from last feature commit down-right to c5 -->
+  <line x1="540" y1="140" x2="600" y2="248" stroke="#22c55e" stroke-width="3"/>
+
+  <!-- Feature branch commits -->
+  <circle cx="430" cy="140" r="12" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+  <text x="430" y="125" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">c3</text>
+
+  <circle cx="540" cy="140" r="12" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+  <text x="540" y="125" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">c4</text>
+
+  <!-- Feature branch label -->
+  <text x="485" y="108" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#22c55e" text-anchor="middle">feat/my-feature</text>
+
+  <!-- Merge label -->
+  <text x="610" y="290" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#22c55e" text-anchor="middle">merge</text>
+
+  <!-- Arrow at end of main branch -->
+  <polygon points="720,255 740,260 720,265" fill="#1e293b"/>
+
+  <!-- Legend -->
+  <circle cx="100" cy="355" r="8" fill="#3b82f6"/>
+  <text x="115" y="359" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b">main commit</text>
+  <circle cx="240" cy="355" r="8" fill="#22c55e"/>
+  <text x="255" y="359" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b">feature commit</text>
+  <circle cx="400" cy="355" r="8" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+  <text x="415" y="359" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b">merge commit</text>
+</svg>

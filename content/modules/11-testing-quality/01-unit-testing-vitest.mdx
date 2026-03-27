@@ -1,0 +1,281 @@
+---
+title: "Unit Testing with Vitest"
+slug: "01-unit-testing-vitest"
+moduleSlug: "11-testing-quality"
+order: 1
+hiringSignal: false
+estimatedHours: 1.5
+tasks:
+  - "Install and configure Vitest in a Next.js project"
+  - "Write a test for a pure utility function"
+  - "Write a test that checks a conditional rendering rule"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=vitest+unit+testing+react+beginners"
+      label: "Vitest Unit Testing Tutorial"
+  docs:
+    - url: "https://vitest.dev/guide/"
+      label: "Vitest Guide"
+---
+
+## Goal
+
+Set up Vitest, write your first passing tests for a utility function, and understand the testing pyramid so you know which tests to write and which to skip.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Testing is a professional signal. Take-home projects with even a handful of well-written unit tests stand out from the majority that have none. Unit tests also pay dividends immediately: when you refactor a sort function or a date formatter, a passing test suite tells you instantly whether you broke anything.
+
+Vitest is the right starting point because it is fast, requires almost no configuration in a Vite or Next.js project, and uses the same API as Jest — so any Jest knowledge transfers. Starting with pure utility functions (no React, no DOM) means your first tests are simple to reason about and fast to run.
+
+## What you will produce
+
+A configured Vitest setup in your Next.js project and at least three passing tests: one for a pure utility function's happy path, one for an edge case (null or invalid input), and one that verifies a conditional rendering rule in a React component.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for test files and configuration
+- **Your Next.js project** — `vitest.config.ts` at the root, test files alongside the code they test
+- **Terminal in Cursor** — to run `npx vitest` and see test results
+
+## Concept overview
+
+### Vitest vs Jest
+
+Vitest is a test runner built on top of Vite. It is faster than Jest for Vite and Next.js projects because it uses the same module resolution and transform pipeline as your application — there is no separate Babel transform or module system to configure. The API is nearly identical to Jest: `describe`, `it`, `expect`, `beforeEach`, `afterEach` all work the same way.
+
+### Test file naming
+
+Vitest discovers test files matching `*.test.ts`, `*.test.tsx`, `*.spec.ts`, or `*.spec.tsx`. The convention in this course is to place test files next to the file they test: `utils/formatDate.ts` and `utils/formatDate.test.ts` in the same directory.
+
+### describe / it / expect
+
+These three functions are the building blocks of every test:
+
+- `describe` groups related tests under a label (usually the function or component name).
+- `it` (or `test`) defines a single test case with a description of what it should do.
+- `expect` makes an assertion — it takes an actual value and chains a matcher like `.toBe`, `.toEqual`, or `.toBeNull`.
+
+A well-written test description reads like a sentence: `it('returns null when the input is undefined', ...)`.
+
+### Testing pure functions first
+
+Start with pure functions — functions that take inputs, return outputs, and have no side effects. They are the easiest things to test because there is no DOM, no network, and no state to set up. Once you are comfortable with `describe/it/expect`, you can add React Testing Library for component tests.
+
+### Running tests
+
+- `npx vitest` — runs tests in watch mode (re-runs on file save)
+- `npx vitest run` — runs tests once and exits (useful in CI)
+- `npx vitest --reporter=verbose` — shows each test name in the output
+
+<Diagram
+  title="Testing Pyramid"
+  src="/diagrams/d10-testing-pyramid.svg"
+  caption="Most tests should be fast unit tests; fewer should be integration tests; even fewer should be E2E tests"
+  alt="Testing pyramid showing unit tests at base, integration in middle, E2E at top"
+/>
+
+<VideoEmbed
+  title="Vitest Unit Testing Tutorial"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=vitest+unit+testing+react+beginners"
+  suggestedTerms="vitest unit testing react typescript beginners tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Add Vitest to the project
+
+**What:** Add Vitest and its jsdom environment as development dependencies.
+
+**Where:** In the Cursor terminal, from your project root.
+
+**How:** Run:
+
+```bash
+npm install --save-dev vitest @vitest/ui jsdom
+```
+
+**Why:** `vitest` is the test runner and CLI. `jsdom` is the simulated browser environment needed for tests that use the DOM (component tests). `@vitest/ui` is optional but gives you a browser-based test UI at `http://localhost:51204` if you prefer it over the terminal output.
+
+**Check:** The three packages appear in the `devDependencies` section of `package.json`.
+
+---
+
+### Step 2 — Create vitest.config.ts
+
+**What:** Create a Vitest configuration file that sets the test environment to jsdom so component tests can use the DOM.
+
+**Where:** In the root of your project, create `vitest.config.ts`.
+
+**How:** Add this configuration:
+
+```ts
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: [],
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './'),
+    },
+  },
+});
+```
+
+**Why:** `environment: 'jsdom'` provides `document`, `window`, and other browser globals for component tests. `globals: true` means you do not need to import `describe`, `it`, and `expect` at the top of every test file — they are available globally just like in Jest. The `@` alias matches the one in your `tsconfig.json` so imports work the same way.
+
+**Check:** Run `npx vitest run` in the terminal. It should start up without errors (even with no test files yet, it exits cleanly).
+
+---
+
+### Step 3 — Write a utility function and your first test
+
+**What:** Create a `formatDate` utility function and a test file for it.
+
+**Where:** Create `utils/formatDate.ts` and `utils/formatDate.test.ts`.
+
+**How:** Write the utility:
+
+```ts
+// utils/formatDate.ts
+export function formatDate(date: Date | null | undefined): string {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return 'Invalid date';
+  }
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+```
+
+Write the first test:
+
+```ts
+// utils/formatDate.test.ts
+import { describe, it, expect } from 'vitest';
+import { formatDate } from './formatDate';
+
+describe('formatDate', () => {
+  it('formats a valid date correctly', () => {
+    const date = new Date(2024, 0, 15); // January 15, 2024
+    expect(formatDate(date)).toBe('January 15, 2024');
+  });
+});
+```
+
+**Why:** Starting with the happy path (a valid date input) confirms the function logic is correct before testing edge cases. The test description reads like a sentence about the expected behavior, not about the implementation.
+
+**Check:** Run `npx vitest run`. The test should pass and the terminal should show green output.
+
+---
+
+### Step 4 — Add edge case tests
+
+**What:** Add tests for `null`, `undefined`, and an invalid `Date` object (such as `new Date('not a date')`).
+
+**Where:** In `utils/formatDate.test.ts`, add more `it` blocks inside the `describe`.
+
+**How:**
+
+```ts
+it('returns "Invalid date" when the input is null', () => {
+  expect(formatDate(null)).toBe('Invalid date');
+});
+
+it('returns "Invalid date" when the input is undefined', () => {
+  expect(formatDate(undefined)).toBe('Invalid date');
+});
+
+it('returns "Invalid date" when the date is not valid', () => {
+  expect(formatDate(new Date('not a date'))).toBe('Invalid date');
+});
+```
+
+**Why:** Edge cases are where bugs live. `new Date('not a date')` creates a `Date` object that passes an `instanceof Date` check but returns `NaN` from `getTime()` — this is a subtle trap that your guard clause must handle. Testing it explicitly makes the guard clause's purpose clear.
+
+**Check:** Run `npx vitest run`. All four tests should pass.
+
+---
+
+### Step 5 — Run in watch mode during development
+
+**What:** Start Vitest in watch mode so tests re-run automatically as you edit files.
+
+**Where:** In the Cursor terminal.
+
+**How:** Run:
+
+```bash
+npx vitest
+```
+
+Then edit `formatDate.ts` to intentionally break it (for example, remove the null check) and save. Watch the test output turn red automatically.
+
+**Why:** Watch mode makes testing a live feedback loop rather than a separate step. When a test goes red while you are editing, you know immediately what you broke. Restore the null check and watch the tests turn green again.
+
+**Check:** The terminal shows test results updating in real time as you save files. The test runner does not require you to press any key to re-run.
+
+## If stuck
+
+- **"Cannot find module 'vitest'"** — confirm `vitest` is in your `devDependencies` and run `npm install` to ensure it is installed in `node_modules`.
+- **"describe is not defined"** — check that `globals: true` is set in `vitest.config.ts`. Without it, you must explicitly import `describe`, `it`, and `expect` from `'vitest'` in each test file.
+- **"Cannot find module '@/utils/formatDate'"** — ensure the `@` alias is configured in `vitest.config.ts` using `resolve.alias`. The Vitest config is separate from `next.config.js` and must have its own alias setup.
+- **Test passes on a date that should fail** — check whether `toLocaleDateString` is producing a different format in your Node version. The month and day names are locale-dependent; if the Node.js `Intl` support does not include `en-US`, the output format may differ.
+
+## Common mistakes
+
+- Writing tests that only test the happy path. Edge cases (null, undefined, empty string, boundary values) are where real bugs appear.
+- Naming tests with implementation details: `it('calls toLocaleDateString')` is unhelpful. Name tests by the observable behavior: `it('formats a valid date as Month Day, Year')`.
+- Putting test files in a separate `__tests__` directory far from the source. Keeping tests next to their source files makes it obvious which code each test covers.
+- Forgetting `globals: true` in the config and then wondering why `describe` is not defined.
+- Testing the wrong thing: if `formatDate` calls another function, test `formatDate`'s output — not whether the internal function was called. Unit tests verify behavior, not implementation.
+
+<KeyTerms terms={[
+  "Vitest: A fast test runner for Vite and Next.js projects that uses the Vite transform pipeline and provides a Jest-compatible API.",
+  "describe: A Vitest/Jest function that groups related test cases under a label, typically the name of the function or component being tested.",
+  "it / test: A Vitest/Jest function that defines a single test case with a description of the expected behavior.",
+  "expect: A Vitest/Jest function that wraps an actual value and provides matcher methods like toBe and toEqual for making assertions.",
+  "Pure function: A function that returns the same output for the same input and has no side effects, making it the easiest type of function to unit test.",
+  "jsdom: A JavaScript implementation of browser DOM APIs that lets Vitest run component tests in a Node.js environment without a real browser.",
+  "Watch mode: A mode where the test runner re-runs affected tests automatically whenever source files change, providing immediate feedback during development.",
+  "Edge case: An input or condition at the boundary of expected behavior, such as null, undefined, empty string, or the maximum allowed value.",
+  "globals: true: A Vitest configuration option that makes describe, it, expect, and other test globals available without explicit imports in every test file.",
+  "Testing pyramid: A model that recommends writing many fast unit tests, fewer integration tests, and even fewer slow end-to-end tests for an efficient test suite."
+]} />
+
+<QuickSummary points={[
+  "Vitest is a fast, nearly-zero-config test runner for Vite and Next.js projects with a Jest-compatible API.",
+  "Test files use the *.test.ts or *.test.tsx naming convention and live next to the source files they test.",
+  "describe groups related tests; it defines a single test case; expect makes an assertion about the actual value.",
+  "Start with pure utility functions — no DOM, no React, no state — to build confidence with the test API before adding component tests.",
+  "Set globals: true in vitest.config.ts to avoid importing describe, it, and expect in every test file.",
+  "Always test edge cases (null, undefined, invalid input) in addition to the happy path — that is where real bugs live.",
+  "Run npx vitest (no 'run') for watch mode during development; run npx vitest run in CI for a single pass."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Write three unit tests for a `formatDate` utility function: one for a normal date input, one for a `null` input, and one for an invalid `Date` object (such as `new Date('abc')`).
+
+**Definition of done:**
+
+- All three tests pass when running `npx vitest run`.
+- One test covers the edge case (`null` or invalid date) and the assertion confirms the fallback string is returned.
+- Test descriptions read as sentences describing behavior, not implementation.
+- No TypeScript errors appear in Cursor for either the utility file or the test file.

@@ -1,0 +1,133 @@
+---
+title: "Project 1: Figma-to-Code Fidelity — Enterprise Settings Page"
+slug: "01-figma-to-code"
+order: 1
+hiringSignal: true
+hiringSignalCategory: "Prototyping + Production Polish"
+estimatedHours: 12
+deliverables:
+  - "A Next.js page at /settings that matches the provided spec"
+  - "Form validation with inline errors on all required fields"
+  - "Loading and error states for the save action"
+  - "Accessible: keyboard navigable, visible focus, proper labels"
+  - "README documenting implementation decisions"
+resources:
+  docs:
+    - url: "https://developer.mozilla.org/en-US/docs/Learn/Forms"
+      label: "MDN Web Forms Guide"
+    - url: "https://nextjs.org/docs/app"
+      label: "Next.js App Router Docs"
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=figma+to+react+component+build+tutorial"
+      label: "Figma to React Component Build"
+---
+
+## Problem Statement
+
+You have been handed a Figma spec for an Enterprise Settings page and asked to build it in production-quality code. This is the most common first task for a UX Engineer joining a product team: translate a design into a working, accessible, and maintainable implementation.
+
+The challenge is not just making it look right. It needs to work right — form validation that catches missing required fields, a save button that shows a loading state while the request is in flight, an error state if the save fails, and keyboard navigation that works correctly for every interactive element on the page.
+
+This project tests your ability to read a spec critically, make implementation decisions independently, and produce code that a senior engineer would be comfortable merging.
+
+## Spec Description
+
+The Settings page has three sections:
+
+### User Profile Section
+
+- **Full name** — required text input with a character limit of 100
+- **Email address** — required email input, read-only (greyed out with a "Contact support to change" note)
+- **Job title** — optional text input
+- **Profile photo** — a circular avatar display (static, no upload required in this project)
+
+### Notification Preferences Section
+
+- **Email notifications** — toggle switch, on by default
+- **Weekly digest** — checkbox, off by default
+- **Product updates** — checkbox, off by default
+- **Marketing emails** — checkbox, off by default
+
+Each checkbox and toggle must have a visible label and a brief description below the label explaining what the setting controls.
+
+### Security Section
+
+- **Current password** — required password input (only shown when user initiates a password change)
+- **New password** — required, minimum 8 characters, at least one number
+- **Confirm new password** — required, must match new password
+- A **"Change password"** link that expands the password fields (collapsed by default)
+
+### Save Button
+
+- Positioned at the bottom of the form, full-width on mobile
+- Shows a loading spinner and "Saving..." text while the save request is in flight
+- Returns to "Save changes" on success
+- Shows "Save failed — try again" on error with a retry action
+
+## Acceptance Criteria
+
+### Functional
+
+- All required fields show an inline error message below the field when submitted without a value. The error message is specific: "Full name is required", not just "Required".
+- The save button transitions through three states: default ("Save changes"), loading ("Saving..."), and error ("Save failed — try again"). Simulate the loading state with a 1.5s delay and randomly return success or error 50% of the time.
+- The password change section is collapsed by default and expands when the user clicks "Change password". The expanded section is animated (a simple height transition is sufficient).
+- Password fields validate that new password is at least 8 characters and contains at least one number. Confirm password validates that it matches the new password field.
+
+### Visual
+
+- Section headings, field labels, and descriptions use a clear typographic hierarchy (do not make everything the same size and weight).
+- Form fields have consistent spacing and alignment. Fields within a section are grouped visually.
+- The layout is readable at 320px wide (minimum mobile width) without horizontal scrolling.
+
+### Accessibility
+
+- Every form input has a visible, properly associated label (`htmlFor`/`id` pair or label wrapping the input).
+- Inline error messages are associated with their inputs via `aria-describedby` so screen readers announce them when the field is focused.
+- The save button's loading and error states are announced to screen readers. Use `aria-live="polite"` on a status region or `role="status"` on the button feedback text.
+- All interactive elements are reachable and operable using Tab and Enter/Space keys only, without a mouse.
+- Focus is visible at all times. Do not suppress the browser default outline unless you replace it with a custom visible focus style.
+
+### Code Quality
+
+- All component props are typed with TypeScript interfaces — no `any` types.
+- Semantic HTML throughout: form elements inside a `form` tag, sections inside `section` or `fieldset` elements with `legend` where appropriate.
+- No inline styles. Use CSS modules, Tailwind utility classes, or a combination — but be consistent.
+- A short README (200–400 words) that documents at least three implementation decisions you made and why.
+
+## Suggested Implementation Phases
+
+Work through these phases in order. Complete each phase before moving to the next. This prevents the common mistake of trying to build the form, validation, loading states, and accessibility all at once.
+
+**Phase 1: HTML structure**
+Build the page layout and all form elements as plain HTML without any JavaScript state. Focus on semantic correctness: `form`, `fieldset`, `legend`, `label`, `input`, `button`. At the end of this phase, the form should be fully navigable by keyboard and visually structured correctly.
+
+**Phase 2: TypeScript types**
+Define interfaces for the form data shape and the component props. Create a `SettingsFormData` interface with the shape of the entire form. Type all component props before adding any state.
+
+**Phase 3: Form state**
+Add `useState` for the form fields and wire all inputs to controlled state. At the end of this phase, typing in any field should update the state and React should re-render the input value correctly.
+
+**Phase 4: Validation**
+Add a validate function that takes the form state and returns an errors object (a record mapping field names to error strings). Run validation on submit. Conditionally render error messages below each field when the errors object contains a message for that field.
+
+**Phase 5: Loading and error states**
+Add a `saveStatus` state that cycles through `'idle' | 'loading' | 'success' | 'error'`. Wire the save button to this state machine. Simulate the async save with a `setTimeout`.
+
+**Phase 6: Accessibility pass**
+Audit your form against the accessibility acceptance criteria. Check every input for a properly associated label. Add `aria-describedby` to inputs with error messages. Test keyboard navigation from top to bottom of the form. Check that the loading and error states are announced by a screen reader (use VoiceOver on Mac or NVDA on Windows).
+
+**Phase 7: README**
+Write the README documenting your implementation decisions. Cover: why you chose the state shape you did, how you handled password validation, and one thing you would do differently with more time.
+
+## Notes on Scope
+
+This project does not require:
+- A backend or database. Simulate the save with a client-side timeout.
+- A file upload for the profile photo. A static placeholder image is sufficient.
+- Dark mode support (though it is a bonus if you want to add it).
+- Authentication or route protection.
+
+This project does require:
+- The page to be at the route `/settings` in your Next.js app.
+- The form to work correctly with keyboard only (no mouse).
+- The README to be present in the project root or a `/docs` directory.

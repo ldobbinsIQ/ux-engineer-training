@@ -1,0 +1,249 @@
+---
+title: "Core Web Vitals Overview"
+slug: "02-core-web-vitals"
+moduleSlug: "12-performance-basics"
+order: 2
+hiringSignal: false
+estimatedHours: 1
+tasks:
+  - "Identify the LCP element on a page using Chrome DevTools Performance Insights"
+  - "Identify sources of CLS by adding border outlines to all images and iframes"
+  - "Read an INP score from a Lighthouse report and identify which interaction caused it"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=core+web+vitals+for+beginners+lcp+cls+inp"
+      label: "Core Web Vitals for Beginners"
+  docs:
+    - url: "https://web.dev/explore/learn-core-web-vitals"
+      label: "web.dev Core Web Vitals"
+---
+
+## Goal
+
+Understand what each Core Web Vital measures, how to identify failing elements in Chrome DevTools, and what causes poor scores — so you can diagnose and fix performance problems systematically.
+
+## Time + Difficulty
+
+**Estimated time:** 1 hour
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Core Web Vitals are Google's official metrics for user experience quality. They are factored into Google Search rankings, which means poor scores can reduce organic traffic. More importantly, they measure things that users actually feel: how long they wait for content to appear (LCP), whether content jumps around while they are trying to read it (CLS), and how quickly the page responds when they tap a button (INP).
+
+UX Engineers who understand Core Web Vitals can have a specific conversation with engineers and product managers about performance: not "the page feels slow" but "the LCP element is a hero image with no priority prop and no preload hint, which is causing a 4.2s LCP on mobile."
+
+## What you will produce
+
+A documented identification of the LCP element, at least one CLS source, and an INP score on a page of your choice — using Chrome DevTools and Lighthouse.
+
+## Tools + Where you will work
+
+- **Chrome DevTools** — the Performance Insights panel and Lighthouse tab
+- **Browser** — Chrome, with your Next.js app running on `http://localhost:3000`
+- **Cursor** — to add a CSS debugging rule for finding CLS sources
+
+## Concept overview
+
+### LCP — Largest Contentful Paint
+
+LCP measures when the largest visible content element finishes loading. "Largest" is determined by element size in the viewport at the time it renders. The LCP element is typically one of:
+
+- A hero image (the `img` or `background-image` with the largest rendered area)
+- A large heading text block
+- A video poster image
+
+**Good:** under 2.5 seconds
+**Needs improvement:** 2.5–4 seconds
+**Poor:** over 4 seconds
+
+Common causes of poor LCP:
+- Large images without `width`/`height` (cause layout recalculation)
+- Images loaded without a `priority` hint or `preload` link
+- Server-side rendering that is slow to respond (high TTFB)
+- Large JavaScript bundles that block rendering
+
+### CLS — Cumulative Layout Shift
+
+CLS measures how much visible content shifts unexpectedly during the page lifecycle. A layout shift happens when a rendered element changes position without user input — typically because something above it loaded and pushed it down (an image without dimensions, a banner injected by an ad, a font that changes character widths on load).
+
+**Good:** under 0.1
+**Needs improvement:** 0.1–0.25
+**Poor:** over 0.25
+
+CLS is scored on a scale from 0 (no shift) to any positive number. The most common cause in Next.js apps is images without explicit `width` and `height` props, which the browser cannot reserve space for before the image loads.
+
+Common causes:
+- Images without `width`/`height` attributes
+- Dynamically injected content above existing content (cookie banners, notification bars)
+- Web fonts that cause text to reflow when they load (FOIT/FOUT)
+
+### INP — Interaction to Next Paint
+
+INP replaced FID (First Input Delay) as a Core Web Vital in March 2024. It measures the time from when a user interacts with the page (click, tap, keyboard input) to when the browser paints the next frame in response.
+
+**Good:** under 200ms
+**Needs improvement:** 200–500ms
+**Poor:** over 500ms
+
+Poor INP is caused by JavaScript running on the main thread during or immediately after a user interaction, blocking the browser from painting the response. Common causes:
+- Large event handlers that do heavy computation synchronously
+- Rendering a large list immediately on click without virtualization
+- Synchronous DOM reads that force layout recalculation
+
+<Diagram
+  title="Core Web Vitals Triad"
+  src="/diagrams/d11-core-web-vitals.svg"
+  caption="LCP measures load time, CLS measures visual stability, and INP measures interaction responsiveness"
+  alt="Diagram showing the three Core Web Vitals: LCP, CLS, and INP with their thresholds"
+/>
+
+<VideoEmbed
+  title="Core Web Vitals for Beginners"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=core+web+vitals+for+beginners+lcp+cls+inp"
+  suggestedTerms="core web vitals LCP CLS INP beginner chrome devtools tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Identify the LCP element using Performance Insights
+
+**What:** Use Chrome DevTools' Performance Insights panel to identify which element on the page is the Largest Contentful Paint element.
+
+**Where:** In Chrome DevTools, with your Next.js app loaded at `http://localhost:3000`.
+
+**How:**
+
+1. Open Chrome DevTools (F12).
+2. Click the **Performance insights** tab (or find it via the `>>` overflow).
+3. Click **Measure page load**.
+4. Wait for the recording to complete.
+5. Find the **LCP** item in the Insights panel on the right.
+6. Click it — DevTools highlights the LCP element in the viewport and shows its details.
+
+Note the element tag, its `src` if it is an image, and its LCP time in milliseconds.
+
+**Why:** Knowing exactly which element is the LCP element tells you where to focus your optimization effort. A hero image that is the LCP element should have the Next.js `priority` prop. A heading that is the LCP element might indicate the page is text-only and already well optimized.
+
+**Check:** You can name the LCP element (for example: "The hero image with src='/images/hero.jpg' is the LCP element at 2.8s").
+
+---
+
+### Step 2 — Identify CLS sources with CSS border outlines
+
+**What:** Add a temporary CSS rule that draws a border around all images and iframes to make it easy to spot elements that load without reserved space and cause layout shift.
+
+**Where:** In Cursor, in your global CSS file (for example `app/globals.css`).
+
+**How:** Add this debug rule temporarily:
+
+```css
+/* CLS DEBUG — remove before committing */
+img, iframe, video {
+  outline: 2px solid red;
+}
+```
+
+Save the file and reload the page. Watch for:
+- Images that appear without a space already reserved (the surrounding content jumps down when the image loads)
+- Elements with `outline: 2px solid red` that cause content below them to shift
+
+**Why:** The red outline makes the boundaries of all embedded media visible. When an image loads and the red box appears in a position that pushes other content, you have found a CLS source. It is much faster than watching the DevTools layout shift markers.
+
+**Check:** After adding the rule, reload the page slowly (throttle the network in DevTools → Network → Slow 3G) and watch whether any red-outlined element causes surrounding text or elements to shift position. Note which elements cause shifts.
+
+---
+
+### Step 3 — Remove the debug CSS and fix at least one CLS source
+
+**What:** Remove the debug CSS rule and add `width` and `height` attributes (or equivalent) to at least one image that was causing layout shift.
+
+**Where:** In Cursor — remove from `globals.css`, then fix the `img` element or component.
+
+**How:** For a plain `img` element causing CLS, add explicit dimensions:
+
+```html
+<!-- Before: causes CLS -->
+<img src="/images/hero.jpg" alt="Hero" />
+
+<!-- After: reserves space, no CLS -->
+<img src="/images/hero.jpg" alt="Hero" width={1200} height={600} />
+```
+
+Or replace with the Next.js `Image` component (which enforces `width` and `height`):
+
+```tsx
+import Image from 'next/image';
+<Image src="/images/hero.jpg" alt="Hero" width={1200} height={600} priority />
+```
+
+**Why:** The browser uses the `width` and `height` attributes to calculate the aspect ratio and reserve the correct amount of space before the image loads. No space reservation means the browser renders surrounding content at position 0 and then moves it down when the image arrives — that movement is measured as CLS.
+
+**Check:** Run a Lighthouse audit and check the CLS score. It should improve. Or use the Performance Insights recording to verify no layout shifts are flagged after the fix.
+
+---
+
+### Step 4 — Read an INP score from a Lighthouse report
+
+**What:** Run a Lighthouse audit and find the INP metric in the Performance results.
+
+**Where:** In Chrome DevTools → Lighthouse tab, with your production build running.
+
+**How:**
+
+1. Run `npm run build && npm start` in the terminal.
+2. Run a Lighthouse audit (Mobile preset, Performance category).
+3. In the results, scroll past the score gauges to find the **Metrics** section.
+4. Find the **INP** row and note the value and color rating (green/orange/red).
+5. Scroll to the **Diagnostics** section and look for "Avoid long main-thread tasks" — this shows which scripts are blocking the main thread during interactions.
+
+**Why:** INP is the newest Core Web Vital and the one most directly connected to perceived interactivity. A high INP score in Lighthouse (shown as orange or red) indicates that clicking or tapping in the page produces a delay before the UI updates, which users feel as sluggishness.
+
+**Check:** You have noted the INP value and color rating. If INP is red or orange, you have identified at least one interaction or script that is contributing to the delay from the Diagnostics section.
+
+## If stuck
+
+- **Performance Insights tab is missing** — it may be behind a feature flag in older Chrome versions. Update Chrome to the latest version. Alternatively, use the regular Performance tab and look for the LCP marker in the timeline.
+- **CLS is 0 but images still shift visually** — some layout shifts are attributed to elements other than images (for example, a dynamically injected banner). Keep the red outline rule enabled and watch more carefully for banner or modal components that appear after initial load.
+- **INP is not showing in Lighthouse** — INP requires user interaction during the audit. Lighthouse simulates some interactions but may not trigger your specific components. For accurate INP measurement, use the PageSpeed Insights tool at pagespeed.web.dev with your deployed URL.
+
+## Common mistakes
+
+- Confusing LCP with FCP (First Contentful Paint). FCP measures when the first content of any kind appears (may be a loading spinner). LCP measures when the main content finishes loading. LCP is what matters for perceived load time.
+- Thinking CLS only comes from images. Cookie banners, chat widgets, dynamic notifications, and late-loading fonts all cause CLS. Use the red outline technique broadly and watch for anything that moves other content.
+- Assuming INP is always caused by JavaScript bundles. INP can also be caused by render-heavy components that do too much work synchronously in an event handler. Profile the specific interaction in the Performance panel to find the bottleneck.
+- Removing the debug CSS outline rule but not rebuilding before the next Lighthouse audit. The audit tests the built output; source file changes require a rebuild.
+
+<KeyTerms terms={[
+  "LCP (Largest Contentful Paint): A Core Web Vital that measures when the largest visible content element finishes loading. Good is under 2.5 seconds.",
+  "CLS (Cumulative Layout Shift): A Core Web Vital that measures how much visible content shifts unexpectedly during page load. Good is under 0.1.",
+  "INP (Interaction to Next Paint): A Core Web Vital that measures the delay between a user interaction and the next browser paint. Good is under 200ms. Replaced FID in March 2024.",
+  "FCP (First Contentful Paint): A performance metric measuring when the first content (text, image, or canvas) becomes visible. Not a Core Web Vital but useful context.",
+  "Layout shift: The movement of a visible element on screen without user input, typically caused by content loading above it. Each shift contributes to the CLS score.",
+  "Priority prop: A Next.js Image component prop that instructs the browser to preload the image as a high-priority resource, reducing LCP time for above-the-fold images.",
+  "FOIT/FOUT: Flash of Invisible Text / Flash of Unstyled Text. Font loading behaviors where text is temporarily invisible or rendered in a fallback font before the web font loads, contributing to CLS.",
+  "Performance Insights: A Chrome DevTools panel that records page load and shows annotated insights including the LCP element, layout shifts, and long tasks.",
+  "Main thread: The browser thread responsible for parsing HTML, running JavaScript, and painting. Blocking it with long tasks causes poor INP.",
+  "TTFB (Time to First Byte): The time from when the browser sends a request to when it receives the first byte of the server's response. High TTFB is a common cause of poor LCP."
+]} />
+
+<QuickSummary points={[
+  "LCP measures load time (good is under 2.5s), CLS measures visual stability (good is under 0.1), and INP measures interaction responsiveness (good is under 200ms).",
+  "The LCP element is usually the largest above-fold image or heading — find it in Chrome DevTools Performance Insights.",
+  "CLS is most commonly caused by images without explicit width and height dimensions. Add dimensions to reserve space before the image loads.",
+  "Use a temporary CSS rule (outline: 2px solid red on img, iframe, video) to visually identify elements that cause layout shifts.",
+  "INP is caused by JavaScript blocking the main thread during or after an interaction. Look for long tasks in the Performance tab diagnostics.",
+  "Always run CWV measurements on a production build — dev server metrics are not representative."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Find the LCP element and at least one source of layout shift on a page of your choice (your Next.js app or any public website).
+
+**Definition of done:**
+
+- You can name the LCP element (tag name, content or src, and LCP time in milliseconds).
+- You can name at least one element that causes a layout shift and explain why it shifts (for example, "The hero image has no width or height, so the browser cannot reserve space for it before it loads").
+- You have noted the INP score from a Lighthouse report and can identify whether it is good, needs improvement, or poor.

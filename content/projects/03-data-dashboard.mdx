@@ -1,0 +1,143 @@
+---
+title: "Project 3: Data-Dense Dashboard"
+slug: "03-data-dashboard"
+order: 3
+hiringSignal: true
+hiringSignalCategory: "Data-Dense UI"
+estimatedHours: 14
+deliverables:
+  - "A dashboard page with a sortable, paginated table"
+  - "Filter controls (search + status dropdown) synced to URL"
+  - "Empty, loading, and error states for the table"
+  - "Lighthouse accessibility score 90+ and no CLS"
+  - "A 'tradeoffs' write-up in the README"
+resources:
+  docs:
+    - url: "https://web.dev/performance"
+      label: "web.dev Performance"
+    - url: "https://nextjs.org/docs/app/api-reference/functions/use-search-params"
+      label: "Next.js useSearchParams"
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+dashboard+table+filters+pagination"
+      label: "React Dashboard with Table and Filters"
+---
+
+## Problem Statement
+
+Data-dense UI is the most common category of work in enterprise software. Almost every SaaS product, admin panel, and analytics tool has at least one table with filters and pagination. This project asks you to build that table correctly — not just functionally, but with accessible sort controls, URL-synced filters that survive a page refresh, proper empty/loading/error states, and no layout shift.
+
+This is the project where the patterns from Module 10 and Module 12 combine. You will be evaluated not just on whether the table works, but on the quality of the details.
+
+## Dataset
+
+Use one of the following options for your data:
+
+**Option A — JSONPlaceholder (easiest):** Fetch data from `https://jsonplaceholder.typicode.com/users` or `https://jsonplaceholder.typicode.com/posts`. These endpoints return JSON with consistent fields. For users: `id`, `name`, `email`, `phone`, `website`, `company.name`. For posts: `id`, `title`, `body`, `userId`.
+
+**Option B — Static JSON (most control):** Create a file `data/users.json` with 50–100 rows of made-up data with at least 5 fields including a numeric field (like `id` or `score`) and a status field with 3–4 distinct values (for example `active`, `inactive`, `pending`). This gives you full control over the data shape for testing filter and sort scenarios.
+
+**Option C — Bring your own API:** Use any public API that returns a list of items with at least 4 fields. Wrap the fetch in a try/catch to simulate the error state.
+
+Whichever option you choose, ensure there are at least 50 rows so pagination is meaningful.
+
+## Functional Requirements
+
+### Sortable columns
+
+- At least 3 columns must be sortable.
+- At least one sortable column must be numeric and one must be a string.
+- Clicking an active sort column toggles the direction (ascending to descending).
+- Clicking a new column resets direction to ascending.
+- `aria-sort` on the active column's `th` element reflects the current direction.
+- All other column headers have `aria-sort="none"`.
+- Sort resets to page 1 when the sort column or direction changes.
+
+### URL-synced filters
+
+- A search input that filters rows by at least one text field (for example, name or title).
+- A category/status dropdown that filters by a discrete field.
+- Both filters sync to URL query parameters using `useSearchParams` and `router.replace`.
+- Copying the URL and opening it in a new tab shows the same filtered results with the same filter controls populated.
+- A "Clear filters" button removes all filter params from the URL in one action.
+- Filter changes reset to page 1.
+
+### Pagination
+
+- 10 rows per page.
+- Previous and Next buttons, disabled at the first and last page respectively.
+- A page indicator showing the current page and total page count ("Page 2 of 7").
+- Pagination controls are wrapped in a `nav` element with `aria-label="Pagination"`.
+
+### Skeleton loader
+
+- Renders exactly 10 skeleton rows (matching the page size) while data is loading.
+- Skeleton rows have `aria-hidden="true"`.
+- Rows have shimmer animation.
+- No layout shift between the loading state and the data state (skeleton rows and real rows must have the same height).
+
+### Empty state
+
+- Distinct messages for two empty cases:
+  - No data at all (for example, the API returned an empty array)
+  - No rows match the current filters
+- Each empty state includes a heading, a one-sentence explanation, and a relevant CTA (for the filter empty state, a "Clear filters" button).
+
+### Error state
+
+- A message explaining the category of failure (do not use a generic "Something went wrong" alone).
+- A "Try again" button that re-fetches the data.
+- `role="alert"` on the error state so screen readers announce it immediately.
+
+## Non-Functional Requirements
+
+### No layout shift
+
+- Assign fixed widths to columns so the table does not reflow when rows change.
+- Use `table-layout: fixed` in CSS to enforce column widths.
+- Verify CLS is 0 in Lighthouse after the fix.
+
+### Keyboard navigation
+
+- Tab must reach: filter inputs, the sort column headers (as buttons), the clear filters button, the Previous/Next pagination buttons.
+- Activating a sort header via keyboard (Enter or Space) must sort the table the same way as a mouse click.
+
+### Accessible sort
+
+- `aria-sort="ascending"` or `aria-sort="descending"` on the active column's `th`.
+- `aria-sort="none"` on all other sortable column headers.
+- Sort direction is visually indicated (an arrow or icon) in addition to `aria-sort`.
+
+### Lighthouse score
+
+- Run a Lighthouse audit on the production build (`npm run build && npm start`).
+- The Accessibility score must be 90 or higher.
+- CLS must be 0.
+- Screenshot the scores and include them in your README.
+
+## Tradeoffs Write-Up
+
+Your README must include a "Tradeoffs" section of 200–400 words addressing the following three questions:
+
+**1. Client-side vs server-side sort and filter**
+You sorted and filtered on the client in this project. Explain when you would choose server-side sort/filter instead and what the tradeoffs are (data freshness, page size limits, backend complexity, perceived responsiveness).
+
+**2. URL state management**
+Describe how you handled writing to URL query params without polluting browser history. Explain why `router.replace` was the correct choice over `router.push` for filter changes.
+
+**3. What you would change with more time**
+Name one specific thing you would improve if you had 4 more hours: a missing feature, a performance optimization, an accessibility improvement, or a code quality refactor. Be specific — "I would improve performance" is not an acceptable answer.
+
+## Suggested Implementation Order
+
+Build in this sequence to avoid blocking yourself on dependencies:
+
+1. Fetch data and render a basic unstyled table — confirm data shape is correct.
+2. Add sort state and sort headers with correct `aria-sort` attributes.
+3. Add pagination state and slice the sorted rows.
+4. Add the skeleton loader and wire it to the loading state.
+5. Add the filter bar (search input and status dropdown) wired to local React state first.
+6. Migrate filter state from React state to URL query params.
+7. Add the empty states (no data, no results) and the error state.
+8. Fix column widths and verify CLS is 0.
+9. Run Lighthouse and fix any accessibility issues surfaced by the audit.
+10. Write the README tradeoffs section.

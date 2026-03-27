@@ -1,0 +1,418 @@
+---
+title: "CSS Variables as Design Tokens"
+slug: "03-css-variables-tokens"
+moduleSlug: "03-css-responsive-tokens"
+order: 3
+hiringSignal: false
+estimatedHours: 1.5
+tasks:
+  - "Define color and spacing tokens in :root using CSS custom properties"
+  - "Apply tokens to a component instead of hardcoded values"
+  - "Add a .dark class that overrides token values for dark mode"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=css+variables+design+tokens+tutorial"
+      label: "CSS Variables as Design Tokens"
+  docs:
+    - url: "https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties"
+      label: "MDN: Using CSS Custom Properties"
+---
+
+## Goal
+
+Define a set of design tokens using CSS custom properties, apply them inside a component, and implement a dark mode override using a class-based approach — so that one token value change propagates everywhere it is used.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+Design tokens are the bridge between Figma and code. When a designer changes the brand primary color in Figma variables, that change should flow into the codebase by updating one token value — not by hunting through hundreds of hardcoded hex strings. Understanding this pipeline makes you a more effective collaborator with design teams and a stronger candidate for component library work.
+
+Tailwind CSS itself is built on this principle: every color, spacing, and radius value in Tailwind is a token that you can override in `tailwind.config.js`.
+
+## What you will produce
+
+- A `:root` block with color, spacing, radius, and shadow tokens
+- A Card component that uses only token values (no hardcoded colors or spacing)
+- A `.dark` class override that switches the tokens to a dark palette
+- Confirmation that changing a token value updates every component that uses it
+
+## Tools + Where you will work
+
+- **Cursor** — editing CSS and component files
+- **Browser DevTools** — inspecting computed custom property values
+- **Your Next.js project** — `globals.css` and `components/Card.tsx`
+
+## Concept overview
+
+### CSS custom properties as token primitives
+
+A CSS custom property (also called a CSS variable) is declared with two dashes and can hold any CSS value:
+
+```css
+:root {
+  --color-blue-500: #3b82f6;
+  --spacing-4: 1rem;
+}
+```
+
+Use it in a property value with `var()`:
+
+```css
+.button {
+  background-color: var(--color-blue-500);
+  padding: var(--spacing-4);
+}
+```
+
+Custom properties cascade and inherit just like regular CSS properties. Declaring them on `:root` makes them globally available. Declaring them on a specific element (like `.dark`) scopes the override to that subtree.
+
+### Semantic token naming
+
+Token naming has two layers:
+
+1. **Primitive tokens** — raw values with no semantic meaning. Named by their value: `--color-blue-500`, `--spacing-16`, `--radius-md`.
+2. **Semantic tokens** — named by their purpose, not their value. They reference or repeat a primitive: `--color-primary`, `--color-surface`, `--space-component-padding`.
+
+In a robust token system, components reference semantic tokens. Semantic tokens map to primitives. Changing the primitive or remapping the semantic token updates everything downstream.
+
+```css
+:root {
+  /* Primitives */
+  --color-blue-500: #3b82f6;
+  --color-slate-900: #0f172a;
+  --color-white: #ffffff;
+
+  /* Semantic tokens */
+  --color-primary: var(--color-blue-500);
+  --color-surface: var(--color-white);
+  --color-text-default: var(--color-slate-900);
+}
+```
+
+### Token categories
+
+| Category | Example tokens |
+|---|---|
+| Color | --color-primary, --color-surface, --color-text-default, --color-border |
+| Spacing | --space-1, --space-2, --space-4, --space-8 (multiples of 0.25rem) |
+| Border radius | --radius-sm, --radius-md, --radius-lg, --radius-full |
+| Shadow | --shadow-sm, --shadow-md, --shadow-lg |
+| Typography | --font-size-sm, --font-size-base, --font-weight-medium |
+
+### Token pipeline
+
+<Diagram
+  title="Token Pipeline"
+  src="/diagrams/d5-tokens-pipeline.svg"
+  caption="Tokens flow from abstract primitive values through semantic aliases into component usage"
+  alt="Diagram showing token pipeline from primitives to semantic tokens to components"
+/>
+
+### Dark mode with class-based override
+
+Override semantic tokens for dark mode by redefining them under a `.dark` class. The `.dark` class is applied to the `html` or `body` element by JavaScript when the user selects dark mode.
+
+```css
+.dark {
+  --color-surface: var(--color-slate-900);
+  --color-text-default: var(--color-white);
+  --color-border: #334155;
+}
+```
+
+Because components reference `--color-surface` and `--color-text-default` (not the primitives directly), they switch appearance automatically when `.dark` is toggled — no component-level changes needed.
+
+### Tailwind CSS variables integration
+
+Tailwind v3 and v4 both support using CSS custom properties as token values. In Tailwind v4, the entire design system is defined as CSS variables in a `@theme` block, making the token pipeline native to the framework.
+
+```css
+/* Tailwind v4 style */
+@theme {
+  --color-primary: #3b82f6;
+  --spacing-component: 1rem;
+}
+```
+
+This means `bg-primary` in JSX maps to your custom `--color-primary` token.
+
+### Relationship to Figma variables
+
+Figma Variables (released in 2023) use the same two-layer primitive/semantic model. A Figma "Color/Primary/500" variable maps directly to your CSS `--color-primary` token. Tools like Token Studio and Style Dictionary can automate exporting Figma variables to CSS custom properties, closing the design-to-code gap.
+
+<VideoEmbed
+  title="CSS Variables as Design Tokens"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=css+variables+design+tokens+tutorial"
+  suggestedTerms="css custom properties design tokens dark mode figma variables tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Define primitive tokens in :root
+
+**What:** Add primitive token declarations to your global CSS file.
+
+**Where:** `app/globals.css` (App Router) or `styles/globals.css` (Pages Router).
+
+**How:** Add the following `:root` block. If `:root` already exists, merge these into it:
+
+```css
+:root {
+  /* Color primitives */
+  --color-blue-500: #3b82f6;
+  --color-blue-700: #1d4ed8;
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-700: #334155;
+  --color-slate-900: #0f172a;
+  --color-white: #ffffff;
+  --color-red-500: #ef4444;
+
+  /* Spacing scale (base 4px = 0.25rem) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+```
+
+**Why:** Primitives are the raw values. Defining them here means you can change a primitive once and have it propagate through all semantic tokens that reference it.
+
+**Check:** Open DevTools, select the `html` element in Elements panel, and look in the Computed styles section. You should see all the `--color-*` and `--space-*` custom properties listed.
+
+---
+
+### Step 2 — Define semantic tokens
+
+**What:** Add semantic aliases that give the primitives purposeful names.
+
+**Where:** Below the primitives in the same `:root` block.
+
+**How:**
+
+```css
+:root {
+  /* ...primitives above... */
+
+  /* Semantic color tokens */
+  --color-primary: var(--color-blue-500);
+  --color-primary-hover: var(--color-blue-700);
+  --color-surface: var(--color-white);
+  --color-surface-subtle: var(--color-slate-50);
+  --color-border: var(--color-slate-200);
+  --color-text-default: var(--color-slate-900);
+  --color-text-muted: var(--color-slate-700);
+  --color-error: var(--color-red-500);
+
+  /* Semantic spacing tokens */
+  --space-component-padding: var(--space-6);
+  --space-section-gap: var(--space-12);
+}
+```
+
+**Why:** Components should reference `--color-surface`, not `--color-white`. When you implement dark mode, you redefine `--color-surface` to a dark color — every component that uses it updates automatically without touching a single component file.
+
+**Check:** In DevTools, inspect the computed `--color-primary` on the `html` element. It should resolve to `#3b82f6`.
+
+---
+
+### Step 3 — Build a Card component using only tokens
+
+**What:** Create a `Card.tsx` component that references token values instead of hardcoded CSS values.
+
+**Where:** `components/Card.tsx`.
+
+**How:**
+
+```tsx
+type CardProps = {
+  title: string;
+  description: string;
+};
+
+export default function Card({ title, description }: CardProps) {
+  return (
+    <article className="card">
+      <h3 className="card__title">{title}</h3>
+      <p className="card__description">{description}</p>
+    </article>
+  );
+}
+```
+
+Add the corresponding CSS using token values:
+
+```css
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-component-padding);
+  box-shadow: var(--shadow-sm);
+}
+
+.card__title {
+  color: var(--color-text-default);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
+}
+
+.card__description {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+```
+
+**Why:** The card does not know whether it is in light or dark mode. It only knows "use the surface color" and "use the default text color." The token system handles mode switching at the root level.
+
+**Check:** Render the Card on a page. It should show a white card with a border, correct padding, and readable text.
+
+---
+
+### Step 4 — Add a dark mode override class
+
+**What:** Define a `.dark` class that overrides the semantic color tokens.
+
+**Where:** In `globals.css`, below the `:root` block.
+
+**How:**
+
+```css
+.dark {
+  --color-surface: var(--color-slate-900);
+  --color-surface-subtle: #1e293b;
+  --color-border: var(--color-slate-700);
+  --color-text-default: var(--color-white);
+  --color-text-muted: #94a3b8;
+  --color-primary: #60a5fa; /* lighter blue for dark backgrounds */
+}
+```
+
+**Why:** You override only the semantic tokens — the primitives stay the same. Any component using `--color-surface` or `--color-text-default` will now render correctly in dark mode without any component-level changes.
+
+**Check:** In DevTools, manually add the class `dark` to the `html` element. The page should immediately switch to the dark palette without any JavaScript or page reload.
+
+---
+
+### Step 5 — Wire up a dark mode toggle
+
+**What:** Add a button that adds/removes the `.dark` class from the `html` element.
+
+**Where:** In a layout component or your main page.
+
+**How:**
+
+```tsx
+"use client";
+import { useState } from "react";
+
+export default function DarkModeToggle() {
+  const [dark, setDark] = useState(false);
+
+  function toggle() {
+    const newDark = !dark;
+    setDark(newDark);
+    document.documentElement.classList.toggle("dark", newDark);
+  }
+
+  return (
+    <button type="button" onClick={toggle}>
+      {dark ? "Switch to light mode" : "Switch to dark mode"}
+    </button>
+  );
+}
+```
+
+**Why:** `document.documentElement` is the `html` element. Toggling the `dark` class there propagates the token overrides to the entire page through CSS cascade.
+
+**Check:** Click the toggle button. The entire page switches between light and dark palettes. The Card component switches without any changes to its own CSS.
+
+---
+
+### Step 6 — Test token propagation by changing a value
+
+**What:** Change one primitive token and verify it updates everywhere it is used.
+
+**Where:** The `:root` block in `globals.css`.
+
+**How:** Change `--color-blue-500` from `#3b82f6` to `#8b5cf6` (purple). Save the file.
+
+**Why:** This is the key test of a token system: one change propagates everywhere. If `--color-primary` references `--color-blue-500`, and every button and link uses `--color-primary`, then all of them should turn purple immediately.
+
+**Check:** All elements using `--color-primary` (buttons, links, accents) turn purple. Revert the change once confirmed.
+
+## If stuck
+
+- **Custom properties not showing in DevTools:** Make sure the `:root` block is in a CSS file that is actually imported by your app. In Next.js App Router, `globals.css` must be imported in `app/layout.tsx`.
+- **Dark mode toggle is not changing anything:** Confirm `document.documentElement.classList.toggle("dark", newDark)` is running. Add `console.log(document.documentElement.classList)` to verify the class is being added and removed.
+- **Tailwind classes are overriding your token-based styles:** If using both Tailwind and a CSS file, Tailwind's base `preflight` styles may be resetting colors. Ensure your token-based classes come after Tailwind in the cascade, or use higher specificity.
+- **var() is rendering as an empty value:** The custom property name must start with exactly two dashes (`--`). A single dash or typo in the name will produce an empty/invalid value.
+
+## Common mistakes
+
+- Using token names that describe the value instead of the purpose (`--blue-500`) as a semantic token. If the brand color changes from blue to teal, you rename all references. Use purposeful names like `--color-primary`.
+- Skipping the semantic layer and having components reference primitives directly. If you change `--color-blue-500`, you must also update every component that uses it. The semantic layer insulates components from primitive changes.
+- Redefining tokens on too many elements instead of just `:root` and `.dark`. Scoped overrides are useful for theming specific sections, but overusing them makes the cascade hard to trace.
+- Not testing dark mode with the toggle — only testing by manually adding the class in DevTools. Both paths should work; the toggle confirms the JavaScript is correctly targeting the right element.
+- Mixing token-based styles with Tailwind hardcoded color classes on the same element. If the element has both `var(--color-surface)` and `bg-white`, the Tailwind class may win due to specificity or cascade order, bypassing your token system.
+
+<KeyTerms terms={[
+  "CSS custom property: A CSS variable declared with two dashes (such as --color-primary) that can hold any CSS value and be referenced elsewhere with var().",
+  "Design token: A named, reusable value that represents a design decision, such as a color, spacing size, or border radius, shared between design tools and code.",
+  "Primitive token: A token named by its raw value rather than its purpose, such as --color-blue-500 or --space-4, forming the foundation of a token system.",
+  "Semantic token: A token named by its purpose rather than its value, such as --color-primary or --color-surface, which references a primitive token.",
+  ":root selector: A CSS pseudo-class that matches the root element of the document (the html element), used to declare globally accessible custom properties.",
+  "var(): A CSS function that reads the value of a custom property, with an optional fallback if the property is not defined.",
+  "Dark mode: A display mode that uses a dark color palette, typically toggled by adding a class to the html element and overriding semantic color tokens.",
+  "Token pipeline: The flow of values from design tool primitives through semantic aliases into component usage, enabling systematic design changes.",
+  "Figma variables: A Figma feature for defining named, reusable values that mirrors the CSS custom property token model and can be exported to CSS.",
+  "Class-based dark mode: A dark mode implementation where a CSS class (typically dark) is added to the html element to trigger token overrides, as opposed to using the prefers-color-scheme media query alone."
+]} />
+
+<QuickSummary points={[
+  "CSS custom properties on :root are globally available and cascade into all child elements, making them ideal for design tokens.",
+  "A two-layer token system uses primitive tokens (raw values) and semantic tokens (purposeful names) so components reference purpose, not specific colors.",
+  "Dark mode is implemented by redefining semantic tokens under a .dark class — no component-level changes are needed because components reference semantic tokens.",
+  "Changing one primitive token propagates through all semantic tokens that reference it and into all components that use those semantic tokens.",
+  "Always name semantic tokens by purpose (--color-primary, --color-surface) not by value (--color-blue) so they remain accurate when the design changes.",
+  "Tailwind v4 defines its entire design system as CSS custom properties in an @theme block, making the token pipeline native to the framework."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Refactor a hardcoded Card component to use design tokens:
+
+1. Define at least 8 tokens in `:root`: primary color, surface color, border color, default text color, muted text color, component padding, border radius, and a shadow.
+2. Create semantic aliases for all tokens.
+3. Rewrite the Card component's CSS to use only `var()` references — no hardcoded hex values, pixel sizes, or rem values (except in the primitive token declarations).
+4. Add a `.dark` override class that changes the surface, text, and border tokens to a dark palette.
+5. Add a toggle button that applies/removes the `.dark` class on the `html` element.
+6. Change `--color-primary` to a completely different color (your choice) and confirm it updates everywhere.
+
+**Definition of done:**
+
+- The Card component's CSS contains no hardcoded hex colors, only `var()` references.
+- Clicking the dark mode toggle switches the entire card to the dark palette without any changes to `Card.tsx` or its CSS.
+- Changing `--color-primary` in `:root` updates every element that uses `--color-primary` across the page.
+- DevTools shows the custom properties in the computed styles of the `html` element.
+- The `.dark` class override only redefines semantic tokens, not primitive tokens.

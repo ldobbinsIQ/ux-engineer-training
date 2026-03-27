@@ -1,0 +1,288 @@
+---
+title: "useEffect and Side Effects"
+slug: "03-useeffect-side-effects"
+moduleSlug: "06-react-fundamentals"
+order: 3
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Fetch data in a useEffect with a dependency array"
+  - "Add a cleanup function to cancel the fetch on unmount"
+  - "Log which dependency triggered a re-run using a ref"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+useeffect+explained+side+effects"
+      label: "React useEffect Explained"
+  docs:
+    - url: "https://react.dev/reference/react/useEffect"
+      label: "React useEffect"
+---
+
+## Goal
+
+Use `useEffect` to run code that interacts with the world outside React — fetching data, setting timers, subscribing to events — and write cleanup functions so those effects do not leak when the component unmounts.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner–Intermediate
+
+## Why this matters for UX Engineers
+
+Every time you load data to populate a UI, you are writing a side effect. Understanding `useEffect` is what separates React developers who can build real product features from developers who can only render static data. The cleanup function pattern is particularly important in interviews — candidates who know it demonstrate production awareness, not just tutorial knowledge.
+
+A missing cleanup function causes memory leaks and the dreaded "Can't perform a React state update on an unmounted component" warning. Both are red flags in a code review.
+
+## What you will produce
+
+A page that fetches a list of items from a public API using `useEffect`, shows a loading state while the request is in flight, handles errors gracefully, and cancels the fetch if the user navigates away before it completes.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all file changes
+- **Your Next.js project** — a new client component page under `app/`
+- **Browser DevTools** — Network tab to verify the AbortController cancels the request
+
+## Concept overview
+
+### What a side effect is
+
+A side effect is any code that interacts with something outside React's render cycle: fetching from an API, setting a timer, subscribing to a WebSocket, reading from localStorage, or manually manipulating the DOM. React's render function should be a pure function of props and state. Everything else is a side effect and belongs in `useEffect`.
+
+### The three dependency array patterns
+
+The behavior of `useEffect` is controlled by its second argument:
+
+| Pattern | When the effect runs |
+|---|---|
+| No array: `useEffect(() => { ... })` | After every render |
+| Empty array: `useEffect(() => { ... }, [])` | Once after the component mounts |
+| With deps: `useEffect(() => { ... }, [userId])` | After mount, then again whenever `userId` changes |
+
+### The cleanup function
+
+Return a function from `useEffect` to clean up when the component unmounts or before the effect runs again. For fetch, use `AbortController` to cancel the in-flight request. For timers, call `clearInterval` or `clearTimeout`. For subscriptions, call the unsubscribe function.
+
+### StrictMode double-invoke
+
+React's StrictMode intentionally mounts, unmounts, and remounts every component in development. This means your effect will run twice in dev. If you see two network requests in the Network tab, this is expected and harmless — it is StrictMode verifying your cleanup function works correctly.
+
+<VideoEmbed
+  title="React useEffect Explained"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=react+useeffect+explained+side+effects"
+  suggestedTerms="react useeffect side effects dependency array cleanup abortcontroller"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create a client component and add a basic useEffect
+
+**What:** Create a page component with a `useEffect` that logs a message on mount.
+
+**Where:** Create `app/practice/effects/page.tsx` in your Next.js project.
+
+**How:** Add the `'use client'` directive and a `useEffect` with an empty dependency array:
+
+```tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+
+export default function EffectsPracticePage() {
+  useEffect(() => {
+    console.log('Component mounted');
+  }, []);
+
+  return <main className="p-8"><p>Effects practice</p></main>;
+}
+```
+
+**Why:** An empty dependency array means the effect runs exactly once after the first render — the equivalent of "on mount". This is where you put one-time setup code like fetching initial data. The log confirms the effect is firing.
+
+**Check:** Open the browser console. You should see "Component mounted" appear once (or twice in development due to StrictMode, which is expected).
+
+---
+
+### Step 2 — Fetch data inside useEffect
+
+**What:** Replace the log with a real fetch call and store the result in state.
+
+**Where:** In the same `app/practice/effects/page.tsx`.
+
+**How:** Add state for the data, loading flag, and error, then fetch inside the effect:
+
+```tsx
+interface Post {
+  id: number;
+  title: string;
+  body: string;
+}
+
+const [posts, setPosts] = useState<Post[]>([]);
+const [isLoading, setIsLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+
+useEffect(() => {
+  setIsLoading(true);
+  fetch('https://jsonplaceholder.typicode.com/posts?_limit=5')
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+      return res.json();
+    })
+    .then((data: Post[]) => {
+      setPosts(data);
+      setIsLoading(false);
+    })
+    .catch(err => {
+      setError(err.message);
+      setIsLoading(false);
+    });
+}, []);
+```
+
+**Why:** Three pieces of state — data, loading, and error — are the standard pattern for any async data fetch. They cover every state the UI needs to handle: waiting, success, and failure. Rendering all three states makes the component production-ready.
+
+**Check:** The page shows the loading state briefly, then renders the list of post titles. Check the Network tab in DevTools to confirm the fetch request completed successfully.
+
+---
+
+### Step 3 — Add a cleanup function using AbortController
+
+**What:** Cancel the fetch if the component unmounts before it completes.
+
+**Where:** Inside the `useEffect` in `app/practice/effects/page.tsx`.
+
+**How:** Create an `AbortController` at the start of the effect and pass its signal to `fetch`. Return a cleanup function that calls `abort()`:
+
+```tsx
+useEffect(() => {
+  const controller = new AbortController();
+  setIsLoading(true);
+
+  fetch('https://jsonplaceholder.typicode.com/posts?_limit=5', {
+    signal: controller.signal,
+  })
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+      return res.json();
+    })
+    .then((data: Post[]) => {
+      setPosts(data);
+      setIsLoading(false);
+    })
+    .catch(err => {
+      if (err.name === 'AbortError') return; // Ignore expected cancellation
+      setError(err.message);
+      setIsLoading(false);
+    });
+
+  return () => {
+    controller.abort();
+  };
+}, []);
+```
+
+**Why:** Without the cleanup, if the user navigates away while the fetch is in flight, the `.then` callback will still try to call `setPosts` on an unmounted component. The AbortController cancels the fetch at the network level and the `AbortError` check prevents setting state after cleanup.
+
+**Check:** In DevTools Network tab, use throttling to slow the connection. Navigate away from the page before the fetch completes. Confirm the request shows as "Cancelled" in the Network tab and no console errors appear.
+
+---
+
+### Step 4 — Add a dependency to re-fetch when a value changes
+
+**What:** Add a user ID selector that triggers a new fetch whenever the selected ID changes.
+
+**Where:** In the same component, above the `useEffect`.
+
+**How:** Add state for the selected user ID and add it to the dependency array:
+
+```tsx
+const [userId, setUserId] = useState(1);
+
+useEffect(() => {
+  const controller = new AbortController();
+  setIsLoading(true);
+  setPosts([]);
+
+  fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}&_limit=3`, {
+    signal: controller.signal,
+  })
+    .then(res => res.json())
+    .then((data: Post[]) => {
+      setPosts(data);
+      setIsLoading(false);
+    })
+    .catch(err => {
+      if (err.name === 'AbortError') return;
+      setError(err.message);
+      setIsLoading(false);
+    });
+
+  return () => controller.abort();
+}, [userId]);
+
+// In the JSX, add buttons to change the userId:
+<div className="flex gap-2">
+  {[1, 2, 3].map(id => (
+    <button key={id} onClick={() => setUserId(id)} type="button"
+      className="rounded border px-3 py-1">
+      User {id}
+    </button>
+  ))}
+</div>
+```
+
+**Why:** Adding `userId` to the dependency array tells React to re-run the effect whenever `userId` changes. The cleanup from the previous run fires first, cancelling any in-flight request for the old user ID before starting the new one.
+
+**Check:** Clicking the user buttons updates the post list. Clicking quickly between users does not cause stale data to appear from a cancelled request.
+
+## If stuck
+
+- **"Can't perform a React state update on an unmounted component":** You are calling `setPosts` or `setIsLoading` after the component has unmounted. Add the AbortController cleanup from Step 3. Check that your `.catch` block returns early on `AbortError`.
+- **Effect is running on every render:** You forgot the dependency array entirely. Add `[]` as the second argument to `useEffect`.
+- **Data is stale after changing the user ID:** The `userId` variable is not in the dependency array. React does not watch variables automatically — they must be listed explicitly.
+- **Two fetch requests in the Network tab on load:** This is StrictMode double-invoke, which is expected in development. The first request will be aborted by the cleanup function; only the second provides data.
+
+## Common mistakes
+
+- Omitting the dependency array entirely, causing the effect to re-run after every render and creating an infinite fetch loop if the effect sets state.
+- Putting `async` directly on the effect function: `useEffect(async () => { ... })`. Async functions return a Promise, but `useEffect` expects either `undefined` or a cleanup function. Wrap the async logic in a named async function inside the effect and call it immediately.
+- Forgetting to handle the `AbortError` in the catch block, which logs a spurious error to the console on every unmount.
+- Including functions defined outside the component in the dependency array without wrapping them in `useCallback`. This causes the effect to re-run on every render because the function reference changes each time.
+- Mutating state inside `useEffect` without setting it through the setter function.
+
+<KeyTerms terms={[
+  "useEffect: A React hook that runs a function after the component renders. Used for side effects like fetching data, setting timers, and subscribing to events.",
+  "Side effect: Any code that interacts with something outside React's render cycle, such as network requests, timers, or DOM manipulation.",
+  "Dependency array: The second argument to useEffect, a list of values that React watches. The effect re-runs whenever any value in the list changes.",
+  "Cleanup function: A function returned from useEffect that React calls before the component unmounts or before the effect runs again. Used to cancel fetches, clear timers, and unsubscribe from events.",
+  "AbortController: A browser API that allows a fetch request to be cancelled. Passing its signal to fetch and calling abort() in the cleanup function prevents state updates on unmounted components.",
+  "AbortError: The error thrown when a fetch is cancelled via AbortController. Should be caught and ignored separately from real network errors.",
+  "StrictMode double-invoke: A React development behavior where effects are intentionally run twice (mount, cleanup, mount) to verify that cleanup functions work correctly.",
+  "Mount: The moment a component is first added to the DOM and its effects run for the first time.",
+  "Unmount: The moment a component is removed from the DOM and its cleanup functions run.",
+  "Loading state: A boolean piece of state that tracks whether an async operation is still in progress, used to show skeleton screens or spinners while waiting for data."
+]} />
+
+<QuickSummary points={[
+  "useEffect runs after render and is for code that interacts outside React: fetch, timers, subscriptions, and DOM manipulation.",
+  "The dependency array controls when the effect re-runs: empty array means mount only, no array means every render, listed values mean re-run when those values change.",
+  "Always return a cleanup function from effects that start async operations. Use AbortController to cancel in-flight fetch requests.",
+  "Catch AbortError separately and return early so that navigating away does not log spurious errors to the console.",
+  "Do not put async directly on the useEffect function — define an async function inside the effect and call it immediately.",
+  "StrictMode intentionally runs effects twice in development to verify cleanup functions work. Two network requests on load is expected behavior, not a bug."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Build a `LiveClock` component that displays the current time, updated every second using `setInterval` inside a `useEffect`. The component must clean up the interval when it unmounts so no memory leak occurs. Display the time in `HH:MM:SS` format using `toLocaleTimeString`.
+
+**Definition of done:**
+
+- The clock displays the current time and updates every second.
+- No memory leak warning appears in the browser console after the component unmounts.
+- The clock stops updating when the component is removed from the page (verify by conditionally rendering it with a toggle button and watching the console).
+- The interval ID is stored in a variable inside the effect and passed to `clearInterval` in the cleanup function, not stored in state.

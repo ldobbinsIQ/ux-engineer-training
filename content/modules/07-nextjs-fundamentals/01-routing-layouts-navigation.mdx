@@ -1,0 +1,267 @@
+---
+title: "File Routing, Layouts, and Navigation"
+slug: "01-routing-layouts-navigation"
+moduleSlug: "07-nextjs-fundamentals"
+order: 1
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Create a new route by adding a folder and page.tsx"
+  - "Add a shared layout with a nav bar using layout.tsx"
+  - "Use the Link component for client-side navigation between routes"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=nextjs+app+router+file+routing+layouts"
+      label: "Next.js App Router Routing and Layouts"
+  docs:
+    - url: "https://nextjs.org/docs/app/getting-started/layouts-and-pages"
+      label: "Next.js Layouts and Pages"
+---
+
+## Goal
+
+Understand how Next.js App Router maps file system folders to URLs, use `layout.tsx` to share a persistent nav bar across routes, and use the `Link` component for client-side navigation that does not trigger a full page reload.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+File-based routing is one of the first things you encounter in any Next.js codebase. Knowing how folders map to URLs, how nested layouts work, and when to use `Link` versus a plain anchor tag is foundational knowledge that every team expects by day one.
+
+Navigation UX — the feeling that moving between pages is instant — depends on client-side routing. Using `Link` correctly is what produces that feeling. Using a plain `<a>` tag breaks it.
+
+## What you will produce
+
+A Next.js project with two routes (`/dashboard` and `/settings`), each rendered by a `page.tsx` file, sharing a persistent nav bar through `layout.tsx` files, connected with `Link` components that enable client-side navigation.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all file changes
+- **Your Next.js project** — the `app/` directory
+- **Browser** — to verify navigation behavior and confirm no full page reloads
+
+## Concept overview
+
+### File-based routing
+
+In Next.js App Router, the file system is the router. A folder inside `app/` becomes a route segment. A file named `page.tsx` inside that folder is the rendered page for that route. There is no configuration file to update when you add a new route — you just create the folder and the file.
+
+| File path | URL |
+|---|---|
+| `app/page.tsx` | `/` |
+| `app/dashboard/page.tsx` | `/dashboard` |
+| `app/dashboard/settings/page.tsx` | `/dashboard/settings` |
+| `app/blog/[slug]/page.tsx` | `/blog/anything` |
+
+### layout.tsx — the persistent shell
+
+A `layout.tsx` file wraps every page in the same folder and its subfolders. The layout renders once and stays mounted as the user navigates between child routes — it does not remount. This is where you put nav bars, sidebars, and other persistent UI.
+
+Every layout receives a `children` prop that Next.js fills with the currently active page. The root `app/layout.tsx` is required and wraps the entire application.
+
+### Nested layouts
+
+Layouts compose. A route at `/dashboard/settings` is wrapped by `app/dashboard/layout.tsx`, which is itself wrapped by `app/layout.tsx`. Each layout in the chain stays mounted while the user navigates within its scope.
+
+### Link vs anchor tag
+
+The Next.js `Link` component from `next/link` performs client-side navigation — it swaps the page content in JavaScript without a full browser reload. A plain `<a href="/dashboard">` does a full page reload, which discards all React state, re-fetches all assets, and produces a flash. Always use `Link` for internal routes.
+
+### useRouter for programmatic navigation
+
+When you need to navigate in response to a non-click event — after a form submission, after a delay — import `useRouter` from `next/navigation` and call `router.push('/destination')`. This is the programmatic equivalent of `Link`.
+
+<VideoEmbed
+  title="Next.js App Router Routing and Layouts"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=nextjs+app+router+file+routing+layouts"
+  suggestedTerms="nextjs app router file routing layouts navigation link component"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create the dashboard route
+
+**What:** Add a new page at `/dashboard` by creating a folder and a `page.tsx` file.
+
+**Where:** Inside the `app/` directory of your Next.js project, create the folder `app/dashboard/` and the file `app/dashboard/page.tsx`.
+
+**How:** In Cursor, right-click the `app/` folder in the Explorer panel and create a new folder named `dashboard`. Then create a new file inside it named `page.tsx` with a default export:
+
+```tsx
+export default function DashboardPage() {
+  return (
+    <main className="p-8">
+      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <p className="mt-2 text-gray-600">Welcome to your dashboard.</p>
+    </main>
+  );
+}
+```
+
+**Why:** Next.js discovers routes by scanning `app/` for `page.tsx` files. The file name must be exactly `page.tsx` (lowercase). Any other name — `Page.tsx`, `index.tsx`, `dashboard.tsx` — will not create a route.
+
+**Check:** Visit `http://localhost:3000/dashboard` in your browser. The page content should appear. If you see a 404, check that the file is named `page.tsx` exactly and is inside `app/dashboard/`.
+
+---
+
+### Step 2 — Add a shared layout with a nav bar
+
+**What:** Create `app/dashboard/layout.tsx` to wrap the dashboard section with a persistent nav bar.
+
+**Where:** Create `app/dashboard/layout.tsx`.
+
+**How:** The layout must accept and render a `children` prop:
+
+```tsx
+import Link from 'next/link';
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen">
+      <nav className="flex gap-4 border-b bg-white px-8 py-4">
+        <Link href="/dashboard" className="font-medium hover:text-blue-600">
+          Dashboard
+        </Link>
+        <Link href="/settings" className="font-medium hover:text-blue-600">
+          Settings
+        </Link>
+      </nav>
+      {children}
+    </div>
+  );
+}
+```
+
+**Why:** The layout stays mounted while the user navigates between `/dashboard` and any sub-routes. The `children` prop is where Next.js renders the active `page.tsx`. Without `{children}`, the page content would not appear.
+
+**Check:** Visit `/dashboard`. The nav bar and the page content should both be visible. The nav bar should appear above the "Dashboard" heading.
+
+---
+
+### Step 3 — Create the settings route
+
+**What:** Add a `/settings` route with its own page content.
+
+**Where:** Create `app/settings/page.tsx`.
+
+**How:** Create the folder `app/settings/` and add `page.tsx`:
+
+```tsx
+export default function SettingsPage() {
+  return (
+    <main className="p-8">
+      <h1 className="text-2xl font-bold">Settings</h1>
+      <p className="mt-2 text-gray-600">Manage your account settings here.</p>
+    </main>
+  );
+}
+```
+
+**Why:** `/settings` is a top-level route, not nested under `/dashboard`. It will be wrapped by `app/layout.tsx` (the root layout) but not by `app/dashboard/layout.tsx`. If you want the nav bar on `/settings` too, you will add a layout for it in the next step or lift the nav bar to the root layout.
+
+**Check:** Visit `http://localhost:3000/settings`. The settings page content should appear. The dashboard-specific nav bar should not appear on this route.
+
+---
+
+### Step 4 — Move the nav bar to the root layout
+
+**What:** Lift the nav bar to `app/layout.tsx` so it appears on every route, including `/settings`.
+
+**Where:** Open `app/layout.tsx` — the root layout that Next.js requires.
+
+**How:** Add the `Link` imports and nav bar to the root layout's JSX, wrapping whatever is already in the `body`:
+
+```tsx
+import Link from 'next/link';
+import './globals.css';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <nav className="flex gap-4 border-b bg-white px-8 py-4">
+          <Link href="/dashboard" className="font-medium hover:text-blue-600">
+            Dashboard
+          </Link>
+          <Link href="/settings" className="font-medium hover:text-blue-600">
+            Settings
+          </Link>
+        </nav>
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+**Why:** The root layout wraps every route in the application. A nav bar placed here appears on every page without any duplication. Remove the nav bar from `app/dashboard/layout.tsx` after adding it here to avoid it appearing twice on `/dashboard`.
+
+**Check:** Both `/dashboard` and `/settings` now show the same nav bar. The nav bar does not flicker or remount when navigating between the two routes.
+
+---
+
+### Step 5 — Verify client-side navigation with the Network tab
+
+**What:** Confirm that clicking a `Link` does not cause a full page reload.
+
+**Where:** Browser DevTools, Network tab.
+
+**How:** Open DevTools (`F12`), go to the Network tab, and click "Preserve log". Navigate from `/dashboard` to `/settings` by clicking the Settings link. Look at what appears in the Network tab.
+
+**Why:** A full page reload fetches the HTML document again — you will see a new document request at the top of the Network list. A client-side navigation does not — you will see only API calls or asset fetches if any data is loaded, but no new document request.
+
+**Check:** Clicking the nav `Link` does not produce a new HTML document request in the Network tab. The URL changes and the content updates without a visible page flash.
+
+## If stuck
+
+- **404 on a route you just created:** The file must be named exactly `page.tsx` with a lowercase `p`. Check that it is inside the correct folder and that the folder name matches the URL segment you expect.
+- **Nav bar appears twice on the dashboard route:** You have a nav bar in both `app/layout.tsx` and `app/dashboard/layout.tsx`. Remove it from the dashboard layout since the root layout already covers every route.
+- **Link is navigating but the page reloads:** You are using `<a href="...">` instead of the Next.js `Link` component. Import `Link` from `next/link`, not `react-router-dom` or any other library.
+- **TypeScript error on layout children:** The layout must have the type `{ children: React.ReactNode }`. If you see an error, add `import React from 'react'` or use the full type `React.ReactNode`.
+
+## Common mistakes
+
+- Naming the page file `index.tsx` instead of `page.tsx`. Next.js App Router requires the exact filename `page.tsx`. The Pages Router used `index.tsx`, but App Router does not.
+- Forgetting `{children}` in the layout JSX. Without it, the layout renders but the page content is invisible.
+- Using `<a href="...">` for internal links. This forces a full page reload and discards all React state. Always use `Link` from `next/link` for routes within the same application.
+- Nesting a layout inside a page file. Layouts must be separate files named `layout.tsx`. A page file exports the page content only.
+- Putting client-side hooks like `useRouter` in a layout without adding `'use client'`. Layouts are server components by default — add the directive if the layout needs interactivity.
+
+<KeyTerms terms={[
+  "App Router: The Next.js routing system introduced in Next.js 13 where the app directory contains all routes, layouts, and pages.",
+  "Route segment: A folder inside the app directory that corresponds to one segment of the URL path.",
+  "page.tsx: The required filename for the rendered page component of a route. Next.js only serves a URL if a file named page.tsx exists in the corresponding folder.",
+  "layout.tsx: A file that wraps all pages in its folder and subfolders with persistent UI such as nav bars and sidebars. It receives a children prop and stays mounted during navigation.",
+  "Nested layout: A layout.tsx file inside a subfolder that wraps its own routes while being wrapped by the parent layout.tsx, enabling layered persistent UI.",
+  "Link component: The Next.js component imported from next/link that performs client-side navigation between routes without a full page reload.",
+  "Client-side navigation: Navigation that swaps page content using JavaScript instead of requesting a new HTML document from the server, preserving React state and avoiding page flicker.",
+  "useRouter: A Next.js hook from next/navigation that returns a router object for programmatic navigation, used when navigation must happen in response to non-click events.",
+  "Dynamic segment: A folder with a name wrapped in square brackets, such as [slug], that matches any URL value and passes it to the page as a param prop.",
+  "Root layout: The required app/layout.tsx file that wraps the entire application and must include the html and body elements."
+]} />
+
+<QuickSummary points={[
+  "A folder inside app/ becomes a route segment and a file named page.tsx inside it becomes the rendered page at that URL.",
+  "layout.tsx wraps all pages in its folder and stays mounted during navigation, making it the right place for persistent UI like nav bars.",
+  "Layouts compose: a route is wrapped by every layout.tsx between it and the root, so shared UI can be placed at the right level of the hierarchy.",
+  "Always use the Link component from next/link for internal routes — a plain anchor tag triggers a full page reload that discards React state and re-fetches all assets.",
+  "useRouter from next/navigation enables programmatic navigation for cases where Link is not appropriate, such as after a form submission.",
+  "The Network tab in DevTools is the ground truth for verifying client-side navigation — no new HTML document request means the navigation was client-side."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Add a `/settings` route with its own `layout.tsx` that includes a sidebar nav with two links: "Profile" (navigating to `/settings/profile`) and "Notifications" (navigating to `/settings/notifications`). Create both sub-routes as `page.tsx` files with placeholder content. The sidebar should appear on both settings sub-routes but not on the `/dashboard` route.
+
+**Definition of done:**
+
+- Navigating between `/dashboard` and `/settings` does not trigger a full page reload (verified in the Network tab).
+- The sidebar nav appears on `/settings/profile` and `/settings/notifications` but not on `/dashboard`.
+- All navigation links use the `Link` component from `next/link`, not plain anchor tags.
+- All three new page files are named exactly `page.tsx` and each exports a default function component.

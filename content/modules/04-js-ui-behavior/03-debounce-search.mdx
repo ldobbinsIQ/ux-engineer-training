@@ -1,0 +1,339 @@
+---
+title: "Debounce + Search Input Pattern"
+slug: "03-debounce-search"
+moduleSlug: "04-js-ui-behavior"
+order: 3
+hiringSignal: false
+estimatedHours: 1
+tasks:
+  - "Build a search input that debounces its onChange handler by 300ms"
+  - "Show a loading indicator while the debounce is pending"
+  - "Filter a local array based on the debounced value"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=debounce+search+input+react+hooks"
+      label: "Debounce Search Input in React"
+  docs:
+    - url: "https://developer.mozilla.org/en-US/docs/Web/API/setTimeout"
+      label: "MDN setTimeout"
+---
+
+## Goal
+
+Build a search input that waits for the user to stop typing before executing a filter operation, using a reusable `useDebounce` custom hook built with `setTimeout` and `clearTimeout`.
+
+## Time + Difficulty
+
+**Estimated time:** 1 hour
+**Difficulty:** Beginner–Intermediate
+The pattern is short to implement but requires a clear mental model of how `setTimeout` and `clearTimeout` work together in a `useEffect` cleanup cycle.
+
+## Why this matters for UX Engineers
+
+A search input that fires on every keystroke creates a serious performance and UX problem. If the handler makes an API call, a user typing "laptop" sends six requests — one for "l", one for "la", one for "lap", and so on. Most of those requests are useless and may arrive out of order, causing the UI to display stale results.
+
+Even for local filtering (no API call), re-running a filter across a large array on every keystroke can cause noticeable input lag on slower devices. Debouncing solves this by waiting until the user pauses before executing the expensive operation.
+
+Debouncing is also one of the most common interview topics for frontend roles. Being able to implement it from scratch — with `setTimeout`, `clearTimeout`, and a `useEffect` cleanup — signals that you understand asynchronous JavaScript, React's effect lifecycle, and performance trade-offs. That combination is rare enough at the junior level that it is a strong hiring signal.
+
+## What you will produce
+
+A `SearchableList` React component that:
+
+- Renders a text input
+- Debounces the input value by 300ms using a `useDebounce` custom hook
+- Shows a small "Searching..." indicator while the debounce is pending (input value has changed but debounce has not yet fired)
+- Filters a local array of fruit names based on the debounced search term
+- Logs to the console only when the debounce fires — not on every keystroke
+
+## Tools + Where you will work
+
+- **Editor:** Cursor
+- **Browser:** Chrome or Firefox with DevTools Console open
+- **Framework:** React (Vite + React or any JSX-supporting project)
+- **Network:** No external API required — this lesson uses a local array
+
+## Concept overview
+
+### What debouncing is
+
+Debouncing delays the execution of a function until after a specified amount of time has passed since the last time it was called. Every new call resets the timer.
+
+Think of it like an elevator door. The door does not close the moment the first person steps in. It waits a few seconds. Every time another person steps in, the timer resets. The door only closes when no new person has entered for the full wait period.
+
+In a search input, the "door closing" is the filter running (or the API call firing). Each keystroke resets the timer. The filter only runs after the user pauses for 300ms.
+
+### Implementing with setTimeout and clearTimeout
+
+```js
+// Without debounce — fires on EVERY keystroke
+input.addEventListener("change", (e) => {
+  filterResults(e.target.value); // runs on every character
+});
+
+// With debounce — fires only after 300ms of silence
+let timer;
+input.addEventListener("change", (e) => {
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    filterResults(e.target.value); // runs once, 300ms after last keystroke
+  }, 300);
+});
+```
+
+### Implementing in React with useEffect
+
+In React, the `useEffect` cleanup function is the correct place to call `clearTimeout`. Every time the input value changes, the effect re-runs: the cleanup function clears the previous timer, and a new timer starts.
+
+```js
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedValue(value);
+  }, delay);
+
+  return () => clearTimeout(timer); // cleanup: cancel previous timer
+}, [value, delay]);
+```
+
+### Debounce vs throttle
+
+These two terms are often confused:
+
+- **Debounce:** Waits until activity stops for a given period, then fires once. Best for search inputs, window resize handlers, and form validation.
+- **Throttle:** Fires at most once per given period, even if called continuously. Best for scroll event handlers and drag operations where you want periodic updates, not a single end-of-activity update.
+
+For search inputs, debounce is almost always the right choice.
+
+### Showing a pending indicator
+
+To show a "Searching..." indicator while the debounce is pending, compare the raw input value with the debounced value. If they differ, the debounce has not yet fired:
+
+```js
+const isPending = inputValue !== debouncedValue;
+```
+
+This gives users immediate feedback that their input was registered, even before the filter runs.
+
+<VideoEmbed title="Debounce Search Input in React" fallbackSearchUrl="https://www.youtube.com/results?search_query=debounce+search+input+react+hooks" suggestedTerms="debounce search input react hooks custom useDebounce" watchFirst={true} duration="~15 min" />
+
+## Step-by-step
+
+### Step 1 — Create the useDebounce custom hook
+
+**What:** Create a file `useDebounce.ts` containing a reusable hook that accepts a value and a delay and returns the debounced value.
+
+**Where:** `src/hooks/useDebounce.ts` in your project. Create the `hooks` folder if it does not exist.
+
+**How:**
+
+```ts
+import { useState, useEffect } from "react";
+
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+```
+
+**Why:** Extracting the logic into a custom hook makes it reusable across any component in the app. The generic type parameter T allows the hook to work with strings, numbers, or any other type. The `useEffect` cleanup function (`return () => clearTimeout(timer)`) cancels the previous timer every time `value` changes, which is the core of the debounce behavior.
+
+**Check:** No TypeScript errors in Cursor. Hover over the `T` in the function signature — Cursor should show "generic type parameter T".
+
+---
+
+### Step 2 — Build the local data array
+
+**What:** Create a file `SearchableList.tsx` and define a static array of items to search.
+
+**Where:** `src/components/SearchableList.tsx`.
+
+**How:**
+
+```tsx
+const FRUITS = [
+  "Apple", "Apricot", "Avocado", "Banana", "Blackberry",
+  "Blueberry", "Cherry", "Coconut", "Fig", "Grape",
+  "Grapefruit", "Guava", "Kiwi", "Lemon", "Lime",
+  "Lychee", "Mango", "Melon", "Nectarine", "Orange",
+  "Papaya", "Peach", "Pear", "Pineapple", "Plum",
+  "Pomegranate", "Raspberry", "Strawberry", "Watermelon",
+];
+```
+
+**Why:** Using a local array eliminates network variables and lets you focus on the debounce behavior itself. You can verify the filtering logic works correctly before adding a real API call.
+
+**Check:** The array is defined at the module level (outside the component function) so it is not re-created on every render.
+
+---
+
+### Step 3 — Wire up the search input with useDebounce
+
+**What:** Build the `SearchableList` component with an input, the `useDebounce` hook, and a filtered list.
+
+**Where:** In `SearchableList.tsx`, below the `FRUITS` array.
+
+**How:**
+
+```tsx
+import { useState } from "react";
+import { useDebounce } from "../hooks/useDebounce";
+
+export function SearchableList() {
+  const [inputValue, setInputValue] = useState("");
+  const debouncedValue = useDebounce(inputValue, 300);
+
+  const isPending = inputValue !== debouncedValue;
+
+  const results = FRUITS.filter((fruit) =>
+    fruit.toLowerCase().includes(debouncedValue.toLowerCase())
+  );
+
+  return (
+    <div>
+      <label htmlFor="fruit-search">Search fruits</label>
+      <input
+        id="fruit-search"
+        type="search"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        placeholder="Type to search..."
+        aria-label="Search fruits"
+      />
+      {isPending && <p aria-live="polite">Searching...</p>}
+      <ul>
+        {results.map((fruit) => (
+          <li key={fruit}>{fruit}</li>
+        ))}
+      </ul>
+      {results.length === 0 && !isPending && (
+        <p>No fruits match "{debouncedValue}".</p>
+      )}
+    </div>
+  );
+}
+```
+
+**Why:** `inputValue` updates on every keystroke (keeping the input controlled and responsive). `debouncedValue` only updates after 300ms of inactivity. The filter runs on `debouncedValue`, not `inputValue`, so it does not re-run on every keystroke. `isPending` gives the user immediate visual feedback that their input was registered.
+
+**Check:** Type quickly into the input. The "Searching..." text appears immediately. The list only updates after you stop typing for 300ms.
+
+---
+
+### Step 4 — Add a console.log to confirm debounce timing
+
+**What:** Add a `console.log` inside the filter operation to confirm it only fires after the debounce delay.
+
+**Where:** In the `results` computation in `SearchableList.tsx`.
+
+**How:**
+
+```tsx
+const results = FRUITS.filter((fruit) => {
+  console.log(`Filtering with: "${debouncedValue}"`);
+  return fruit.toLowerCase().includes(debouncedValue.toLowerCase());
+});
+```
+
+**Why:** Watching the console while typing is the fastest way to verify the debounce is working correctly. If the log fires on every keystroke, the debounce is not working. If it fires only after a pause, it is working correctly.
+
+**Check:** Open DevTools Console. Type "apple" quickly. The log should appear once (or a small number of times), not five times in quick succession.
+
+**Note:** Remove or comment out the `console.log` after testing. Leaving logs in production code is a code smell.
+
+---
+
+### Step 5 — Test edge cases
+
+**What:** Test three specific scenarios to confirm the component behaves correctly.
+
+**Where:** In the browser, with DevTools Console open.
+
+**How:**
+
+1. **Rapid typing:** Type "watermelon" as fast as possible. Confirm the "Searching..." indicator appears while typing and the list only updates when you stop.
+
+2. **Clearing the input:** After searching, delete all characters. Confirm the full list reappears after 300ms and the empty state does not flash.
+
+3. **No results:** Type a term with no matches (e.g., "zzz"). Confirm the "No fruits match" message appears only after the debounce fires, not while still typing.
+
+**Why:** Edge cases reveal whether the implementation is robust. The clearing case in particular can expose bugs where the empty state flashes before the debounce fires.
+
+**Check:** All three scenarios behave as described. No unexpected empty state flashes. Console confirms the filter only runs after pausing.
+
+## If stuck
+
+**The list updates on every keystroke, not after a delay**
+Check that you are filtering on `debouncedValue`, not `inputValue`. If you use `inputValue` in the filter, debouncing has no effect on the output even if the hook is working correctly.
+
+**"Searching..." appears permanently**
+This means `debouncedValue` never catches up to `inputValue`. Check that the `useEffect` inside `useDebounce` has `[value, delay]` in its dependency array. If the array is empty or missing, the effect only runs once and never updates `debouncedValue`.
+
+**TypeScript error: "Type 'string' is not assignable to type 'T'"**
+Make sure the `useState` initial value inside `useDebounce` uses `useState<T>(value)`, not `useState(value)`. Without the explicit generic, TypeScript may infer a narrower type.
+
+**The console.log fires too many times**
+The `console.log` inside the filter callback runs once per array item, not once per render. With 29 fruits, you will see 29 log lines per debounce fire. Add the log outside the filter (before the `.filter()` call) to see one line per debounce.
+
+**The component is not rendering in the browser**
+Confirm `SearchableList` is imported and used in your root component. Check for import path typos — TypeScript module imports are case-sensitive on Linux and macOS.
+
+## Common mistakes
+
+- **Filtering on `inputValue` instead of `debouncedValue`.** This is the most common mistake. The filter runs on every keystroke because it depends on the undelayed value.
+- **Forgetting the cleanup function in useEffect.** Without `return () => clearTimeout(timer)`, the old timer does not get cancelled when the value changes. Multiple timers accumulate and all fire — the debounce does not work.
+- **Using debounce when throttle is the right tool.** For scroll handlers and drag events that need periodic updates during continuous activity, use throttle instead of debounce.
+- **Making the delay too long.** At 1000ms, debouncing feels sluggish and users wonder if the input is broken. 200–400ms is the standard range for search inputs.
+- **Not handling the empty results state.** If the debounced value returns no matches, show a message. Rendering an empty list silently is a UX bug.
+- **Re-creating the static data array on every render.** Define constant arrays outside the component function so they are not re-allocated on every render.
+
+<KeyTerms terms={[
+  { term: "Debounce", definition: "A technique that delays execution of a function until a specified amount of time has passed since the last invocation. Every new call resets the timer. Used in search inputs to avoid running expensive operations on every keystroke." },
+  { term: "Throttle", definition: "A technique that limits how often a function can be called, firing at most once per specified interval regardless of how many times it is invoked. Preferred over debounce for scroll and drag event handlers that need periodic updates during continuous activity." },
+  { term: "setTimeout", definition: "A browser API that schedules a function to run after a specified number of milliseconds. Returns a timer ID that can be passed to clearTimeout to cancel the scheduled call." },
+  { term: "clearTimeout", definition: "A browser API that cancels a pending setTimeout call using the timer ID returned by setTimeout. Used in useEffect cleanup functions to cancel the previous debounce timer when the value changes." },
+  { term: "useEffect cleanup", definition: "The function returned from a useEffect callback. React calls it before re-running the effect (when dependencies change) and when the component unmounts. The correct place to cancel timers, abort fetches, and remove event listeners." },
+  { term: "Custom hook", definition: "A JavaScript function whose name starts with 'use' that calls one or more built-in React hooks. Custom hooks let you extract and reuse stateful logic across multiple components without changing component structure." },
+  { term: "Controlled input", definition: "A form input whose value is driven by React state. The onChange handler updates state, and the state value is passed back to the input's value prop. This gives React full control over the input's displayed value." },
+  { term: "Pending state", definition: "In a debounced search, the period between the user's last keystroke and when the debounce fires. Detected by comparing the raw input value with the debounced value. Showing a visual indicator during this period confirms to the user that their input was registered." },
+  { term: "Generic type parameter", definition: "A placeholder type in TypeScript written as a letter like T inside angle brackets in a function signature. Allows a function or hook to work with multiple types while still being type-safe. For example, useDebounce of type T can debounce strings, numbers, or any other type." }
+]} />
+
+<QuickSummary points={[
+  "Debouncing delays execution until the user stops typing, preventing excessive API calls or filter operations on every keystroke.",
+  "The core implementation uses setTimeout to schedule work and clearTimeout in the useEffect cleanup to cancel the previous timer when the value changes.",
+  "A custom useDebounce hook extracts this pattern into reusable logic that can be applied to any value, not just search inputs.",
+  "Always filter on the debounced value, not the raw input value — this is the most common mistake when first implementing this pattern.",
+  "Show a pending indicator by comparing the raw input value with the debounced value — if they differ, the debounce has not yet fired.",
+  "Debounce (fires once after inactivity) and throttle (fires at intervals during activity) are different tools for different problems — use debounce for search inputs."
+]} />
+
+## Practice task + Definition of done
+
+**Practice task:** Extract `useDebounce` into its own file and build a `SearchableList` component that uses it to filter a local array of at least 20 items. Add a pending indicator and an empty state message.
+
+Work through these checkpoints:
+
+1. Create `src/hooks/useDebounce.ts` with the generic hook implementation.
+2. Create `src/components/SearchableList.tsx` that imports and uses `useDebounce` with a 300ms delay.
+3. Add a `console.log` before the filter to confirm it only fires after the debounce delay — not on every keystroke.
+4. Add a `isPending` indicator that shows "Searching..." while the user is typing.
+5. Add an empty state message when no results match the debounced value.
+6. Remove the `console.log` before completing.
+
+**Definition of done:**
+
+- Opening DevTools Console and typing quickly shows the filter log appearing only after 300ms of inactivity — not on every character.
+- The "Searching..." indicator appears immediately on each keystroke and disappears when the filter runs.
+- Searching for a term with no matches shows the empty state message, not a blank list.
+- Clearing the input restores the full list after 300ms with no flash of the empty state.
+- TypeScript reports zero errors in Cursor.
+- The `useDebounce` hook is in its own file under `src/hooks/` and is imported by the component, not defined inline.

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400">
+  <!-- Background -->
+  <rect width="800" height="400" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="400" y="34" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1e293b" text-anchor="middle">Testing Pyramid</text>
+
+  <!-- Define clipping paths for each tier -->
+  <!-- Full pyramid points: top=(400,60), bottom-left=(80,360), bottom-right=(720,360) -->
+
+  <!-- Bottom tier: Unit Tests (green, full width) -->
+  <!-- Bottom tier: y=260 to y=360 -->
+  <!-- At y=260: left=(80+((260-60)/(360-60))*(400-80)) = 80+200/300*320 = 80+213.3=293.3, right=720-213.3=506.7 -->
+  <!-- At y=360: left=80, right=720 -->
+  <polygon points="80,360 720,360 507,260 293,260" fill="#22c55e" opacity="0.85"/>
+
+  <!-- Middle tier: Integration Tests (blue) -->
+  <!-- y=160 to y=260 -->
+  <!-- At y=160: left=(80+100/300*320)=80+106.7=186.7, right=720-106.7=613.3 -->
+  <polygon points="293,260 507,260 613,160 187,160" fill="#3b82f6" opacity="0.85"/>
+
+  <!-- Top tier: E2E Tests (orange) -->
+  <!-- y=60 to y=160 -->
+  <polygon points="187,160 613,160 400,60" fill="#f97316" opacity="0.85"/>
+
+  <!-- Pyramid outline -->
+  <polygon points="400,60 80,360 720,360" fill="none" stroke="#1e293b" stroke-width="2.5"/>
+  <!-- Horizontal dividers -->
+  <line x1="187" y1="160" x2="613" y2="160" stroke="#1e293b" stroke-width="2"/>
+  <line x1="293" y1="260" x2="507" y2="260" stroke="#1e293b" stroke-width="2"/>
+
+  <!-- Top tier label -->
+  <text x="400" y="112" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">E2E Tests</text>
+  <text x="400" y="130" font-family="system-ui, sans-serif" font-size="11" fill="#fff7ed" text-anchor="middle">Few, slow, expensive</text>
+  <text x="400" y="148" font-family="system-ui, sans-serif" font-size="10" fill="#fff7ed" text-anchor="middle">Playwright, Cypress</text>
+
+  <!-- Middle tier label -->
+  <text x="400" y="200" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">Integration / RTL Tests</text>
+  <text x="400" y="218" font-family="system-ui, sans-serif" font-size="11" fill="#eff6ff" text-anchor="middle">Some, medium speed</text>
+  <text x="400" y="236" font-family="system-ui, sans-serif" font-size="10" fill="#eff6ff" text-anchor="middle">React Testing Library, Jest</text>
+
+  <!-- Bottom tier label -->
+  <text x="400" y="293" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">Unit Tests</text>
+  <text x="400" y="313" font-family="system-ui, sans-serif" font-size="12" fill="#f0fdf4" text-anchor="middle">Many, fast, cheap</text>
+  <text x="400" y="331" font-family="system-ui, sans-serif" font-size="11" fill="#f0fdf4" text-anchor="middle">Vitest, Jest — pure functions &amp; utils</text>
+
+  <!-- Right side labels -->
+  <text x="740" y="115" font-family="system-ui, sans-serif" font-size="11" fill="#f97316" text-anchor="start">← Fewer</text>
+  <text x="740" y="215" font-family="system-ui, sans-serif" font-size="11" fill="#3b82f6" text-anchor="start">← Some</text>
+  <text x="740" y="315" font-family="system-ui, sans-serif" font-size="11" fill="#22c55e" text-anchor="start">← More</text>
+
+  <!-- Left side arrow: Fewer (top) to More (bottom) -->
+  <text x="40" y="90" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">Fewer</text>
+  <line x1="40" y1="95" x2="40" y2="350" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+  <text x="40" y="365" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">More</text>
+
+  <defs>
+    <marker id="arrowGray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/>
+    </marker>
+  </defs>
+</svg>

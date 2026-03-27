@@ -1,0 +1,280 @@
+---
+title: "Data Fetching Patterns in Next.js"
+slug: "03-data-fetching-patterns"
+moduleSlug: "07-nextjs-fundamentals"
+order: 3
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Fetch data directly in a server component using async/await"
+  - "Add a loading.tsx file to show a skeleton while data loads"
+  - "Add an error.tsx file to handle fetch failures gracefully"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=nextjs+app+router+data+fetching+server+components"
+      label: "Next.js Data Fetching in App Router"
+  docs:
+    - url: "https://nextjs.org/docs/app/getting-started/fetching-data"
+      label: "Next.js Data Fetching"
+---
+
+## Goal
+
+Fetch data directly in async server components, show skeleton loading states using `loading.tsx`, and handle fetch failures with a user-friendly `error.tsx` — the three-file pattern that makes every data-loaded page production-ready.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+Loading and error states are UX decisions as much as they are technical ones. A page that shows a blank white screen while data loads feels broken. A page that crashes with an unhandled error and shows nothing communicates failure poorly. Next.js gives you a file-based convention to handle both — but only if you know the pattern.
+
+Employers also look for this pattern in take-home projects. A candidate who handles loading and error states demonstrates production awareness. A candidate who only handles the happy path does not.
+
+## What you will produce
+
+A product list page at `/products` with three states: a skeleton loading UI (via `loading.tsx`), a rendered list of products (via the async server component), and a friendly error message with a retry button (via `error.tsx`). All three states must be observable in the browser.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all file changes
+- **Your Next.js project** — the `app/products/` directory
+- **Browser DevTools** — Network tab with throttling to see the loading state, and a forced error URL to see the error state
+
+## Concept overview
+
+### Async server components
+
+Any server component can be made async by adding the `async` keyword to the function. You can then `await` any Promise directly in the function body — including `fetch`. The component will suspend while waiting and resume when the data is ready. There is no `useEffect`, no loading state in `useState`, and no cleanup function needed.
+
+### loading.tsx — Suspense-based loading UI
+
+When Next.js encounters an async page that is still loading, it automatically wraps it in a React Suspense boundary. If a `loading.tsx` file exists in the same folder as `page.tsx`, Next.js renders it as the fallback while the page is suspended. This file follows the same naming convention as `page.tsx` and `layout.tsx`.
+
+### error.tsx — error boundaries
+
+When a `page.tsx` throws an error during rendering, Next.js catches it with an error boundary if an `error.tsx` file exists in the same folder. Unlike `loading.tsx`, `error.tsx` must be a client component (add `'use client'`) because error boundaries in React require class lifecycle methods or client-side hooks to reset. The component receives an `error` prop and a `reset` function to retry.
+
+### Static vs dynamic fetching
+
+By default, `fetch` in a server component is cached. The same URL fetched multiple times returns the cached result without a new network request. Adding `{ cache: 'no-store' }` to the fetch options makes it dynamic — a fresh request on every page load. Use `no-store` for data that changes frequently (user dashboards, live inventory) and the default cache for data that rarely changes (marketing content, product categories).
+
+<VideoEmbed
+  title="Next.js Data Fetching in App Router"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=nextjs+app+router+data+fetching+server+components"
+  suggestedTerms="nextjs async server components data fetching loading error suspense"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create the products route with an async server component
+
+**What:** Build an async server component at `/products` that fetches and renders a list.
+
+**Where:** Create the folder `app/products/` and the file `app/products/page.tsx`.
+
+**How:** Make the function async and await the fetch directly:
+
+```tsx
+interface Product {
+  id: number;
+  title: string;
+  price: number;
+  category: string;
+}
+
+export default async function ProductsPage() {
+  const res = await fetch('https://fakestoreapi.com/products', {
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch products: ${res.status}`);
+  }
+
+  const products: Product[] = await res.json();
+
+  return (
+    <main className="p-8">
+      <h1 className="mb-6 text-2xl font-bold">Products</h1>
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {products.map(product => (
+          <li key={product.id} className="rounded-lg border p-4 shadow-sm">
+            <h2 className="font-semibold">{product.title}</h2>
+            <p className="mt-1 text-sm text-gray-500">{product.category}</p>
+            <p className="mt-2 font-bold">${product.price.toFixed(2)}</p>
+          </li>
+        ))}
+      </ul>
+    </main>
+  );
+}
+```
+
+**Why:** The `throw new Error(...)` on a non-ok response is critical. Without it, a failed fetch would continue with an empty or malformed `products` array and render broken UI silently. Throwing causes the error boundary (the `error.tsx` you will add in Step 4) to catch the failure and show the error state.
+
+**Check:** Visit `http://localhost:3000/products`. The product list should load and render. Check the Network tab to confirm the fetch hit the Fake Store API.
+
+---
+
+### Step 2 — Add loading.tsx with a skeleton UI
+
+**What:** Create a loading state that appears while the async page is fetching data.
+
+**Where:** Create `app/products/loading.tsx` in the same folder as `page.tsx`.
+
+**How:** Export a default function that renders skeleton placeholder cards:
+
+```tsx
+export default function ProductsLoading() {
+  return (
+    <main className="p-8">
+      <div className="mb-6 h-8 w-32 animate-pulse rounded bg-gray-200" />
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <li key={i} className="rounded-lg border p-4 shadow-sm">
+            <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
+            <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-gray-200" />
+            <div className="mt-3 h-5 w-16 animate-pulse rounded bg-gray-200" />
+          </li>
+        ))}
+      </ul>
+    </main>
+  );
+}
+```
+
+**Why:** The `loading.tsx` file is automatically used as the Suspense fallback for the page. Next.js renders it immediately while the async page is suspended, then swaps in the real content when the fetch completes. The skeleton matches the final layout so the transition feels smooth rather than jarring.
+
+**Check:** In the DevTools Network tab, set the connection speed to "Slow 3G". Reload the products page. The skeleton cards should appear for several seconds before the real products render.
+
+---
+
+### Step 3 — Verify the loading state visually
+
+**What:** Confirm the skeleton layout matches the real product card layout so the transition is seamless.
+
+**Where:** Side by side comparison in the browser, using Network throttling.
+
+**How:** Keep DevTools open with "Slow 3G" throttling. Reload and observe the skeleton. Note which elements are placeholder divs and which match the real content. Adjust the skeleton to match the real card height if they differ.
+
+**Why:** A skeleton that looks nothing like the real content creates a jarring layout shift on load. The goal is for the skeleton to occupy approximately the same space as the real content so the page does not jump when the data arrives.
+
+**Check:** When the products load, the page layout does not shift or jump. The cards appear in the same positions as the skeleton placeholders.
+
+---
+
+### Step 4 — Add error.tsx with a retry button
+
+**What:** Create an error boundary that catches fetch failures and shows a user-friendly message with a retry action.
+
+**Where:** Create `app/products/error.tsx` in the same folder.
+
+**How:** This file must be a client component because it uses the `reset` callback:
+
+```tsx
+'use client';
+
+interface ErrorPageProps {
+  error: Error & { digest?: string };
+  reset: () => void;
+}
+
+export default function ProductsError({ error, reset }: ErrorPageProps) {
+  return (
+    <main className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+      <div className="rounded-full bg-red-100 p-4">
+        <span className="text-3xl">⚠</span>
+      </div>
+      <h2 className="text-xl font-semibold text-gray-900">
+        Failed to load products
+      </h2>
+      <p className="max-w-sm text-sm text-gray-500">
+        {error.message || 'Something went wrong. Please try again.'}
+      </p>
+      <button
+        type="button"
+        onClick={reset}
+        className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+      >
+        Try again
+      </button>
+    </main>
+  );
+}
+```
+
+**Why:** The `reset` function re-renders the page component from the top, clearing the error and attempting the fetch again. Without `error.tsx`, an unhandled error in a page component shows the default Next.js error page in development and a generic 500 page in production — neither is acceptable product UX.
+
+**Check:** Temporarily change the API URL to a broken one (e.g., `https://fakestoreapi.com/BROKEN`). Reload the page. The error state should appear with your message and a "Try again" button. Fix the URL and click "Try again" — the products should load.
+
+---
+
+### Step 5 — Test all three states in DevTools
+
+**What:** Observe the loading, success, and error states in sequence.
+
+**Where:** Browser DevTools, Network tab.
+
+**How:** Use the following sequence to test all three states:
+
+1. **Loading state:** Set throttling to "Slow 3G" and reload the page. Observe the skeleton.
+2. **Success state:** Remove the throttling and reload. Observe the product list.
+3. **Error state:** Temporarily change the fetch URL to an invalid endpoint, reload the page, then observe the error state and click "Try again". Restore the correct URL.
+
+**Why:** Every page that fetches data has three states that users will encounter: loading (slow connection), success (normal operation), and error (network issue or server failure). A page that only handles the success state is incomplete.
+
+**Check:** All three states are visible and match the expected UI. The "Try again" button successfully re-fetches and transitions from error to success state.
+
+## If stuck
+
+- **loading.tsx is not showing:** Confirm the file is named exactly `loading.tsx` and is in the same folder as `page.tsx`. Check that the page function is `async` — loading.tsx only works with Suspense, which only activates for async components.
+- **error.tsx is not showing when fetch fails:** Make sure the page throws when the fetch fails (`if (!res.ok) throw new Error(...)`). If the page does not throw, the error boundary never activates. Also confirm `error.tsx` has `'use client'` as its first line.
+- **NEXT_PUBLIC env var is undefined on the client:** Environment variables used in client components must be prefixed with `NEXT_PUBLIC_`. If you are fetching from an internal API that requires a secret key, keep the fetch in the server component where the key is safely hidden from the browser.
+- **Products are cached and stale:** Add `{ cache: 'no-store' }` to your fetch options to opt out of caching and always get fresh data. The default cache behavior in Next.js may serve a cached version from a previous build.
+
+## Common mistakes
+
+- Forgetting to add `'use client'` to `error.tsx`. Error boundaries in React require client-side capabilities. Next.js will show a build error if `error.tsx` is a server component.
+- Catching fetch errors with try/catch inside the page and returning empty state instead of throwing. The error boundary only activates when the component throws. Silently catching errors produces a broken empty UI with no error message.
+- Naming the files `Loading.tsx` or `Error.tsx` with capital letters. Next.js conventions require the exact lowercase filenames `loading.tsx`, `error.tsx`, and `page.tsx`.
+- Using `useEffect` to fetch data in a server component. Server components do not use hooks. Use top-level `await` with the `async` function keyword.
+- Forgetting to check `res.ok` before parsing the JSON body. An error response from the server (e.g., 404 or 500) still has a body, but `res.json()` on it will return an error message object, not the expected data.
+
+<KeyTerms terms={[
+  "Async server component: A server component function declared with the async keyword, allowing top-level await for data fetching without hooks.",
+  "loading.tsx: A Next.js file convention that provides the Suspense fallback UI for an async page. Rendered immediately while the page is fetching, then swapped for the real content.",
+  "error.tsx: A Next.js file convention that acts as an error boundary for a route segment. Must be a client component. Receives error and reset props.",
+  "Suspense: A React feature that allows components to pause rendering while waiting for async data and show a fallback UI in the meantime.",
+  "Error boundary: A React mechanism that catches errors thrown during rendering and displays a fallback UI instead of crashing the whole page.",
+  "reset function: The prop passed to error.tsx by Next.js that re-renders the page component from the top, clearing the error and attempting the operation again.",
+  "Static fetching: The default fetch behavior in Next.js where the response is cached and reused across requests, suitable for data that rarely changes.",
+  "Dynamic fetching: Fetch with the option cache: 'no-store' that makes a fresh network request on every page load, suitable for user-specific or frequently changing data.",
+  "Skeleton UI: A loading placeholder that mimics the shape and layout of the real content, providing a visual sense of structure while data is being fetched.",
+  "NEXT_PUBLIC prefix: The required prefix for environment variables that need to be available in client components. Variables without this prefix are server-only."
+]} />
+
+<QuickSummary points={[
+  "Make a server component async and use top-level await fetch to load data — no useEffect, no useState, no cleanup function needed.",
+  "A loading.tsx file in the same folder as page.tsx is automatically used as the Suspense fallback, showing immediately while the async page is suspended.",
+  "An error.tsx file in the same folder catches errors thrown during page rendering. It must be a client component and receives a reset function to retry.",
+  "Always check res.ok and throw on failure — if the page does not throw, the error boundary never activates and broken data renders silently.",
+  "Add cache: 'no-store' to fetch options for data that changes frequently. Omit it for data that is safe to cache across requests.",
+  "Test all three states — loading, success, and error — using Network throttling and a temporarily broken URL to confirm each state is handled correctly."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Build a product list page at `/products` with all three data states handled. The loading state should show at least 6 skeleton card placeholders that match the approximate layout of the real product cards. The error state should show a descriptive message and a "Try again" button. The success state should show the fetched products in a grid.
+
+**Definition of done:**
+
+- All three states are visible in the browser: loading (via Slow 3G throttling), success (normal load), and error (via broken URL, then fixed with the retry button).
+- `loading.tsx` skeleton cards occupy the same approximate space as the real product cards, producing no visible layout shift when data arrives.
+- `error.tsx` has `'use client'` as its first line and the "Try again" button successfully triggers a re-fetch.
+- The `page.tsx` file is async, uses top-level `await fetch`, throws on `!res.ok`, and has no `useEffect` or `useState`.

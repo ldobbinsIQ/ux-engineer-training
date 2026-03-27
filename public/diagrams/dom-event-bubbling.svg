@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" font-family="system-ui, -apple-system, sans-serif">
+  <rect width="800" height="300" fill="#fafafa" rx="12"/>
+
+  <!-- Title -->
+  <text x="400" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="#111">DOM Event Bubbling: Events Travel Up the Tree</text>
+
+  <!-- Left: DOM tree -->
+  <!-- document -->
+  <rect x="320" y="48" width="160" height="36" rx="8" fill="#64748b" opacity="0.15" stroke="#64748b" stroke-width="1.5"/>
+  <text x="400" y="71" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">document</text>
+
+  <line x1="400" y1="84" x2="400" y2="100" stroke="#94a3b8" stroke-width="1.5"/>
+
+  <!-- body -->
+  <rect x="320" y="100" width="160" height="36" rx="8" fill="#64748b" opacity="0.15" stroke="#64748b" stroke-width="1.5"/>
+  <text x="400" y="123" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">body</text>
+
+  <line x1="400" y1="136" x2="400" y2="152" stroke="#94a3b8" stroke-width="1.5"/>
+
+  <!-- div.container -->
+  <rect x="300" y="152" width="200" height="36" rx="8" fill="#3b82f6" opacity="0.15" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="400" y="175" text-anchor="middle" font-size="11" font-weight="600" fill="#1d4ed8">div.container</text>
+
+  <line x1="400" y1="188" x2="400" y2="204" stroke="#94a3b8" stroke-width="1.5"/>
+
+  <!-- button (clicked) -->
+  <rect x="310" y="204" width="180" height="44" rx="8" fill="#ef4444" opacity="0.2" stroke="#ef4444" stroke-width="2"/>
+  <text x="400" y="222" text-anchor="middle" font-size="11" font-weight="700" fill="#991b1b">button</text>
+  <text x="400" y="238" text-anchor="middle" font-size="10" fill="#991b1b">← CLICK happens here</text>
+
+  <!-- Bubble arrows (right side) -->
+  <path d="M510 226 Q580 226 580 170 Q580 114 510 114" stroke="#ef4444" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#redarrow2)"/>
+  <text x="590" y="145" font-size="11" font-weight="600" fill="#dc2626">Event</text>
+  <text x="590" y="160" font-size="11" fill="#dc2626">bubbles</text>
+  <text x="590" y="175" font-size="11" fill="#dc2626">up ↑</text>
+
+  <!-- Listener annotations -->
+  <rect x="50" y="152" width="200" height="36" rx="6" fill="#10b981" opacity="0.15" stroke="#10b981" stroke-width="1.5"/>
+  <text x="150" y="170" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46">Event delegation:</text>
+  <text x="150" y="184" text-anchor="middle" font-size="10" fill="#065f46">Listen on parent, catch child events</text>
+
+  <line x1="250" y1="170" x2="298" y2="170" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#greenarrow2)"/>
+
+  <!-- stopPropagation note -->
+  <rect x="50" y="210" width="220" height="46" rx="6" fill="#f59e0b" opacity="0.15" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="160" y="228" text-anchor="middle" font-size="10" font-weight="600" fill="#b45309">e.stopPropagation()</text>
+  <text x="160" y="242" text-anchor="middle" font-size="10" fill="#b45309">Stops the event from bubbling</text>
+  <text x="160" y="255" text-anchor="middle" font-size="10" fill="#b45309">further up the tree</text>
+
+  <!-- Caption -->
+  <text x="400" y="285" text-anchor="middle" font-size="11" fill="#64748b">Every click, keypress, and input event bubbles up to document unless stopped</text>
+
+  <defs>
+    <marker id="redarrow2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#ef4444"/>
+    </marker>
+    <marker id="greenarrow2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#10b981"/>
+    </marker>
+  </defs>
+</svg>

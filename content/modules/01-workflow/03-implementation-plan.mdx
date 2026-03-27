@@ -1,0 +1,285 @@
+---
+title: "Writing an Implementation Plan from a Design Spec"
+slug: "03-implementation-plan"
+moduleSlug: "01-workflow"
+order: 3
+hiringSignal: false
+estimatedHours: 1
+tasks:
+  - "Create a component inventory from a sample settings page spec"
+  - "Write a state inventory with at least 3 states per interactive component"
+  - "Document a data flow and write 3 open questions"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=figma+developer+handoff+read+design+spec"
+      label: "Reading a Figma Design Spec"
+  docs:
+    - url: "https://nextjs.org/docs/app/getting-started"
+      label: "Next.js Getting Started"
+---
+
+## Goal
+By the end of this lesson, you will be able to translate a Figma design screen into a written implementation plan that includes a component inventory, a state inventory, a data flow summary, and a list of open questions for the designer.
+
+## Time + Difficulty
+- **Time:** 50–65 min
+- **Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+- UX Engineers are expected to read a design spec and turn it into a build plan independently — this is one of the first things you do when joining a new team or starting a project
+- A written plan forces you to notice gaps in the design before writing a single line of code, which saves hours of rework
+- Component and state inventories are the fastest way to estimate how long a feature will take to build
+- Identifying open questions demonstrates design literacy — it signals to designers and PMs that you understand the full interaction, not just the happy path
+- Hiring managers and senior engineers use implementation plans to evaluate judgment, thoroughness, and communication
+
+## What you will produce
+- A markdown file at `~/projects/week-1/plans/settings-page.md` containing a component inventory, state inventory, data flow summary, and at least 3 open questions
+
+## Tools + Where you will work
+- **Tools:** Cursor, Terminal
+- **Folder:** `~/projects/week-1/plans/`
+- **Files you'll edit:** `settings-page.md` (new)
+- **Commands you'll run:** `mkdir -p ~/projects/week-1/plans`
+
+## Concept overview
+An implementation plan is a short document you write before opening your code editor. It lists every UI element on a screen (component inventory), every possible state those elements can be in (state inventory), how data moves through the screen (data flow), and anything you need the designer to clarify (open questions). Writing this plan takes 30–60 minutes and typically saves 2–4 hours of mid-build confusion.
+
+**How this maps to UX thinking:** Designers think in screens and flows; engineers think in components and states. An implementation plan is the translation layer between the two. When you write one, you are doing both jobs — which is the core value of a UX Engineer.
+
+**Mental model:**
+- Component inventory: a nested list of every visible UI piece, from page down to atomic elements
+- State inventory: for each interactive component, list every condition it can be in (loading, error, empty, filled, disabled, focused, success)
+- Data flow: which parts of the UI are static (hardcoded), which are dynamic (from an API or local state), and how changes in one part affect another
+- Open questions: anything the design does not specify — error messages, empty states, edge cases, loading behavior, permissions
+- Happy path: the ideal user flow when nothing goes wrong — designs almost always show only this
+- Edge cases: everything that can go wrong or be different — always ask about these before building
+
+<Diagram title="Design-to-Code Translation" src="/diagrams/d3-design-to-code.svg" caption="An implementation plan bridges the Figma spec and the first line of code" alt="Diagram showing Figma spec flowing to component list, state list, data flow, and build" />
+
+## Step-by-step
+
+### Step 1: Create the plans folder and file
+**What:** Create the folder and markdown file where your implementation plan will live.
+**Where:** Terminal
+**How:**
+```bash
+mkdir -p ~/projects/week-1/plans
+cd ~/projects/week-1/plans
+```
+Then open Cursor, navigate to `~/projects/week-1/plans/`, and create a new file named `settings-page.md`.
+**Why:** Keeping plans alongside projects means you always know where to look when you need to revisit your reasoning.
+**Check:** The file `settings-page.md` exists in `~/projects/week-1/plans/` and opens in Cursor.
+
+### Step 2: Add the plan header and screen summary
+**What:** Write the top section of the plan with the screen name, date, and a 2–3 sentence description of what the screen does.
+**Where:** Cursor — `settings-page.md`
+**How:** Write the following at the top of the file, filling in the bracketed fields:
+```markdown
+# Implementation Plan: Settings Page
+
+**Screen:** Account Settings
+**Date:** [today's date]
+**Designer:** [name or "unknown"]
+**Engineer:** [your name]
+
+## Screen Summary
+The Account Settings page lets a logged-in user update their profile information (name, email, avatar), change their password, and manage notification preferences. The page is a single scrollable view divided into three sections. Changes are saved per-section with individual Save buttons, not a single global save.
+```
+**Why:** A summary forces you to read the whole design before cataloguing parts — engineers who skip this step miss the big picture and build components in the wrong order.
+**Check:** You can read your summary and describe the screen's purpose in one sentence without looking at the file.
+
+### Step 3: Write the component inventory
+**What:** List every UI element on the screen in a nested hierarchy from page level down to atom level.
+**Where:** Cursor — `settings-page.md`
+**How:** Add a section below the summary. Use indentation to show nesting. Here is a template for the Account Settings page — expand it based on what you see in the design:
+```markdown
+## Component Inventory
+
+- SettingsPage (page layout)
+  - PageHeader
+    - Heading ("Account Settings")
+    - Breadcrumb (optional)
+  - ProfileSection
+    - SectionHeading ("Profile")
+    - AvatarUpload
+      - Avatar (image)
+      - UploadButton
+    - FormField (Name)
+      - Label
+      - TextInput
+    - FormField (Email)
+      - Label
+      - TextInput
+    - SaveButton
+  - PasswordSection
+    - SectionHeading ("Change Password")
+    - FormField (Current Password)
+      - Label
+      - PasswordInput
+      - ShowHideToggle
+    - FormField (New Password)
+      - Label
+      - PasswordInput
+      - ShowHideToggle
+    - FormField (Confirm Password)
+      - Label
+      - PasswordInput
+      - ShowHideToggle
+    - SaveButton
+  - NotificationsSection
+    - SectionHeading ("Notifications")
+    - ToggleRow (Email notifications)
+      - Label
+      - Toggle
+    - ToggleRow (Push notifications)
+      - Label
+      - Toggle
+    - ToggleRow (Weekly digest)
+      - Label
+      - Toggle
+    - SaveButton
+```
+**Why:** An indented component list maps directly to your React component tree — you are essentially writing the file structure before touching code.
+**Check:** Every visible UI element from the design is represented in the list. No element is listed more than once.
+
+### Step 4: Write the state inventory
+**What:** For every interactive component, list every state it can be in.
+**Where:** Cursor — `settings-page.md`
+**How:** Add a state inventory section. Document at minimum: loading, error, empty/default, and success states. Add component-specific states (focused, disabled, filled) where relevant:
+```markdown
+## State Inventory
+
+### TextInput (all text fields)
+- Default: empty, placeholder visible
+- Focused: border highlight, cursor active
+- Filled: user has typed a value
+- Invalid: red border, inline error message below field
+- Disabled: greyed out, not interactive (read-only email field)
+
+### PasswordInput
+- Default: characters hidden (dots)
+- Show mode: characters visible (toggled by ShowHideToggle)
+- Focused: border highlight
+- Invalid: red border, error message (e.g., "Password must be at least 8 characters")
+
+### SaveButton (per section)
+- Default: enabled, solid color
+- Disabled: greyed out when no changes have been made in that section
+- Loading: spinner, non-interactive (while POST request is in flight)
+- Success: brief green checkmark or "Saved!" confirmation (1–2 seconds, then resets)
+- Error: red tint or error toast (server returned an error)
+
+### Toggle (notification rows)
+- Off: unchecked/grey
+- On: checked/brand color
+- Loading: brief disabled state while preference is being saved to the server
+
+### AvatarUpload
+- Default: current avatar displayed
+- Hover/focus: upload overlay visible
+- Uploading: progress indicator
+- Error: "Upload failed" message, revert to previous avatar
+- Success: new avatar displayed
+
+### PasswordSection (section-level)
+- Default: empty fields
+- Mismatch error: "New password and confirm password do not match" (cross-field validation)
+- Current password wrong: server error displayed inline
+```
+**Why:** States are the hardest part of a UI to get right and the most commonly under-specced in designs — writing them out forces you to think through the complete interaction before building.
+**Check:** Every interactive component has at least 3 states listed, including at least one error state.
+
+### Step 5: Document the data flow
+**What:** Describe which parts of the UI are static, which come from an API, and how user actions flow to the server.
+**Where:** Cursor — `settings-page.md`
+**How:**
+```markdown
+## Data Flow
+
+### Static (hardcoded)
+- Section headings and labels
+- Placeholder text
+- Button labels
+
+### Dynamic (from API on page load)
+- User's current name (GET /api/user/profile)
+- User's current email (GET /api/user/profile)
+- Current avatar URL (GET /api/user/profile)
+- Current notification preferences (GET /api/user/notifications)
+
+### User actions → server
+- Update profile: POST /api/user/profile → { name, email }
+- Change password: POST /api/user/password → { currentPassword, newPassword }
+- Update avatar: POST /api/user/avatar → multipart form with image file
+- Update notifications: POST /api/user/notifications → { emailNotifications, pushNotifications, weeklyDigest }
+
+### Local state (React)
+- Form field values (controlled inputs)
+- Section-level "dirty" flag (has anything changed since last save?)
+- Loading state per Save button
+- Error messages per field and per section
+```
+**Why:** A data flow map tells you exactly which components need props, which need local state, and which need API calls — this shapes your entire component architecture.
+**Check:** You can identify at least one static element, at least one dynamic element, and at least one user action with its corresponding API endpoint.
+
+### Step 6: Write your open questions
+**What:** List at least 3 questions the design does not answer that you need resolved before or during build.
+**Where:** Cursor — `settings-page.md`
+**How:**
+```markdown
+## Open Questions
+
+1. **Email change confirmation:** When a user updates their email, does the system send a confirmation email to the new address before changing it? The design does not show this flow.
+
+2. **Empty state for avatar:** What should the avatar show if the user has never uploaded one — initials, a generic silhouette, or a default image? The spec only shows a user with an existing avatar.
+
+3. **Notification save behavior:** Do notification toggles auto-save on toggle (no Save button needed) or do they require the Save button? The design shows a Save button but toggles often auto-save in production apps.
+
+4. **Password strength indicator:** Should the new password field show a strength meter (weak/medium/strong)? This is missing from the spec but is common UX and affects build complexity.
+
+5. **Read-only email:** If the email field is disabled (e.g., for SSO users), what does the disabled state look like and is there an explanation tooltip or message?
+```
+**Why:** Sending open questions to the designer before starting build is the single highest-leverage thing a UX Engineer can do — it eliminates the most common source of rework.
+**Check:** You have at least 3 questions, each referencing a specific design element and a specific gap.
+
+## If stuck
+- **Not sure what counts as a component:** If it is a distinct, reusable piece of UI that could theoretically be used on another page, it is a component. When in doubt, include it.
+- **State inventory feels overwhelming:** Start with just two states for each component — the default state and the error state. Then add loading, success, and disabled as you think through the interaction.
+- **Do not have a real Figma spec to reference:** Use the sample Settings page described in this lesson as your spec. Treat the component inventory in Step 3 as the "design" and write the state inventory and open questions from there.
+- **Open questions feel obvious:** No question about an edge case is too obvious to ask. Designers often have answers they simply did not document, and asking surfaces them before they become bugs.
+
+## Common mistakes
+- Listing components at only one level of depth (e.g., just "Form") instead of nesting down to individual inputs and labels — the deeper the inventory, the more useful it is
+- Writing state inventories that only cover the happy path (default and success) — error and loading states are where most bugs live and most design specs go silent
+- Treating the data flow section as optional — skipping it means you will discover mid-build that you do not know where data comes from
+- Writing open questions that are actually answerable from the design (e.g., "What color is the button?") — open questions should be about behavior, edge cases, and missing states
+- Making the plan so long it takes more than 60 minutes to write — an implementation plan is a planning tool, not a specification document; bullet points are better than paragraphs
+- Not updating the plan when the design changes — keep it as a living document that reflects the current state of the spec
+
+<KeyTerms terms={[
+  { term: "Component inventory", definition: "A nested list of every UI element on a screen, organized from page layout down to individual atomic elements" },
+  { term: "State inventory", definition: "A list of every condition an interactive component can be in, including default, loading, error, empty, filled, disabled, and success" },
+  { term: "Data flow", definition: "A description of which UI elements are static, which come from an API, and how user actions map to server calls" },
+  { term: "Open questions", definition: "A list of design gaps or ambiguities that must be resolved before or during build to avoid rework" },
+  { term: "Happy path", definition: "The ideal user flow through a feature when nothing goes wrong — design specs almost always show only this path" },
+  { term: "Edge case", definition: "A situation outside the happy path, such as an empty state, a network error, or an unusually long input value" },
+  { term: "Dirty state", definition: "A flag that tracks whether a form or section has been changed since it was last saved, used to enable or disable a Save button" },
+]} />
+
+<QuickSummary points={[
+  "An implementation plan has four parts: component inventory, state inventory, data flow, and open questions",
+  "Write the plan before opening your code editor — it saves more time than it takes",
+  "Every interactive component needs at least 3 states: default, error, and loading",
+  "Open questions should target design gaps, edge cases, and missing states — not things visible in the spec",
+  "The component inventory is essentially your React component tree written in plain text before any code is written",
+]} />
+
+## Practice task
+Without copying the Settings page example, write an implementation plan for a Login page with a Forgot Password link. The Login page has an email field, a password field, a Remember Me checkbox, a Login button, and a Forgot Password link. The Forgot Password flow opens a modal (or a new page — you decide) where the user enters their email and receives a reset link. Create the file at `~/projects/week-1/plans/login-page.md`.
+
+**Definition of done:**
+- `~/projects/week-1/plans/login-page.md` exists
+- The file includes a component inventory covering both the Login screen and the Forgot Password flow
+- Every interactive component has at least 3 states documented
+- The data flow section identifies what is static, what is dynamic, and lists at least 2 API endpoints
+- At least 3 open questions are listed, each referencing a specific interaction or edge case

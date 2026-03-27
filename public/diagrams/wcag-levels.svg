@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 260" font-family="system-ui, -apple-system, sans-serif">
+  <rect width="800" height="260" fill="#fafafa" rx="12"/>
+
+  <!-- Title -->
+  <text x="400" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="#111">WCAG Conformance Levels: A, AA, AAA</text>
+
+  <!-- Level A -->
+  <rect x="30" y="50" width="225" height="180" rx="10" fill="#ef4444" opacity="0.08" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="143" y="74" text-anchor="middle" font-size="16" font-weight="800" fill="#dc2626">Level A</text>
+  <text x="143" y="90" text-anchor="middle" font-size="11" fill="#dc2626">Minimum (required)</text>
+  <rect x="50" y="100" width="185" height="1" fill="#fca5a5"/>
+  <text x="55" y="120" font-size="10" fill="#7f1d1d">• Images have alt text</text>
+  <text x="55" y="136" font-size="10" fill="#7f1d1d">• Form inputs have labels</text>
+  <text x="55" y="152" font-size="10" fill="#7f1d1d">• No seizure-inducing content</text>
+  <text x="55" y="168" font-size="10" fill="#7f1d1d">• Keyboard accessible</text>
+  <text x="55" y="184" font-size="10" fill="#7f1d1d">• No content is keyboard-trapped</text>
+  <text x="143" y="218" text-anchor="middle" font-size="9" fill="#dc2626" font-style="italic">Fails = unusable for many</text>
+
+  <!-- Level AA -->
+  <rect x="288" y="50" width="225" height="180" rx="10" fill="#f59e0b" opacity="0.1" stroke="#f59e0b" stroke-width="2"/>
+  <text x="400" y="74" text-anchor="middle" font-size="16" font-weight="800" fill="#b45309">Level AA ★</text>
+  <text x="400" y="90" text-anchor="middle" font-size="11" fill="#b45309">Industry standard target</text>
+  <rect x="308" y="100" width="185" height="1" fill="#fcd34d"/>
+  <text x="313" y="120" font-size="10" fill="#78350f">• 4.5:1 contrast ratio (text)</text>
+  <text x="313" y="136" font-size="10" fill="#78350f">• 3:1 contrast (large text/UI)</text>
+  <text x="313" y="152" font-size="10" fill="#78350f">• Focus visible on all elements</text>
+  <text x="313" y="168" font-size="10" fill="#78350f">• Resize text to 200% no loss</text>
+  <text x="313" y="184" font-size="10" fill="#78350f">• Error suggestions in forms</text>
+  <text x="400" y="218" text-anchor="middle" font-size="9" fill="#b45309" font-style="italic">This is what employers mean by "accessible"</text>
+
+  <!-- Level AAA -->
+  <rect x="546" y="50" width="225" height="180" rx="10" fill="#8b5cf6" opacity="0.08" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="659" y="74" text-anchor="middle" font-size="16" font-weight="800" fill="#6d28d9">Level AAA</text>
+  <text x="659" y="90" text-anchor="middle" font-size="11" fill="#6d28d9">Enhanced (aspirational)</text>
+  <rect x="566" y="100" width="185" height="1" fill="#c4b5fd"/>
+  <text x="571" y="120" font-size="10" fill="#4c1d95">• 7:1 contrast ratio</text>
+  <text x="571" y="136" font-size="10" fill="#4c1d95">• Sign language for audio</text>
+  <text x="571" y="152" font-size="10" fill="#4c1d95">• Reading level: grade 9 or lower</text>
+  <text x="571" y="168" font-size="10" fill="#4c1d95">• No timing requirements</text>
+  <text x="571" y="184" font-size="10" fill="#4c1d95">• Context-sensitive help</text>
+  <text x="659" y="218" text-anchor="middle" font-size="9" fill="#6d28d9" font-style="italic">Not always feasible for all content</text>
+
+  <text x="400" y="248" text-anchor="middle" font-size="11" fill="#64748b">Target AA for all public-facing products. AA is the legal standard in the US (ADA, Section 508) and EU.</text>
+</svg>

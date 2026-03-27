@@ -1,0 +1,382 @@
+---
+title: "Flexbox and Grid in Product Layouts"
+slug: "01-flex-and-grid"
+moduleSlug: "03-css-responsive-tokens"
+order: 1
+hiringSignal: false
+estimatedHours: 1.5
+tasks:
+  - "Build a nav bar using Flexbox (space-between, align-center)"
+  - "Build a card grid using CSS Grid (auto-fill, minmax)"
+  - "Combine both: a page shell with a sidebar + main content area"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=css+grid+layout+kevin+powell"
+      label: "CSS Grid Layout Tutorial"
+  docs:
+    - url: "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_grid_layout"
+      label: "MDN CSS Grid Layout"
+---
+
+## Goal
+
+Use Flexbox and CSS Grid to build the three most common product UI layout patterns — a navigation bar, a card grid, and a two-column page shell — so you can reach for the right tool for each layout problem.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner–Intermediate
+
+## Why this matters for UX Engineers
+
+Layout is where design intent meets code reality. Designers spec nav bars, card grids, sidebars, and dashboards in Figma. Your job as a UX Engineer is to translate those specs into CSS that is correct at every screen size. Knowing when to use Flexbox versus Grid — and why — is a daily decision in production work.
+
+These two layout systems cover the vast majority of UI patterns you will encounter. Mastering them means you spend less time fighting CSS and more time on interaction quality.
+
+## What you will produce
+
+Three components in your Next.js project:
+1. A horizontal nav bar built with Flexbox
+2. A responsive card grid built with CSS Grid
+3. A page shell that combines a fixed sidebar and a main content area
+
+## Tools + Where you will work
+
+- **Cursor** — writing component files
+- **Browser DevTools** — inspecting grid and flex overlays
+- **Your Next.js project** — `components/` directory
+
+## Concept overview
+
+### Flexbox: one dimension at a time
+
+Flexbox is for laying out items along a single axis — either a row or a column. Use it when you want items to share a line and control how space is distributed between or around them. Common use cases: nav bars, toolbars, button groups, centered content, vertical stacks.
+
+Key Flexbox properties:
+
+| Property | What it does |
+|---|---|
+| `display: flex` | Activates Flexbox on the container |
+| `flex-direction` | Sets the main axis: row (default) or column |
+| `justify-content` | Distributes space along the main axis |
+| `align-items` | Aligns items on the cross axis |
+| `gap` | Sets spacing between flex items |
+| `flex-wrap` | Allows items to wrap to the next line |
+
+**Tailwind equivalents:** `flex`, `flex-row`, `flex-col`, `justify-between`, `justify-center`, `items-center`, `gap-4`, `flex-wrap`
+
+### CSS Grid: two dimensions at once
+
+Grid is for two-dimensional layout — rows and columns at the same time. Use it for page shells, card grids, dashboards, and any layout where items need to align both horizontally and vertically. Grid is the right tool when the layout relationship between rows matters, not just the row itself.
+
+Key Grid properties:
+
+| Property | What it does |
+|---|---|
+| `display: grid` | Activates Grid on the container |
+| `grid-template-columns` | Defines column structure |
+| `auto-fill` | Creates as many columns as fit |
+| `minmax(min, max)` | Sets a minimum and maximum column width |
+| `gap` | Sets spacing between grid cells |
+| `grid-column` | Controls how many columns an item spans |
+
+**Tailwind equivalents:** `grid`, `grid-cols-3`, `col-span-2`, `gap-6`
+
+### When to use each
+
+| Use Flexbox when... | Use Grid when... |
+|---|---|
+| Items flow in one direction | You need rows AND columns |
+| Content determines item size | You want consistent column widths |
+| Building a nav bar or toolbar | Building a card grid or dashboard |
+| Items should wrap naturally | Items must align across rows |
+
+### DevTools layout overlays
+
+Both Chrome and Edge show colored overlays when you inspect a flex or grid container in DevTools. Click the grid or flex badge next to the element in the Elements panel to toggle the overlay. This is invaluable for understanding why items are positioned where they are.
+
+<VideoEmbed
+  title="CSS Grid Layout Tutorial"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=css+grid+layout+kevin+powell"
+  suggestedTerms="css grid flexbox layout tutorial product UI responsive"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create a component file for the nav bar
+
+**What:** Create a `NavBar.tsx` component.
+
+**Where:** `components/NavBar.tsx` in your Next.js project.
+
+**How:** Open Cursor, create the file, and add this starting structure:
+
+```tsx
+export default function NavBar() {
+  return (
+    <nav aria-label="Primary" className="navbar">
+      <a href="/" className="navbar__logo">Acme</a>
+      <ul className="navbar__links">
+        <li><a href="/products">Products</a></li>
+        <li><a href="/pricing">Pricing</a></li>
+        <li><a href="/about">About</a></li>
+      </ul>
+      <a href="/signup" className="navbar__cta">Sign up</a>
+    </nav>
+  );
+}
+```
+
+**Why:** A semantic `nav` with real `a` elements is the correct structure. The three zones (logo, links, CTA) map naturally to a flex row with space-between distribution.
+
+**Check:** The file saves without errors and the JSX is valid.
+
+---
+
+### Step 2 — Style the nav bar with Flexbox
+
+**What:** Apply Flexbox to distribute the three nav zones across the full width.
+
+**Where:** In your CSS file (e.g., `globals.css`) or as Tailwind classes on the elements.
+
+**How (CSS):**
+
+```css
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 64px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.navbar__links {
+  display: flex;
+  list-style: none;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+}
+```
+
+**How (Tailwind):**
+
+```tsx
+<nav aria-label="Primary" className="flex items-center justify-between px-6 h-16 bg-white border-b border-gray-200">
+  <a href="/">Acme</a>
+  <ul className="flex gap-6 list-none">...</ul>
+  <a href="/signup">Sign up</a>
+</nav>
+```
+
+**Why:** `justify-content: space-between` pushes the logo to the left and the CTA to the right, with the links centered in the remaining space. `align-items: center` vertically centers all items in the 64px container.
+
+**Check:** The nav bar shows the logo on the left, links in the middle, and "Sign up" on the right. Open DevTools and click the flex badge on the nav element to see the overlay.
+
+---
+
+### Step 3 — Create a CardGrid component
+
+**What:** Create a `CardGrid.tsx` component that renders a list of cards.
+
+**Where:** `components/CardGrid.tsx`.
+
+**How:**
+
+```tsx
+const cards = [
+  { title: "Fast", description: "Loads in under 100ms." },
+  { title: "Secure", description: "Encrypted at rest and in transit." },
+  { title: "Scalable", description: "Handles millions of requests." },
+  { title: "Accessible", description: "WCAG 2.1 AA compliant." },
+  { title: "Reliable", description: "99.9% uptime SLA." },
+  { title: "Affordable", description: "Pricing that scales with you." },
+];
+
+export default function CardGrid() {
+  return (
+    <section>
+      <h2>Features</h2>
+      <ul className="card-grid">
+        {cards.map((card) => (
+          <li key={card.title} className="card">
+            <h3>{card.title}</h3>
+            <p>{card.description}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+```
+
+**Why:** An unordered list is the correct semantic element for a collection of equivalent items. The `section` gives the grid a landmark context when it has a heading.
+
+**Check:** The component renders all six cards in the browser (they will appear stacked until Grid is applied in the next step).
+
+---
+
+### Step 4 — Apply CSS Grid with auto-fill and minmax
+
+**What:** Make the card list into a responsive grid that creates as many columns as fit.
+
+**Where:** In your CSS file for the `.card-grid` class, or as Tailwind classes.
+
+**How (CSS):**
+
+```css
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.card {
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+```
+
+**How (Tailwind):**
+
+```tsx
+<ul className="grid gap-6 list-none p-0 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
+```
+
+**Why:** `repeat(auto-fill, minmax(240px, 1fr))` is the most powerful one-liner in CSS Grid. It creates as many columns as fit without a media query, each at least 240px wide. When the viewport narrows, columns drop and the layout reflows automatically.
+
+**Check:** Drag the browser window narrower. At full width you should see 3 columns; as the window shrinks, cards reflow to 2 columns, then 1. Open DevTools and toggle the grid overlay to see column lines.
+
+---
+
+### Step 5 — Build a two-column page shell with sidebar
+
+**What:** Create a layout that has a fixed-width sidebar and a flexible main content area.
+
+**Where:** `components/PageShell.tsx` or directly in a page file.
+
+**How (CSS Grid):**
+
+```tsx
+export default function PageShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="page-shell">
+      <aside className="sidebar">
+        <nav aria-label="Sidebar">
+          <ul>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/settings">Settings</a></li>
+          </ul>
+        </nav>
+      </aside>
+      <main className="main-content">
+        {children}
+      </main>
+    </div>
+  );
+}
+```
+
+```css
+.page-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  border-right: 1px solid #e5e7eb;
+  padding: 1.5rem;
+}
+
+.main-content {
+  padding: 2rem;
+}
+```
+
+**How (Tailwind):**
+
+```tsx
+<div className="grid min-h-screen" style={{ gridTemplateColumns: "240px 1fr" }}>
+```
+
+**Why:** `240px 1fr` creates a fixed 240px sidebar and a main column that takes all remaining space. This is a two-dimensional layout (rows and columns both matter), which is exactly what Grid is designed for.
+
+**Check:** The page renders with a visible sidebar on the left and content area on the right. Resize the window — the sidebar stays 240px and the main area expands and contracts.
+
+---
+
+### Step 6 — Inspect both layouts in DevTools
+
+**What:** Use DevTools layout overlays to confirm your flex and grid containers are working as intended.
+
+**Where:** Browser DevTools, Elements panel.
+
+**How:** Open DevTools (`F12`). In the Elements panel, find the nav bar element. You should see a small "flex" badge next to it. Click it to toggle the flex overlay (shows item boundaries and spacing). Then find the `.card-grid` element and click its "grid" badge to see column and row lines.
+
+**Why:** The visual overlay shows the actual computed layout, not just what you expect. This is the fastest way to diagnose layout bugs.
+
+**Check:** The flex overlay shows three items distributed across the nav bar with space between them. The grid overlay shows the column lines on the card grid with consistent gutters.
+
+## If stuck
+
+- **Cards are not forming columns:** Check that `display: grid` is on the list element, not the individual cards. The grid container is the parent.
+- **Sidebar and main content are stacked instead of side by side:** Confirm `grid-template-columns` has two values. If it is missing or has only one value, all items go in the same column.
+- **Tailwind grid-template-columns not working:** Tailwind does not have a built-in utility for `repeat(auto-fill, minmax(...))`. Use an inline style or a CSS file for that specific value.
+- **Gap is not applying between flex items:** Confirm `gap` is on the flex container, not the items. The `gap` property applies to the container in both Flexbox and Grid.
+
+## Common mistakes
+
+- Using Flexbox for a two-dimensional grid layout. If items need to align both across rows and down columns, use Grid.
+- Setting `width` or `height` on flex items when you want them to grow. Use `flex-grow: 1` or `flex: 1` instead, so the item grows relative to its siblings.
+- Adding `margin: auto` to individual items instead of using `gap` on the container. Gap is more consistent and composable.
+- Using `grid-template-columns: repeat(3, 1fr)` for a card grid. This fixes the column count at three regardless of viewport width. Use `auto-fill` with `minmax` for a responsive grid without media queries.
+- Nesting a grid inside a grid when Flexbox would work for the inner layout. Use the simplest tool for each layer.
+
+<KeyTerms terms={[
+  "Flexbox: A CSS layout system for arranging items along a single axis (row or column), ideal for navigation bars, toolbars, and linear distributions of items.",
+  "CSS Grid: A two-dimensional CSS layout system for arranging items in both rows and columns simultaneously, ideal for page shells, card grids, and dashboards.",
+  "justify-content: A Flexbox and Grid property that controls how items are distributed along the main axis (horizontal in a row, vertical in a column).",
+  "align-items: A Flexbox and Grid property that controls how items are aligned on the cross axis (perpendicular to the main axis).",
+  "grid-template-columns: A CSS Grid property that defines the number and size of columns in the grid.",
+  "auto-fill: A CSS Grid keyword used inside repeat() that creates as many columns as possible within the available space.",
+  "minmax: A CSS Grid function that sets a minimum and maximum size for a track, allowing columns to be flexible within defined bounds.",
+  "gap: A CSS property that sets the spacing between items in a Flexbox or Grid container, replacing the older grid-gap and grid-column-gap properties.",
+  "1fr: A fractional unit in CSS Grid that represents a share of the available space in the grid container after fixed-size tracks are accounted for.",
+  "flex-direction: A Flexbox property that sets the direction of the main axis, either row (horizontal) or column (vertical)."
+]} />
+
+<QuickSummary points={[
+  "Use Flexbox for one-dimensional layouts like nav bars, toolbars, and button groups where items flow along a single row or column.",
+  "Use CSS Grid for two-dimensional layouts like card grids, page shells, and dashboards where both row and column alignment matter.",
+  "The pattern repeat(auto-fill, minmax(240px, 1fr)) creates a responsive card grid that reflows without any media queries.",
+  "A fixed sidebar and flexible main content area is best expressed as grid-template-columns: 240px 1fr on a Grid container.",
+  "The gap property belongs on the container, not on the items — it applies consistently in both Flexbox and Grid.",
+  "Use DevTools flex and grid overlays to see the actual computed layout and diagnose alignment issues visually."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Build a page that contains all three layout patterns:
+
+1. A nav bar (Flexbox) with a logo on the left, at least three nav links in the center, and a call-to-action button on the right.
+2. A card grid (CSS Grid) with at least six cards using `auto-fill` and `minmax(220px, 1fr)`.
+3. A two-column shell (CSS Grid) where the sidebar is 260px wide and the main content takes the remaining space.
+
+All three must be built using either CSS Grid/Flexbox in a stylesheet or Tailwind utility classes — not `float`, `position: absolute`, or `table-layout`.
+
+**Definition of done:**
+
+- The nav bar items are horizontally aligned with the logo at the left edge and CTA at the right edge at any window width above 640px.
+- The card grid reflows from 3 columns at 1280px, to 2 columns at 768px, to 1 column at 375px — with no media queries written explicitly.
+- The sidebar stays 260px at all widths above 640px and the main content fills the rest.
+- DevTools grid overlay on the card grid shows consistent column widths and gutters.
+- No layout uses `float`, `position: absolute` for structural positioning, or inline styles for layout (Tailwind arbitrary values are acceptable).

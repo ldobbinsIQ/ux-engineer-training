@@ -1,0 +1,323 @@
+---
+title: "Keyboard Navigation and Focus Basics"
+slug: "01-keyboard-and-focus"
+moduleSlug: "08-accessibility"
+order: 1
+hiringSignal: true
+hiringSignalCategory: "Accessibility"
+estimatedHours: 1.5
+tasks:
+  - "Tab through a page and identify all focusable elements"
+  - "Add a visible focus style to buttons and links using CSS :focus-visible"
+  - "Implement a skip-to-main-content link at the top of the page"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=keyboard+navigation+accessibility+focus+management"
+      label: "Keyboard Navigation and Focus Management"
+  docs:
+    - url: "https://www.w3.org/WAI/ARIA/apg/patterns/"
+      label: "WAI-ARIA APG Patterns"
+---
+
+## Goal
+
+Make every interactive element on a page reachable and operable by keyboard alone, with a clearly visible focus indicator at all times, so that users who cannot use a mouse can navigate your UI effectively.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Keyboard accessibility is a WCAG 2.1 Level A requirement — the baseline that every product must meet by law in most jurisdictions. It is also the foundation for all other accessibility work: if a user cannot reach an element with Tab, no ARIA attribute in the world will make it accessible to them.
+
+Many developers unknowingly break keyboard navigation with a single CSS rule: `outline: none`. Hiring reviewers spot this immediately. Demonstrating that you understand focus management, natural tab order, and visible focus indicators separates you from candidates who have only read about accessibility without implementing it.
+
+## What you will produce
+
+A page where every interactive element — links, buttons, form inputs, selects — is reachable by Tab, has a clearly visible focus ring styled with `:focus-visible`, and includes a skip-to-main-content link at the top that becomes visible on focus.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all CSS and JSX changes
+- **Chrome or Edge** — for keyboard testing and DevTools inspection
+- **Your Next.js project** — the global CSS file and whichever page you are auditing
+
+## Concept overview
+
+### Natural tab order
+
+When a user presses Tab, the browser moves focus through interactive elements in the order they appear in the DOM — not necessarily the order they appear visually on screen. This is called the natural tab order. If your visual layout uses CSS to reorder elements (for example with `order` in flexbox or absolute positioning), the keyboard order and visual order can diverge, confusing keyboard users who expect the tab sequence to match what they see.
+
+The rule is simple: keep your DOM order consistent with your visual order. Do not rearrange elements visually in a way that breaks the logical reading sequence.
+
+### Focusable elements
+
+The browser makes the following elements natively focusable without any extra work:
+
+| Element | Default focusable? |
+|---|---|
+| `a` with an `href` attribute | Yes |
+| `button` | Yes |
+| `input` | Yes |
+| `select` | Yes |
+| `textarea` | Yes |
+| `details` | Yes |
+| `div`, `span`, `p` | No (unless tabindex is added) |
+
+If an element needs to receive keyboard focus, use one of the native elements. Only add `tabindex` when a native element is genuinely not available.
+
+### tabindex values
+
+- `tabindex="0"` — adds the element to the natural tab order at its position in the DOM. Use this on custom interactive elements built from non-interactive HTML.
+- `tabindex="-1"` — removes the element from the tab order but allows it to receive focus programmatically via JavaScript (`element.focus()`). Use this for focus management in modals and menus.
+- `tabindex="1"` or any positive integer — forces the element to receive focus before everything with `tabindex="0"`. **Do not use positive tabindex values.** They are unpredictable across large pages and create a maintenance nightmare. No modern accessibility pattern uses them.
+
+### CSS :focus-visible
+
+The `:focus` pseudo-class triggers whenever an element has focus — including when a mouse user clicks a button, which produces a focus ring that many designers consider visually distracting. The `:focus-visible` pseudo-class triggers only when the browser determines that a visible focus indicator is necessary — typically for keyboard navigation and not for mouse clicks.
+
+Use `:focus-visible` to style focus rings. Never use `outline: none` or `outline: 0` without providing an equivalent alternative on `:focus-visible`.
+
+```css
+/* Good — visible ring for keyboard users, no ring on mouse click */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Never do this without a :focus-visible replacement */
+:focus {
+  outline: none;
+}
+```
+
+### Skip navigation links
+
+A skip link is an anchor at the very top of the page that keyboard users can activate to jump past the site navigation directly to the main content. Sighted keyboard users who Tab to the top of a page every time it loads would otherwise have to Tab through every navigation item before reaching the content they care about.
+
+Skip links are typically visually hidden until focused, then appear briefly to show keyboard users where they are.
+
+```html
+<a href="#main-content" class="skip-link">Skip to main content</a>
+...
+<main id="main-content">...</main>
+```
+
+```css
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: white;
+  padding: 8px 16px;
+  z-index: 100;
+  transition: top 0.1s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+```
+
+<Diagram
+  title="Focus Order Map"
+  src="/diagrams/d9-focus-order-modal.svg"
+  caption="Focus moves through the DOM in source order; visible focus indicators show keyboard users their position"
+  alt="Diagram showing focus order through a page and focus trap in a modal dialog"
+/>
+
+<VideoEmbed
+  title="Keyboard Navigation and Focus Management"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=keyboard+navigation+accessibility+focus+management"
+  suggestedTerms="keyboard navigation accessibility focus management tab order focus ring"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Tab through an existing page and document what you find
+
+**What:** Perform a manual keyboard audit by tabbing through the page without using a mouse.
+
+**Where:** Open your Next.js project in the browser. Put your mouse aside.
+
+**How:** Press Tab repeatedly from the top of the page. For each element that receives focus, note: (1) can you see which element is focused? (2) does the focus order match the visual reading order? (3) are there any interactive elements you cannot reach? Write down any issues in a simple list.
+
+**Why:** Before making changes, you need a baseline. Many focus problems — missing focus rings, illogical tab order, keyboard traps — are only discoverable through manual testing. Automated tools catch fewer than 30% of accessibility issues.
+
+**Check:** You have a written list of at least three observations about the current focus behavior of the page.
+
+---
+
+### Step 2 — Check the global CSS for outline: none
+
+**What:** Search your stylesheets for any rule that removes the browser default focus outline.
+
+**Where:** Your global CSS file — typically `app/globals.css` or `styles/globals.css`.
+
+**How:** Open Cursor and use `Ctrl+Shift+F` to search the entire project for `outline: none` and `outline: 0`. Review every match. If any match targets `:focus` without a corresponding `:focus-visible` rule that provides an alternative, mark it.
+
+**Why:** Removing the browser default outline without replacing it is the single most common accessibility bug in production codebases. It is invisible to visual testing but immediately apparent in keyboard testing.
+
+**Check:** Every instance of `outline: none` either targets a context where it is safe (such as a button that already has a custom `:focus-visible` style) or is removed.
+
+---
+
+### Step 3 — Add a global :focus-visible style
+
+**What:** Add a consistent, visible focus ring to all interactive elements across the page.
+
+**Where:** Your global CSS file.
+
+**How:** Add the following rule at the top level of your global stylesheet, adjusting the color to match your design system:
+
+```css
+*:focus-visible {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+```
+
+This applies a visible focus ring to every element on the page when keyboard-navigated. If specific components need custom focus styles, override this rule scoped to that component.
+
+**Why:** A single global rule is the most efficient way to ensure no element is missed. Component-level overrides can supplement but should not replace the global baseline.
+
+**Check:** Tab through the page. Every focusable element — links, buttons, inputs — has a visible colored outline when focused.
+
+---
+
+### Step 4 — Identify and fix tabindex misuse
+
+**What:** Find any positive `tabindex` values or unnecessary `tabindex="0"` on non-interactive elements and correct them.
+
+**Where:** Search your JSX files in Cursor using `Ctrl+Shift+F` for `tabIndex` and `tabindex`.
+
+**How:** For each result:
+- If `tabIndex` is a positive integer, remove it. Fix the DOM order instead.
+- If `tabIndex="0"` is on a `div` or `span` that is acting as a button, replace the entire element with a `button` element.
+- If `tabIndex="-1"` is on an element, verify it is intentional (used for programmatic focus management, not for hiding an element from the tab order).
+
+**Why:** Positive tabindex values create a separate, unpredictable tab sequence that runs before the rest of the page. They are a common workaround for bad DOM order — fix the DOM order instead.
+
+**Check:** No element in your codebase has a `tabIndex` value greater than 0.
+
+---
+
+### Step 5 — Implement the skip-to-main-content link
+
+**What:** Add a visually hidden skip link as the very first element in the page body.
+
+**Where:** Your root layout file — `app/layout.tsx` for App Router projects.
+
+**How:** Add the skip link as the first child of the `body` element, and add the corresponding CSS:
+
+```tsx
+// In app/layout.tsx, inside the body tag, before any other content
+<a href="#main-content" className="skip-link">
+  Skip to main content
+</a>
+```
+
+In your `main` element (or wherever the primary content begins), add `id="main-content"`:
+
+```tsx
+<main id="main-content">
+  {children}
+</main>
+```
+
+Then add the CSS in `globals.css`:
+
+```css
+.skip-link {
+  position: absolute;
+  top: -48px;
+  left: 8px;
+  background: var(--color-primary, #3b82f6);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  z-index: 9999;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 8px;
+}
+```
+
+**Why:** The skip link must be the first focusable element on every page. If a user presses Tab as their first action, the skip link appears and they can jump past the navigation. This is especially important on pages with long navigation menus.
+
+**Check:** Press Tab immediately after loading the page. The skip link becomes visible near the top-left of the viewport. Press Enter and confirm that focus moves to the main content area (the browser URL bar should show `#main-content` in the address).
+
+---
+
+### Step 6 — Test with keyboard only from start to finish
+
+**What:** Do a full keyboard-only navigation pass of the page after your changes.
+
+**Where:** Your browser, with the mouse set aside.
+
+**How:** Start from the address bar (press `F6` to focus it) and Tab through the entire page. Verify: (1) the skip link appears first and works, (2) every interactive element is reachable, (3) every element has a visible focus ring, (4) the tab order matches the visual reading order, (5) you are never trapped.
+
+**Why:** Changes in one area of a stylesheet can unintentionally affect focus styles elsewhere. A final full pass confirms nothing was broken in the process.
+
+**Check:** You can complete a full navigation pass with no invisible focus positions, no elements that cannot be reached, and no keyboard traps.
+
+## If stuck
+
+- **Skip link does not appear on focus:** Check that the `:focus` rule (not `:focus-visible`) is used for the skip link itself, since `:focus-visible` may not fire when the link receives focus programmatically in all browsers.
+- **Focus ring is not visible on some elements:** Some CSS resets (including Tailwind's preflight) remove default outlines. Check for `outline: none` in reset styles and ensure your global `:focus-visible` rule has sufficient specificity.
+- **Tab order is wrong:** Open DevTools, select an element, and look at the DOM order. The visual order and DOM order must match for natural tab order to work. Fix the HTML structure rather than using tabindex.
+- **The skip link moves focus but the page does not scroll:** Ensure the target element (`#main-content`) has either a focusable element inside it or has `tabIndex="-1"` on the `main` element itself, which forces the scroll and focus to work correctly: `<main id="main-content" tabIndex={-1}>`.
+
+## Common mistakes
+
+- Writing `outline: none` in a CSS reset and not replacing it with a `:focus-visible` alternative. This removes all visible focus indicators from every element at once.
+- Using `tabindex="1"` or higher to control focus order instead of fixing the DOM structure. This creates a two-tier tab sequence that is unpredictable.
+- Placing the skip link after the navigation instead of before it. The skip link must be the first focusable element in the DOM.
+- Forgetting the `id` on the target element the skip link points to. Without a matching `id`, the skip link navigates nowhere.
+- Styling `:focus` instead of `:focus-visible`. Using `:focus` alone causes the focus ring to appear on mouse clicks, which many designers find jarring and request be removed — leading to the outline being stripped entirely.
+- Testing only with a mouse and relying on automated tools. Lighthouse and axe-core catch structural issues but cannot test the actual keyboard experience.
+
+<KeyTerms terms={[
+  "Tab order: The sequence in which interactive elements receive keyboard focus when the user presses the Tab key, following DOM source order by default.",
+  "Focus indicator: A visible visual signal — typically an outline or ring — that shows which element currently has keyboard focus.",
+  ":focus-visible: A CSS pseudo-class that applies styles only when the browser determines a visible focus indicator is needed, typically for keyboard navigation but not mouse clicks.",
+  "tabindex: An HTML attribute that controls whether an element participates in keyboard focus. A value of 0 adds an element to the tab order; -1 removes it from the tab order but allows programmatic focus.",
+  "Skip navigation link: An anchor element at the top of a page that keyboard users can activate to jump past repeated navigation directly to the main content.",
+  "Keyboard trap: A situation where keyboard focus enters a region of the page and cannot leave using Tab or Shift+Tab alone, stranding keyboard users.",
+  "Natural tab order: The default sequence of keyboard focus that follows the order of elements in the HTML source, without any tabindex manipulation.",
+  "Focus management: The practice of programmatically moving keyboard focus to the correct element in response to UI events such as opening a modal or completing a form step.",
+  "WCAG 2.1 Level A: The minimum accessibility conformance level defined by the Web Content Accessibility Guidelines, required by most accessibility laws.",
+  "Outline offset: A CSS property that adds space between an element and its focus outline, improving visibility especially on elements with rounded corners or colored backgrounds."
+]} />
+
+<QuickSummary points={[
+  "Tab order follows DOM source order — if visual layout and DOM order diverge, keyboard navigation becomes confusing.",
+  "Native interactive elements (links with href, buttons, inputs, selects) are focusable by default. Non-interactive elements like div and span are not.",
+  "Never use outline: none without providing a visible replacement on :focus-visible.",
+  "Use :focus-visible instead of :focus so focus rings appear for keyboard users but not on mouse clicks.",
+  "Positive tabindex values (1 and above) create an unpredictable tab sequence. Fix DOM order instead.",
+  "A skip-to-main-content link must be the first focusable element and should become visible when it receives focus.",
+  "Manual keyboard testing catches issues that automated tools cannot — press Tab through every page you ship."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Audit a form page in your project by tabbing through it using only the keyboard. Document every issue you find, then fix them all. Specifically: ensure every interactive element has a visible `:focus-visible` ring, the tab order matches the visual reading order, and the page has a working skip link.
+
+**Definition of done:**
+
+- Every interactive element (links, buttons, inputs, selects) has a clearly visible focus ring when navigated to with Tab.
+- No element has a positive `tabindex` value.
+- A skip-to-main-content link is the first focusable element and becomes visible on focus.
+- Tabbing through the entire page never results in a keyboard trap or an invisible focus position.
+- The tab order matches the visual reading order of the page from top to bottom.

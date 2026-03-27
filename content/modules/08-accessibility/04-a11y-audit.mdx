@@ -1,0 +1,260 @@
+---
+title: "Accessibility Audit: Lighthouse + Manual Checks"
+slug: "04-a11y-audit"
+moduleSlug: "08-accessibility"
+order: 4
+hiringSignal: true
+hiringSignalCategory: "Accessibility"
+estimatedHours: 1.5
+tasks:
+  - "Run a Lighthouse accessibility audit on a local page"
+  - "Fix the top 3 issues Lighthouse reports"
+  - "Do a manual keyboard-only audit and document any focus issues"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=lighthouse+accessibility+audit+chrome+devtools"
+      label: "Lighthouse Accessibility Audit Tutorial"
+  docs:
+    - url: "https://web.dev/learn/accessibility"
+      label: "web.dev Learn Accessibility"
+---
+
+## Goal
+
+Run a full accessibility audit on a web page using both Lighthouse automated scanning and a manual keyboard-only review, then document and fix the most important issues found.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Accessibility auditing is a core UX Engineer skill. You will be asked to assess pages for a11y issues, write up findings for engineering teams, and verify that fixes actually resolve the problems. Being able to distinguish between what automated tools catch and what only manual testing reveals is the mark of an experienced practitioner.
+
+Lighthouse audits are not a pass/fail certificate. A Lighthouse score of 100 does not mean a page is fully accessible — it means the automated tool found no violations. Understanding what falls in the 70% of issues that cannot be detected automatically is what separates superficial from deep accessibility knowledge.
+
+## What you will produce
+
+A written accessibility audit report documenting: the Lighthouse score before and after, the top issues found, which were found by the tool vs manually, and the fixes applied. This report is a portfolio artifact — it demonstrates both the technical and communication sides of the UX Engineer role.
+
+## Tools + Where you will work
+
+- **Chrome or Edge DevTools** — Lighthouse panel for automated audit
+- **Cursor** — for applying code fixes
+- **Keyboard only** — for manual testing
+- **NVDA or VoiceOver** — optional but recommended for screen reader testing
+- **Your Next.js project or the training app** — the page being audited
+
+## Concept overview
+
+### What Lighthouse catches vs what it misses
+
+Lighthouse (and similar tools like axe-core and WAVE) uses automated rules that can check for structural and attribute-based issues. These tools are valuable and catch real bugs quickly, but they are limited to what can be verified programmatically.
+
+**Lighthouse catches (automated):**
+- Missing alt text on images
+- Form inputs without associated labels
+- Insufficient color contrast ratios
+- Missing document language (`lang` attribute on `html`)
+- Missing page title
+- Links and buttons with no accessible name
+- Missing `aria-required` on required fields
+- Duplicate IDs referenced by ARIA attributes
+
+**Lighthouse misses (requires manual testing):**
+- Keyboard focus order that is confusing but technically correct
+- Focus traps that are not in a modal context
+- Missing skip navigation links
+- Logical reading order that differs from visual order
+- Screen reader announcements that are present but misleading
+- Custom interactive components that lack keyboard support
+- Touch target sizes that are too small for motor-impaired users
+- Timeout behavior that does not allow extension
+
+This is why the rule of thumb is that automated tools catch approximately 30% of real-world accessibility issues. Manual testing is not optional.
+
+### How to read the Lighthouse report
+
+The Lighthouse accessibility score is a weighted average of individual rule checks. Each rule either passes or fails. The score is not a coverage metric — a perfect score means the checked rules all passed, not that the page has no accessibility issues.
+
+When reviewing the report:
+1. Look at the "Failing" section first — these are confirmed violations.
+2. Read the "Additional items to manually check" section — these are issues Lighthouse flags for human review.
+3. Note the "Passed audits" section — useful to confirm certain things are correctly implemented.
+
+Each failing item includes: a description of the rule, a reference to the WCAG success criterion it relates to, and a list of DOM elements that triggered the violation.
+
+### WCAG 2.1 AA as the baseline
+
+WCAG 2.1 Level AA is the standard referenced by most accessibility laws globally, including the ADA (US), EAA (EU), and AODA (Canada). When auditing, always target AA conformance as the minimum. Lighthouse maps most of its checks to WCAG criteria.
+
+The four principles of WCAG (POUR):
+- **Perceivable** — content can be perceived through at least one sense
+- **Operable** — all functionality is accessible by keyboard and assistive technology
+- **Understandable** — content and UI behavior is predictable and clear
+- **Robust** — content can be interpreted by a wide range of assistive technologies
+
+### Writing audit findings
+
+A useful audit report includes the following for each issue found:
+
+| Column | Content |
+|---|---|
+| ID | A1, A2, A3... |
+| Issue | Plain-language description |
+| WCAG criterion | e.g., 1.4.3 Contrast Minimum (AA) |
+| Found by | Lighthouse / Manual / Screen reader |
+| Severity | Critical / Serious / Moderate / Minor |
+| Element | CSS selector or description |
+| Recommendation | Specific fix, not generic advice |
+
+<VideoEmbed
+  title="Lighthouse Accessibility Audit Tutorial"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=lighthouse+accessibility+audit+chrome+devtools"
+  suggestedTerms="lighthouse accessibility audit chrome devtools WCAG 2.1 manual testing"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Open Chrome DevTools and navigate to Lighthouse
+
+**What:** Launch the Lighthouse panel in DevTools on the page you want to audit.
+
+**Where:** Chrome or Edge browser with your Next.js dev server running.
+
+**How:** Open the page in Chrome. Press `F12` to open DevTools. Click the `>>` (more tabs) button at the top of the DevTools panel if you do not see Lighthouse listed, then select it. Alternatively, right-click on the page, choose Inspect, and look for the Lighthouse tab.
+
+**Why:** Lighthouse must run against a live served page, not a static file. Your Next.js dev server at `localhost:3000` works correctly. File-based URLs do not.
+
+**Check:** You can see the Lighthouse panel with a "Generate report" button and checkboxes for categories including "Accessibility".
+
+---
+
+### Step 2 — Run the accessibility audit and capture the results
+
+**What:** Generate a Lighthouse accessibility report and screenshot the results.
+
+**Where:** The Lighthouse panel in DevTools.
+
+**How:** Check only the "Accessibility" category (uncheck Performance, Best Practices, SEO, and PWA to reduce noise). Select "Desktop" or "Mobile" device emulation — run both if time allows. Click "Generate report". Wait for the scan to complete (10–30 seconds).
+
+When the report appears: screenshot the score at the top. Expand each failing item and read the description. Note which DOM elements are flagged.
+
+**Why:** You need a baseline score to measure improvement. Screenshotting before any changes creates a before/after comparison that belongs in your audit report.
+
+**Check:** The report is complete and you have noted the score and at least three failing items (or all of them if fewer than three are found).
+
+---
+
+### Step 3 — Document the top three issues in a table
+
+**What:** Write up the three most serious Lighthouse findings using the audit report format.
+
+**Where:** Create a Markdown file at `docs/accessibility-audit.md` in your project, or write it in a Notion doc or similar tool.
+
+**How:** For each issue, write the ID, plain-language description, WCAG criterion, found-by method (Lighthouse), severity, the specific DOM element described in the report, and your recommended fix. Severity mapping: Critical for WCAG Level A violations (cannot use at all), Serious for Level AA, Moderate for issues that impede use, Minor for low-impact issues.
+
+**Why:** The ability to write clear, actionable findings is as important as the technical ability to fix them. Product managers, designers, and engineering leads need plain-language descriptions — not WCAG criterion numbers alone.
+
+**Check:** Your document has three rows in the findings table, each with a specific recommended fix that is actionable by another developer.
+
+---
+
+### Step 4 — Fix the top three issues
+
+**What:** Apply the recommended fixes to the codebase.
+
+**Where:** Cursor, editing the relevant component or page files.
+
+**How:** Address each issue in turn:
+- **Missing alt text:** Add descriptive `alt` text to the image element, or `alt=""` for decorative images.
+- **Missing form label:** Add a `label` element with a `htmlFor` attribute matching the input's `id`, or add `aria-label` directly to the input.
+- **Color contrast failure:** Open the failing element in DevTools, use the contrast ratio inspector in the color picker to find a passing alternative, update the CSS token.
+- **Missing document language:** Add `lang="en"` (or the appropriate language code) to the `html` element in your root layout.
+- **Missing accessible name on a button:** Add visible text content, or add `aria-label` to the button if it is an icon-only button.
+
+**Why:** Fixing automated issues is the fastest way to raise your score and demonstrates that you can act on audit findings, not just report them.
+
+**Check:** Each of the three issues has a code change committed (or at minimum applied) in the project.
+
+---
+
+### Step 5 — Re-run Lighthouse and compare scores
+
+**What:** Run the Lighthouse audit again to measure improvement.
+
+**Where:** Same Lighthouse panel, same page.
+
+**How:** Reload the page after your code changes are applied (the dev server hot-reloads, but a manual reload ensures the latest build is running). Run the accessibility-only scan again. Screenshot the new score.
+
+**Why:** The before/after comparison is the evidence that your fixes worked. It also reveals whether any fixes introduced new issues — which Lighthouse will catch immediately.
+
+**Check:** The accessibility score has increased. No new violations have appeared.
+
+---
+
+### Step 6 — Perform the manual keyboard-only audit
+
+**What:** Tab through the entire page using only the keyboard and document any issues that Lighthouse did not catch.
+
+**Where:** Your browser, mouse set aside.
+
+**How:** Using the keyboard-only audit skills from lesson 01, tab through the entire audited page. Look specifically for: (1) missing or invisible focus indicators, (2) focus order that does not match visual order, (3) interactive elements that cannot be reached by Tab, (4) any keyboard trap (focus enters a region and cannot leave). Add each finding to your audit document with "Manual" in the "Found by" column.
+
+**Why:** This step catches the 70% of issues automated tools miss. The combination of automated and manual testing is what a thorough audit looks like.
+
+**Check:** You have added at least two manual-only findings to your audit document (or have explicitly documented that none were found, with a note about what you checked).
+
+## If stuck
+
+- **"Lighthouse can only audit pages served over HTTP":** Make sure your dev server is running (`npm run dev` in the project directory) and you are visiting `localhost:3000`, not opening an HTML file directly.
+- **Lighthouse score is already 100 but you know there are issues:** This is expected. Re-read the "Additional items to manually check" section of the report and proceed to the manual audit steps. A 100 score means only that automated checks passed.
+- **Color contrast checker gives an incorrect result for gradient backgrounds:** Lighthouse and DevTools measure contrast against a single background color. For gradients, check the darkest and lightest portions of the gradient against the text color manually.
+- **You cannot find the Lighthouse tab:** In Chrome, it may be under the `>>` overflow menu. In Edge, it should be a top-level tab. Try reopening DevTools with `Ctrl+Shift+I`.
+- **The audit runs but shows 0 issues even though the page has problems:** Confirm you are auditing the correct page and that the JavaScript has fully loaded. Lighthouse audits the rendered page, so if your content is loaded asynchronously, wait for it to appear before generating the report.
+
+## Common mistakes
+
+- Treating a Lighthouse score of 100 as a pass/fail for accessibility. It means automated checks passed — manual testing is still required.
+- Running Lighthouse on the wrong URL (a production page instead of your local changes, or a cached version).
+- Fixing the DOM element Lighthouse highlighted without understanding the root cause. For example, adding `alt=""` to every flagged image without considering whether some need descriptive text.
+- Not documenting findings before fixing them. You lose the before-state needed for a meaningful report.
+- Auditing only one page. Accessibility issues often appear on specific pages with forms, modals, or dynamic content — audit the pages that have the most complex interactions.
+- Writing recommendations that are too vague ("improve accessibility") rather than specific ("add a visible :focus-visible style to the primary navigation links").
+
+<KeyTerms terms={[
+  "Lighthouse: An open-source automated auditing tool built into Chrome DevTools that evaluates pages for performance, accessibility, SEO, and best practices.",
+  "WCAG 2.1 AA: Web Content Accessibility Guidelines version 2.1 at Level AA conformance, the standard referenced by most accessibility laws globally.",
+  "Accessibility audit: A systematic evaluation of a web page or application for accessibility barriers, combining automated scanning and manual testing.",
+  "axe-core: An open-source accessibility testing engine used by Lighthouse, Storybook, and many other tools to detect common WCAG violations automatically.",
+  "Color contrast ratio: The mathematical ratio between a text color and its background color; WCAG AA requires 4.5:1 for normal text and 3:1 for large text.",
+  "POUR: The four WCAG accessibility principles — Perceivable, Operable, Understandable, and Robust — that frame all accessibility success criteria.",
+  "Severity: A classification of accessibility issues by impact — Critical blocks all use, Serious significantly impedes use, Moderate partially impedes use, Minor is a minor inconvenience.",
+  "Manual audit: A human-performed review of a page for accessibility issues that automated tools cannot detect, including keyboard navigation testing and logical reading order.",
+  "alt text: A text alternative for an image, provided in the alt attribute, that is read by screen readers and displayed when the image cannot load.",
+  "ARIA label: An accessible name provided to an element via the aria-label attribute, used when visible text is absent or insufficient as a label."
+]} />
+
+<QuickSummary points={[
+  "Automated tools like Lighthouse catch approximately 30% of real-world accessibility issues — manual testing is not optional.",
+  "A Lighthouse accessibility score of 100 means automated checks passed, not that the page is fully accessible.",
+  "Lighthouse catches missing alt text, missing form labels, color contrast failures, and missing ARIA attributes; it cannot catch focus order problems, misleading labels, or custom component keyboard behavior.",
+  "WCAG 2.1 Level AA is the baseline standard referenced by most accessibility laws — audit to that level at minimum.",
+  "Document findings before fixing them so you have a before/after comparison and a written record of what was changed and why.",
+  "Run both automated and manual keyboard-only audits on the same page — the combination gives you the most complete picture."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Audit the training app itself (or another page in your project) for accessibility issues. Run Lighthouse, document all failing items, perform a manual keyboard-only audit and add those findings, then fix the issues and re-run Lighthouse.
+
+**Definition of done:**
+
+- Lighthouse accessibility score increases after applying your fixes.
+- Your audit document contains at least 5 issues with ID, description, WCAG criterion, found-by method, severity, element description, and recommendation.
+- At least 2 issues were found through manual keyboard testing rather than Lighthouse.
+- All Critical and Serious issues have been fixed or have a documented reason they cannot be fixed immediately.
+- The before and after Lighthouse scores are both documented.

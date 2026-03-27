@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="400" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="400" y="34" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1e293b" text-anchor="middle">Token Pipeline</text>
+
+  <!-- ===== Tier 1: Primitive Tokens ===== -->
+  <rect x="20" y="56" width="220" height="300" rx="12" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="130" y="82" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#1e293b" text-anchor="middle">Tier 1</text>
+  <text x="130" y="100" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#3b82f6" text-anchor="middle">Primitive Tokens</text>
+
+  <!-- Token boxes -->
+  <rect x="40" y="114" width="180" height="36" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="130" y="136" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-family="monospace">--blue-500: #3b82f6</text>
+
+  <rect x="40" y="160" width="180" height="36" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="130" y="182" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle">--space-4: 1rem</text>
+
+  <rect x="40" y="206" width="180" height="36" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="130" y="228" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle">--radius-md: 6px</text>
+
+  <rect x="40" y="252" width="180" height="36" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="130" y="274" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle">--gray-900: #111827</text>
+
+  <rect x="40" y="298" width="180" height="36" rx="6" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="130" y="320" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle">--font-size-base: 16px</text>
+
+  <!-- Arrow 1 → 2 -->
+  <line x1="242" y1="206" x2="278" y2="206" stroke="#6b7280" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- ===== Tier 2: Semantic Tokens ===== -->
+  <rect x="280" y="56" width="220" height="300" rx="12" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="390" y="82" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#1e293b" text-anchor="middle">Tier 2</text>
+  <text x="390" y="100" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#22c55e" text-anchor="middle">Semantic Tokens</text>
+
+  <rect x="300" y="114" width="180" height="36" rx="6" fill="#ffffff" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="390" y="136" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle">--color-primary</text>
+
+  <rect x="300" y="160" width="180" height="36" rx="6" fill="#ffffff" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="390" y="182" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle">--space-component</text>
+
+  <rect x="300" y="206" width="180" height="36" rx="6" fill="#ffffff" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="390" y="228" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle">--radius-card</text>
+
+  <rect x="300" y="252" width="180" height="36" rx="6" fill="#ffffff" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="390" y="274" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle">--color-text-default</text>
+
+  <rect x="300" y="298" width="180" height="36" rx="6" fill="#ffffff" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="390" y="320" font-family="system-ui, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle">--font-size-body</text>
+
+  <!-- Arrow 2 → 3 -->
+  <line x1="502" y1="206" x2="538" y2="206" stroke="#6b7280" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- ===== Tier 3: Components ===== -->
+  <rect x="540" y="56" width="240" height="300" rx="12" fill="#fef9c3" stroke="#eab308" stroke-width="2"/>
+  <text x="660" y="82" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#1e293b" text-anchor="middle">Tier 3</text>
+  <text x="660" y="100" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#ca8a04" text-anchor="middle">Components</text>
+
+  <!-- Button component -->
+  <rect x="560" y="114" width="200" height="60" rx="8" fill="#ffffff" stroke="#eab308" stroke-width="1.5"/>
+  <text x="660" y="136" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#1e293b" text-anchor="middle">Button</text>
+  <text x="660" y="153" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">bg: var(--color-primary)</text>
+  <text x="660" y="167" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">p: var(--space-component)</text>
+
+  <!-- Card component -->
+  <rect x="560" y="186" width="200" height="60" rx="8" fill="#ffffff" stroke="#eab308" stroke-width="1.5"/>
+  <text x="660" y="208" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#1e293b" text-anchor="middle">Card</text>
+  <text x="660" y="225" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">border-radius: var(--radius-card)</text>
+  <text x="660" y="239" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">color: var(--color-text-default)</text>
+
+  <!-- Input component -->
+  <rect x="560" y="258" width="200" height="60" rx="8" fill="#ffffff" stroke="#eab308" stroke-width="1.5"/>
+  <text x="660" y="280" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#1e293b" text-anchor="middle">Input</text>
+  <text x="660" y="297" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">font-size: var(--font-size-body)</text>
+  <text x="660" y="311" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">radius: var(--radius-card)</text>
+
+  <!-- Footer label -->
+  <text x="400" y="378" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">Raw values → Meaningful names → UI components — change one primitive, update everything</text>
+</svg>

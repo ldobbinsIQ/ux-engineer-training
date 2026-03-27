@@ -1,0 +1,394 @@
+---
+title: "Motion and prefers-reduced-motion"
+slug: "04-motion-and-reduced-motion"
+moduleSlug: "03-css-responsive-tokens"
+order: 4
+hiringSignal: false
+estimatedHours: 1
+tasks:
+  - "Add a CSS transition to a button hover state"
+  - "Wrap the transition in a prefers-reduced-motion media query"
+  - "Test with DevTools Rendering panel: Emulate CSS media feature prefers-reduced-motion"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=css+prefers+reduced+motion+accessibility"
+      label: "CSS prefers-reduced-motion Explained"
+  docs:
+    - url: "https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion"
+      label: "MDN prefers-reduced-motion"
+---
+
+## Goal
+
+Add purposeful CSS transitions and animations to UI elements, wrap them in the correct `prefers-reduced-motion` media query pattern, and verify that motion is completely absent when reduced motion is active in DevTools.
+
+## Time + Difficulty
+
+**Estimated time:** 1 hour
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Motion is a design tool — it confirms actions, guides attention, and makes interfaces feel responsive. But for users with vestibular disorders (affecting balance and spatial orientation), unexpected motion can cause nausea, dizziness, and disorientation. The `prefers-reduced-motion` media query lets the operating system pass this preference to your CSS.
+
+Respecting this preference is a WCAG 2.1 requirement (Success Criterion 2.3.3, AAA) and a practical accessibility baseline. It is also one of the fastest accessibility wins you can implement — typically a few lines of CSS.
+
+## What you will produce
+
+- A button with a smooth background-color and transform transition on hover
+- An entrance animation for a list of items (staggered fade-in)
+- Both wrapped in a `prefers-reduced-motion` pattern that disables motion when the user's OS has reduced motion enabled
+- Verified in DevTools Rendering panel at both reduced and full motion states
+
+## Tools + Where you will work
+
+- **Cursor** — editing CSS files
+- **Browser DevTools** — Rendering panel for emulating reduced motion
+- **Your Next.js project** — any component with a button or list
+
+## Concept overview
+
+### CSS transitions vs animations
+
+**Transitions** happen between two states triggered by a user action (hover, focus, active). They are declared on the element and activate automatically when the specified property changes:
+
+```css
+.button {
+  background-color: blue;
+  transition: background-color 200ms ease;
+}
+
+.button:hover {
+  background-color: darkblue;
+}
+```
+
+**Animations** run independently of user state and are defined with `@keyframes`. They can loop, delay, and run on page load:
+
+```css
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.item {
+  animation: fadeIn 300ms ease forwards;
+}
+```
+
+Use transitions for state changes (hover, focus, toggle). Use animations for entrance effects, loading indicators, and decorative motion.
+
+### When motion adds value vs when it causes harm
+
+**Adds value:**
+- A button that scales slightly on click confirms the press was registered
+- A dropdown that slides open tracks spatial relationships
+- A list that fades in draws attention to new content
+
+**Causes harm:**
+- Parallax scrolling effects that move layers at different speeds
+- Large-scale transform animations (spinning, bouncing, sliding from off-screen)
+- Looping animations that persist while the user is trying to read
+
+The rule of thumb: functional motion (communicating a state change) is usually safe. Decorative motion (adding visual interest with no informational value) should always be behind `prefers-reduced-motion`.
+
+### The correct prefers-reduced-motion pattern
+
+There are two approaches, and one is significantly better than the other.
+
+**Wrong approach — reduced motion in the override:**
+
+```css
+/* Base styles have motion */
+.button {
+  transition: background-color 200ms ease;
+}
+
+/* Override to remove motion — easy to forget */
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}
+```
+
+**Correct approach — motion in the non-reduced branch:**
+
+```css
+/* Base styles have NO motion */
+.button {
+  /* no transition here */
+}
+
+/* Motion is opt-in, only added when reduced motion is not requested */
+@media (prefers-reduced-motion: no-preference) {
+  .button {
+    transition: background-color 200ms ease;
+  }
+}
+```
+
+The second approach is safer because it means anyone whose browser or OS does not support the query gets no motion by default. Motion is an enhancement, not a baseline.
+
+### Tailwind motion utilities
+
+Tailwind includes `motion-safe:` and `motion-reduce:` variant prefixes that map to the two states of the media query:
+
+```tsx
+// Tailwind motion-safe variant — applies only when reduced motion is NOT preferred
+<button className="motion-safe:transition motion-safe:hover:scale-105">
+  Click me
+</button>
+```
+
+This is equivalent to wrapping the transition in `@media (prefers-reduced-motion: no-preference)`.
+
+### Testing in DevTools Rendering panel
+
+The Rendering panel in DevTools lets you emulate the `prefers-reduced-motion` media query without changing your OS settings.
+
+**How to open it:**
+1. Open DevTools (`F12`)
+2. Click the three-dot menu (More tools)
+3. Select "Rendering"
+4. Scroll to "Emulate CSS media feature prefers-reduced-motion"
+5. Select "reduce" from the dropdown
+
+This is the definitive way to test your motion implementation during development.
+
+<Callout variant="what">Test both states in DevTools. Selecting "reduce" should completely remove all transitions and animations, not just slow them down. Selecting "no-preference" should restore them fully.</Callout>
+
+<VideoEmbed
+  title="CSS prefers-reduced-motion Explained"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=css+prefers+reduced+motion+accessibility"
+  suggestedTerms="css prefers-reduced-motion accessibility vestibular animation transition"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Add base button styles with NO transition
+
+**What:** Create button styles without any transition as the safe baseline.
+
+**Where:** In your CSS file, or on a button component.
+
+**How:**
+
+```css
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.25rem;
+  background-color: var(--color-primary, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md, 0.5rem);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover, #1d4ed8);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+}
+```
+
+**Why:** Starting without a transition means the base state is motion-free. You will add the transition only inside the non-reduced-motion media query in the next step.
+
+**Check:** The button renders correctly and the background color changes on hover — just instantly, with no animation.
+
+---
+
+### Step 2 — Add transitions inside the no-preference media query
+
+**What:** Wrap the transition declarations in `@media (prefers-reduced-motion: no-preference)`.
+
+**Where:** In your CSS file, below the base `.btn-primary` styles.
+
+**How:**
+
+```css
+@media (prefers-reduced-motion: no-preference) {
+  .btn-primary {
+    transition:
+      background-color 200ms ease,
+      transform 150ms ease;
+  }
+}
+```
+
+**Why:** Users who have not expressed a preference (the majority) get smooth transitions. Users who have enabled reduced motion in their OS get the instant state changes from Step 1. Motion is an enhancement, not a baseline.
+
+**Check:** Hover the button. The background color transitions smoothly. (You will verify the reduced-motion state in Step 5.)
+
+---
+
+### Step 3 — Add an entrance animation with @keyframes
+
+**What:** Create a fade-in entrance animation for a list of items.
+
+**Where:** In your CSS file.
+
+**How:**
+
+```css
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+```
+
+Apply it to list items, using `animation-delay` for a stagger effect:
+
+```css
+@media (prefers-reduced-motion: no-preference) {
+  .feature-list li {
+    animation: fadeSlideIn 400ms ease forwards;
+    opacity: 0; /* start hidden so the animation plays from 0 */
+  }
+
+  .feature-list li:nth-child(1) { animation-delay: 0ms; }
+  .feature-list li:nth-child(2) { animation-delay: 100ms; }
+  .feature-list li:nth-child(3) { animation-delay: 200ms; }
+  .feature-list li:nth-child(4) { animation-delay: 300ms; }
+}
+```
+
+**Why:** The entire animation block is inside the `no-preference` query. Users with reduced motion see the list immediately at full opacity, with no animation — because without the media query block, there is no `opacity: 0` or `animation` property on the items.
+
+**Check:** Reload the page. The list items fade and slide in sequentially. Users with reduced motion would see them appear instantly.
+
+---
+
+### Step 4 — Use Tailwind motion-safe for inline utility classes
+
+**What:** Apply motion-safe Tailwind variants to a button element.
+
+**Where:** A button component's JSX.
+
+**How:**
+
+```tsx
+<button
+  type="button"
+  className="
+    bg-blue-500 text-white px-5 py-2.5 rounded-lg font-medium
+    hover:bg-blue-700
+    motion-safe:transition-colors
+    motion-safe:duration-200
+    motion-safe:active:scale-95
+    motion-safe:active:transition-transform
+  "
+>
+  Get started
+</button>
+```
+
+**Why:** `motion-safe:` is Tailwind's shorthand for `@media (prefers-reduced-motion: no-preference)`. This approach works well for one-off components where you prefer not to add a CSS class.
+
+**Check:** Hover and click the button. Transitions are visible. (Verify reduced-motion in Step 5.)
+
+---
+
+### Step 5 — Test with DevTools Rendering panel
+
+**What:** Emulate `prefers-reduced-motion: reduce` and confirm motion is absent.
+
+**Where:** Browser DevTools.
+
+**How:**
+1. Open DevTools (`F12`)
+2. Click the three-dot More tools menu
+3. Select "Rendering"
+4. Find "Emulate CSS media feature prefers-reduced-motion"
+5. Change the dropdown from "No override" to "reduce"
+
+Now test every animated element:
+- Hover the CSS button — background color should change instantly, no transition
+- Reload the page — list items should appear immediately at full opacity
+- Hover the Tailwind button — no scale transform, instant color change
+
+**Why:** This is the only reliable way to test reduced-motion behavior without changing your OS accessibility settings.
+
+**Check:** With "reduce" selected, all transitions and animations are completely absent. With "No override" selected, they return normally.
+
+---
+
+### Step 6 — Test the no-preference state and clean up
+
+**What:** Reset the DevTools emulation and confirm animations play normally.
+
+**Where:** DevTools Rendering panel.
+
+**How:** Change "Emulate CSS media feature prefers-reduced-motion" back to "No override". Reload the page and hover/click the buttons again.
+
+**Why:** You need to confirm the default experience is correct, not just that reduced-motion works. Both branches of the media query must be verified.
+
+**Check:** All transitions and animations work as designed. The emulation setting is back to "No override" so it does not affect subsequent testing.
+
+## If stuck
+
+- **Reduced motion emulation does not seem to work:** Make sure you are in the Rendering panel (not the Console or Network). The dropdown must show "reduce" — "No override" means no emulation is active.
+- **Animation still plays in reduced-motion mode:** The animation `@keyframes` block and the `animation` property must both be inside the `@media (prefers-reduced-motion: no-preference)` block. If `opacity: 0` is on the element outside the query, items will be hidden but not animated.
+- **Tailwind motion-safe class not generating:** Confirm your Tailwind `content` config includes the file. Run `npm run build` to see if Tailwind generates the class; if it does not appear, the file path pattern is missing.
+- **Button transform looks choppy on active:** The `transform` transition needs its own declaration. If only `background-color` is listed in `transition`, the transform will be instant.
+
+## Common mistakes
+
+- Putting transitions in the base styles and removing them in `prefers-reduced-motion: reduce`. This approach means users with unsupported browsers get motion. Use `no-preference` to add motion instead.
+- Using `transition: all` instead of listing specific properties. `transition: all` creates unexpected transitions on every property change, including layout properties that cause jank.
+- Forgetting `opacity: 0` on the element before the entrance animation. Without it, the element is visible while the keyframe starts from opacity 0 — causing a flash of content before the animation plays.
+- Only testing the "reduce" state and not the "no-preference" state. Both branches must work correctly.
+- Using JavaScript-based animations (via style properties) without checking `window.matchMedia("(prefers-reduced-motion: reduce)").matches` before running them.
+
+<KeyTerms terms={[
+  "CSS transition: A CSS feature that smoothly animates a property change between two states, triggered by a state change like hover or focus.",
+  "CSS animation: A CSS feature that runs a keyframe-based animation independently of user state, defined with @keyframes and applied with the animation property.",
+  "prefers-reduced-motion: A CSS media feature that detects whether the user has requested reduced motion in their operating system accessibility settings.",
+  "@keyframes: A CSS rule that defines the start and end states (and optional intermediate steps) of a CSS animation.",
+  "motion-safe: A Tailwind variant prefix that applies styles only when prefers-reduced-motion is set to no-preference, equivalent to adding motion inside the non-reduced-motion media query.",
+  "motion-reduce: A Tailwind variant prefix that applies styles only when prefers-reduced-motion is set to reduce.",
+  "Vestibular disorder: A condition affecting the inner ear and brain that controls balance and eye movement, which can be aggravated by screen motion like parallax, spinning, or large-scale transforms.",
+  "DevTools Rendering panel: A browser developer tools panel that provides options for emulating CSS media features, including prefers-reduced-motion, without changing OS settings.",
+  "animation-delay: A CSS property that specifies how long to wait before starting an animation, used to create staggered entrance effects for multiple elements.",
+  "no-preference: The prefers-reduced-motion media feature value indicating the user has not requested reduced motion, used as the condition under which motion should be added."
+]} />
+
+<QuickSummary points={[
+  "CSS transitions animate between two user-triggered states (hover, focus); CSS animations run independently via @keyframes and can play on page load.",
+  "The correct pattern is to add motion inside @media (prefers-reduced-motion: no-preference) so the base state is always motion-free and motion is an enhancement.",
+  "Never put transitions in base styles and remove them in the reduce branch — this fails for browsers that do not support the media query.",
+  "Tailwind's motion-safe: and motion-reduce: variants map directly to the two states of the prefers-reduced-motion media query.",
+  "Test both states in DevTools Rendering panel: with reduce active, all transitions and animations must be completely absent, not just slower.",
+  "Functional motion (confirming a state change) is generally safe; large-scale decorative motion should always be behind the no-preference query."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Add motion to a list of feature items and a primary button, respecting reduced motion:
+
+1. Create a button with a smooth background-color transition (200ms) and a slight scale-down on active (scale 0.97, 150ms). Both must be inside `@media (prefers-reduced-motion: no-preference)`.
+2. Create a list of at least four items with a staggered `fadeSlideIn` animation (fade from opacity 0 and translateY 12px to full opacity at translateY 0). Each item should have a 100ms stagger delay. The entire animation block must be inside the no-preference media query.
+3. Test both elements in DevTools Rendering panel with "reduce" selected — confirm zero motion.
+4. Test with "No override" — confirm transitions and animations play correctly.
+
+**Definition of done:**
+
+- Hovering the button shows a smooth color transition with "No override" in DevTools.
+- Hovering the button shows an instant color change with "reduce" selected in DevTools.
+- Reloading the page shows the list items fading and sliding in sequentially with "No override".
+- Reloading the page shows all list items at full opacity immediately with "reduce" selected.
+- No transition or animation property appears outside a `@media (prefers-reduced-motion: no-preference)` block (or Tailwind `motion-safe:` variant).
+- No element is left at `opacity: 0` in reduced-motion mode (items must be fully visible).

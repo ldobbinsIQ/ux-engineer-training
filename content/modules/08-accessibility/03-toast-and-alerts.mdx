@@ -1,0 +1,327 @@
+---
+title: "Accessible Toast Notifications and Alerts"
+slug: "03-toast-and-alerts"
+moduleSlug: "08-accessibility"
+order: 3
+hiringSignal: true
+hiringSignalCategory: "Accessibility"
+estimatedHours: 1.5
+tasks:
+  - "Add role='alert' to an error message that needs immediate announcement"
+  - "Add role='status' to a success message that does not interrupt"
+  - "Build a toast notification that announces to screen readers without stealing focus"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=accessible+toast+notifications+aria+live"
+      label: "Accessible Toast Notifications with ARIA Live"
+  docs:
+    - url: "https://www.w3.org/WAI/ARIA/apg/patterns/alert/"
+      label: "WAI-ARIA APG: Alert Pattern"
+---
+
+## Goal
+
+Build toast notifications and alert messages that are announced to screen reader users at the correct priority level — errors interrupt immediately, success messages announce politely — without moving keyboard focus away from where the user is working.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner–Intermediate
+
+## Why this matters for UX Engineers
+
+Toasts are one of the most common UI patterns in product applications, and almost every implementation is inaccessible by default. A sighted user sees the toast appear; a screen reader user may hear nothing at all if the live region is not set up correctly. Alternatively, an incorrectly implemented toast can interrupt the user mid-sentence or steal focus away from a form they were filling in.
+
+The distinction between `role="alert"` (assertive, interrupts immediately) and `role="status"` (polite, waits for a pause) is a knowledge signal that comes up directly in accessibility interviews. Getting this right in your portfolio projects shows depth.
+
+## What you will produce
+
+A toast notification component with two variants — success (polite announcement, `role="status"`) and error (assertive announcement, `role="alert"`) — that announce themselves to screen readers when they appear, without moving keyboard focus.
+
+## Tools + Where you will work
+
+- **Cursor** — for component and CSS files
+- **Chrome or Edge** — for visual testing and DevTools inspection
+- **NVDA (Windows) or VoiceOver (macOS)** — for screen reader announcement testing
+- **Your Next.js project** — `components/` directory
+
+## Concept overview
+
+### ARIA live regions
+
+A live region is a part of the page that can be updated dynamically and whose changes are announced to screen readers. The `aria-live` attribute controls the announcement priority:
+
+- `aria-live="polite"` — The screen reader waits until the user pauses before announcing the change. Use this for non-critical updates: success messages, status updates, progress information.
+- `aria-live="assertive"` — The screen reader interrupts whatever it is currently saying to announce the change immediately. Use this only for errors and truly critical information. Overuse causes constant interruptions that degrade the experience.
+
+```html
+<!-- Polite: waits for a pause -->
+<div aria-live="polite">File saved successfully.</div>
+
+<!-- Assertive: interrupts immediately -->
+<div aria-live="assertive">Error: your session has expired.</div>
+```
+
+### role="alert" and role="status"
+
+`role="alert"` is equivalent to `aria-live="assertive"` plus `aria-atomic="true"`. When an element with this role appears in the DOM or has its content changed, the screen reader announces the entire content immediately.
+
+`role="status"` is equivalent to `aria-live="polite"` plus `aria-atomic="true"`. The content is announced when the user is idle.
+
+Use the role shortcuts rather than raw `aria-live` for alerts and status messages — they communicate intent to other developers reading your code.
+
+| Scenario | Role | Priority |
+|---|---|---|
+| Form validation error | `role="alert"` | Assertive — interrupts |
+| Successful save | `role="status"` | Polite — waits |
+| Info notification | `role="status"` | Polite — waits |
+| Session timeout warning | `role="alert"` | Assertive — interrupts |
+| Loading complete | `role="status"` | Polite — waits |
+
+### Why toasts must not steal focus
+
+When a toast appears and grabs keyboard focus, the user loses their place in the document. If they were mid-way through filling in a form, they must now Tab back to find the field they were in. This is a significant usability and accessibility problem.
+
+The correct pattern is: the toast appears visually and is announced via a live region, but focus stays exactly where it was. The user can finish what they were doing and then optionally interact with the toast (for example, clicking a "dismiss" button) when they choose to.
+
+### Auto-dismiss timing and WCAG 2.2.1
+
+WCAG Success Criterion 2.2.1 (Timing Adjustable) requires that users be able to extend or disable time limits. A toast that auto-dismisses after 3 seconds may not give screen reader users enough time to hear and process the announcement, especially if the screen reader is already speaking when the toast appears.
+
+Best practices:
+- Minimum 5 seconds for any auto-dismissing toast
+- Provide a manual dismiss button
+- Pause the auto-dismiss timer when the user hovers over the toast or focuses within it
+- Never auto-dismiss error toasts — they should persist until manually dismissed
+
+### The live region injection trick
+
+Screen readers only announce changes to a live region, not the initial content of the region when the page loads. This creates a subtle problem: if you render a toast and immediately populate it with content in the same render, some screen readers miss the announcement.
+
+The reliable pattern is to render an empty live region container on page load and inject content into it dynamically when you need an announcement:
+
+```tsx
+// Always present in the DOM, initially empty
+<div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+  {statusMessage}
+</div>
+
+// Trigger by setting statusMessage state
+```
+
+<VideoEmbed
+  title="Accessible Toast Notifications with ARIA Live"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=accessible+toast+notifications+aria+live"
+  suggestedTerms="accessible toast notifications aria live region role alert status screen reader"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create the toast component shell
+
+**What:** Build the visual toast component with variants for success and error.
+
+**Where:** Create `components/Toast.tsx` in your project.
+
+**How:** Build a component that accepts a `message` string, a `variant` of `"success" | "error"`, and an `onDismiss` callback. Apply different visual styles for each variant. Do not add any ARIA attributes yet.
+
+```tsx
+interface ToastProps {
+  message: string;
+  variant: 'success' | 'error';
+  onDismiss: () => void;
+}
+
+export function Toast({ message, variant, onDismiss }: ToastProps) {
+  return (
+    <div className={`toast toast--${variant}`}>
+      <span>{message}</span>
+      <button onClick={onDismiss} aria-label="Dismiss notification">
+        ✕
+      </button>
+    </div>
+  );
+}
+```
+
+**Why:** Separate the visual structure from the announcement mechanism. You will add ARIA in the next step. This order makes it easier to understand what each addition contributes.
+
+**Check:** The toast renders visually with different styles for success and error variants.
+
+---
+
+### Step 2 — Add the correct role to each variant
+
+**What:** Apply `role="status"` to success toasts and `role="alert"` to error toasts.
+
+**Where:** Inside the `Toast` component, on the outer container.
+
+**How:** Map the variant to its role:
+
+```tsx
+const role = variant === 'error' ? 'alert' : 'status';
+
+return (
+  <div
+    role={role}
+    aria-atomic="true"
+    className={`toast toast--${variant}`}
+  >
+    <span>{message}</span>
+    <button onClick={onDismiss} aria-label="Dismiss notification">
+      ✕
+    </button>
+  </div>
+);
+```
+
+`aria-atomic="true"` tells the screen reader to announce the entire content of the region as a single unit, rather than just the part that changed.
+
+**Why:** `role="alert"` and `role="status"` carry the correct implicit `aria-live` values and communicate semantic intent. A screen reader user hearing "alert: Save failed — try again" understands the urgency. Hearing "status: File saved" understands it is informational.
+
+**Check:** Inspect the element in DevTools. The rendered HTML should have the `role` attribute set correctly based on the variant.
+
+---
+
+### Step 3 — Set up the live region container in the layout
+
+**What:** Add a persistent, initially empty live region to the page that announcements will be injected into.
+
+**Where:** Your root layout file (`app/layout.tsx`) or a context provider component.
+
+**How:** Add two announcement containers — one for polite, one for assertive — as the last children of the body. They should be visually hidden but present in the accessibility tree:
+
+```tsx
+{/* In app/layout.tsx, inside the body element */}
+<div
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+  className="sr-only"
+  id="toast-polite"
+/>
+<div
+  role="alert"
+  aria-live="assertive"
+  aria-atomic="true"
+  className="sr-only"
+  id="toast-assertive"
+/>
+```
+
+Add the `.sr-only` utility class to your global CSS if it is not already present:
+
+```css
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+```
+
+**Why:** Screen readers announce changes to live regions that are already in the DOM. By keeping these containers present from page load and injecting text into them dynamically, you guarantee the announcement fires reliably across all major screen readers.
+
+**Check:** Inspect the page DOM. Both containers are present in the HTML with correct roles, but their content is empty.
+
+---
+
+### Step 4 — Build a toast manager that injects announcements
+
+**What:** Create a context or custom hook that manages the toast queue and injects text into the live region containers.
+
+**Where:** Create `context/ToastContext.tsx` or a simple hook at `hooks/useToast.ts`.
+
+**How:** The manager should: (1) maintain a list of visible toasts for visual rendering, (2) inject the message text into the correct live region container immediately when a toast is triggered, and (3) auto-remove the visual toast after a timeout (success only):
+
+```tsx
+function announce(message: string, variant: 'success' | 'error') {
+  const containerId = variant === 'error' ? 'toast-assertive' : 'toast-polite';
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Clear and re-set to ensure re-announcement if same message fires twice
+  container.textContent = '';
+  // Small timeout allows screen readers to detect the change
+  requestAnimationFrame(() => {
+    container.textContent = message;
+  });
+}
+```
+
+**Why:** Injecting into a pre-existing live region is more reliable than dynamically mounting a component with `role="alert"`. Some screen readers require the live region to already exist in the DOM before content changes are tracked.
+
+**Check:** When a toast is triggered, open the live region container in DevTools and confirm its `textContent` is set to the message string.
+
+---
+
+### Step 5 — Test with NVDA or VoiceOver
+
+**What:** Verify that the screen reader announces both variants correctly without moving focus.
+
+**Where:** Your browser with NVDA or VoiceOver running.
+
+**How:** Start NVDA (Insert+Q to exit, or use Windows narrator as a fallback). Focus a form input. Trigger a success toast. Verify: (1) the screen reader announces the message without interrupting the reading flow, and (2) keyboard focus remains on the form input. Trigger an error toast from a different input. Verify: (1) the announcement interrupts immediately, and (2) focus does not move.
+
+**Why:** This is the only way to confirm the live regions are working as intended. DevTools cannot simulate screen reader behavior.
+
+**Check:** Success toast is announced politely (after a short delay). Error toast is announced immediately. Focus does not move to the toast in either case.
+
+## If stuck
+
+- **Screen reader does not announce the toast at all:** Confirm the live region container exists in the DOM before the content changes. Check that you are using `textContent` or `innerText` rather than replacing the element entirely. Replacing the element itself (not its content) does not trigger live region announcements.
+- **Both variants announce at the same priority:** Check that your role assignment is using `role="alert"` for errors and `role="status"` for success — not the same role for both.
+- **Announcement fires on page load:** The live region containers should be empty when the page loads. Check that no initial value is being passed as children to the container elements.
+- **Focus moves to the toast on open:** Confirm the toast component does not call `.focus()` anywhere on mount and does not have `autoFocus` on any child element.
+- **Same message does not re-announce:** Use the `textContent = ''` then `requestAnimationFrame` pattern to clear and reset the live region. Some screen readers only announce when content actually changes.
+
+## Common mistakes
+
+- Using `role="alert"` for every toast, including success messages. Assertive announcements interrupt the screen reader constantly and degrade the experience for every notification.
+- Mounting a new live region element for each toast. Live regions must already be present in the DOM. Dynamically injected live regions are not reliably tracked by all screen readers.
+- Auto-dismissing toasts after 2–3 seconds. This is too short for screen reader users who need time to hear the announcement before the element disappears.
+- Moving focus to the toast when it opens. This breaks the keyboard user's context and forces them to navigate back to their previous position.
+- Omitting `aria-atomic="true"`. Without it, only the changed portion of the live region content is announced, which can produce confusing partial announcements.
+- Forgetting to provide a visible dismiss button. Users must be able to dismiss a toast manually, especially error toasts that should not auto-dismiss.
+
+<KeyTerms terms={[
+  "Live region: A section of a page marked with aria-live whose content changes are automatically announced to screen readers when updated.",
+  "aria-live='polite': An ARIA attribute value that instructs screen readers to announce live region changes after the user finishes their current task, without interrupting.",
+  "aria-live='assertive': An ARIA attribute value that instructs screen readers to interrupt their current announcement and immediately read the live region change.",
+  "role='alert': An ARIA role that creates an assertive live region, used for error messages and critical status updates that need immediate announcement.",
+  "role='status': An ARIA role that creates a polite live region, used for success messages and non-critical status updates that can wait for a pause in speech.",
+  "aria-atomic: An ARIA attribute that, when set to true, tells the screen reader to announce the entire content of a live region as one unit whenever any part of it changes.",
+  "Toast notification: A brief, non-blocking UI message that appears and disappears automatically, used for feedback after actions such as saving or submitting a form.",
+  "sr-only: A CSS utility class that visually hides an element while keeping it in the accessibility tree, used for content that is only meaningful to assistive technologies.",
+  "Focus stealing: The problematic behavior of a UI element taking keyboard focus away from where the user is working, disorienting keyboard and screen reader users.",
+  "WCAG 2.2.1 Timing Adjustable: A WCAG success criterion requiring that any time limit on content can be turned off, adjusted, or extended by the user."
+]} />
+
+<QuickSummary points={[
+  "Use role='alert' for error messages that must interrupt immediately, and role='status' for success and info messages that can wait for a pause.",
+  "Toasts must never steal keyboard focus. Announce via a live region and leave focus exactly where it was.",
+  "Live region containers must already exist in the DOM before content is injected — screen readers do not track dynamically created live regions reliably.",
+  "aria-atomic='true' ensures the screen reader announces the complete message as a unit, not just the changed portion.",
+  "Error toasts should persist until manually dismissed. Auto-dismiss is acceptable for success toasts with a minimum 5-second timeout.",
+  "The sr-only pattern hides live region text visually while keeping it in the accessibility tree for screen reader announcements."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Build a form with a save button. On successful save, show a toast that says "Saved successfully." On a simulated failure, show a toast that says "Save failed — try again." Both toasts must announce correctly to a screen reader. Test with NVDA or VoiceOver.
+
+**Definition of done:**
+
+- The success toast is announced by the screen reader without interrupting ongoing speech.
+- The error toast is announced immediately, interrupting other speech.
+- Keyboard focus does not move to either toast when it appears.
+- Both toasts have a dismiss button that closes them.
+- The error toast does not auto-dismiss.
+- The success toast auto-dismisses after at least 5 seconds.

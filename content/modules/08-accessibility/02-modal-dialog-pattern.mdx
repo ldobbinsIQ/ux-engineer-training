@@ -1,0 +1,384 @@
+---
+title: "Accessible Modal Dialog (WAI-ARIA APG)"
+slug: "02-modal-dialog-pattern"
+moduleSlug: "08-accessibility"
+order: 2
+hiringSignal: true
+hiringSignalCategory: "Accessibility"
+estimatedHours: 2
+tasks:
+  - "Build a modal with role='dialog' and aria-modal='true'"
+  - "Trap focus inside the modal when it is open"
+  - "Return focus to the trigger button when the modal closes"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=accessible+modal+focus+management+aria"
+      label: "Accessible Modal Focus Management"
+  docs:
+    - url: "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/"
+      label: "WAI-ARIA APG: Modal Dialog Pattern"
+---
+
+## Goal
+
+Build a modal dialog that fully conforms to the WAI-ARIA Authoring Practices Guide pattern: correct ARIA attributes, focus trap while open, Escape key to close, and focus returned to the trigger element on close.
+
+## Time + Difficulty
+
+**Estimated time:** 2 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+The modal dialog is the most complex common UI pattern from an accessibility standpoint. Getting it wrong breaks the experience for every keyboard and screen reader user on the page. Getting it right demonstrates that you understand focus management at the advanced level — a skill that interviewers at companies with design systems test directly.
+
+Most off-the-shelf modals from general-purpose UI libraries have subtle accessibility bugs — wrong focus initial placement, missing Escape handler, focus not returning to the trigger. Knowing the correct pattern means you can audit third-party components and fix them, not just consume them.
+
+## What you will produce
+
+A modal dialog component built without a UI library that: announces itself correctly to screen readers, traps keyboard focus inside while open, closes on Escape, and returns focus to the button that opened it.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for the component and CSS files
+- **Chrome or Edge** — for keyboard and DevTools testing
+- **NVDA (Windows) or VoiceOver (macOS)** — for screen reader testing
+- **Your Next.js project** — `components/` directory
+
+## Concept overview
+
+### The WAI-ARIA APG modal dialog requirements
+
+The WAI-ARIA Authoring Practices Guide defines the following requirements for a modal dialog:
+
+1. The container element has `role="dialog"`.
+2. `aria-modal="true"` is set on the dialog element to tell supporting screen readers that content outside the dialog is inert.
+3. The dialog has an accessible name provided by either `aria-labelledby` (pointing to a visible heading inside the dialog) or `aria-label`.
+4. When the dialog opens, focus moves to the first focusable element inside the dialog (or to the dialog element itself if it has `tabIndex={-1}`).
+5. Focus is trapped inside the dialog while it is open. Tab cycles through focusable elements within the dialog; Shift+Tab cycles in reverse. Focus does not leave the dialog.
+6. Pressing Escape closes the dialog.
+7. When the dialog closes, focus returns to the element that triggered the dialog to open.
+
+### Implementing focus trap
+
+A focus trap requires intercepting Tab and Shift+Tab keydown events on the dialog and redirecting focus to the first or last focusable element when the user would otherwise tab out.
+
+```ts
+const FOCUSABLE_SELECTORS =
+  'a[href], button:not([disabled]), input:not([disabled]), ' +
+  'select:not([disabled]), textarea:not([disabled]), ' +
+  '[tabindex]:not([tabindex="-1"])';
+
+function trapFocus(event: KeyboardEvent, dialogEl: HTMLElement) {
+  const focusable = Array.from(
+    dialogEl.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTORS)
+  );
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  if (event.key === 'Tab') {
+    if (event.shiftKey) {
+      // Shift+Tab: if focus is on first element, move to last
+      if (document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      }
+    } else {
+      // Tab: if focus is on last element, move to first
+      if (document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  }
+}
+```
+
+### Storing and restoring the trigger reference
+
+Before opening the modal, store a reference to the element that triggered it. On close, call `.focus()` on that stored reference. In React, a `useRef` is the right tool for this.
+
+```tsx
+const triggerRef = useRef<HTMLButtonElement>(null);
+
+function handleOpen() {
+  // triggerRef.current is the button that was clicked
+  setOpen(true);
+}
+
+function handleClose() {
+  setOpen(false);
+  // After state update, restore focus
+  triggerRef.current?.focus();
+}
+```
+
+### aria-modal and the inert pattern
+
+`aria-modal="true"` signals to screen readers that content outside the dialog should be treated as if it does not exist. However, browser support for this attribute varies. A more robust approach combines `aria-modal="true"` with setting `inert` on all other page regions when the dialog is open. The `inert` attribute (now widely supported in modern browsers) prevents focus and interaction entirely on the marked subtree.
+
+<VideoEmbed
+  title="Accessible Modal Focus Management"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=accessible+modal+focus+management+aria"
+  suggestedTerms="accessible modal dialog focus trap aria-modal WAI-ARIA APG keyboard"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Build the basic modal structure
+
+**What:** Create the modal component with the correct HTML structure and ARIA attributes.
+
+**Where:** Create a new file at `components/Modal.tsx` in your Next.js project.
+
+**How:** Build the component with these elements: a backdrop overlay, a dialog container with `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` pointing to a heading inside the dialog. Give the dialog `tabIndex={-1}` so it can receive focus programmatically.
+
+```tsx
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  triggerRef: React.RefObject<HTMLButtonElement>;
+}
+
+export function Modal({ isOpen, onClose, title, children, triggerRef }: ModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        tabIndex={-1}
+        className="modal-dialog"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="modal-title">{title}</h2>
+        {children}
+        <button onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
+```
+
+**Why:** Every ARIA attribute here has a specific function. `role="dialog"` announces the modal type to screen readers. `aria-modal="true"` tells screen readers to ignore content outside the dialog. `aria-labelledby` gives the dialog its accessible name. Without these, a screen reader user will not know they are in a modal.
+
+**Check:** The modal renders when `isOpen` is true and disappears when false. No keyboard behavior is implemented yet — that comes in the next steps.
+
+---
+
+### Step 2 — Move focus into the modal on open
+
+**What:** When the modal opens, programmatically move focus to the first focusable element inside it.
+
+**Where:** Inside the `Modal` component, add a `useEffect`.
+
+**How:** After the modal renders, query for focusable elements and focus the first one. If no focusable element exists, focus the dialog container itself (which is why it has `tabIndex={-1}`).
+
+```tsx
+useEffect(() => {
+  if (!isOpen || !dialogRef.current) return;
+
+  const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+    'a[href], button:not([disabled]), input:not([disabled]), ' +
+    'select:not([disabled]), textarea:not([disabled]), ' +
+    '[tabindex]:not([tabindex="-1"])'
+  );
+
+  if (focusable.length > 0) {
+    focusable[0].focus();
+  } else {
+    dialogRef.current.focus();
+  }
+}, [isOpen]);
+```
+
+**Why:** When a modal opens, keyboard and screen reader users need focus to move inside it. If focus stays on the trigger button behind the modal, keyboard users will be tabbing through content they cannot see or interact with.
+
+**Check:** Open the modal with the keyboard (Tab to the trigger, press Enter or Space). Confirm that focus moves inside the modal automatically.
+
+---
+
+### Step 3 — Implement the focus trap
+
+**What:** Prevent Tab and Shift+Tab from moving focus outside the modal while it is open.
+
+**Where:** In the same `useEffect` or a separate one inside `Modal.tsx`.
+
+**How:** Add a `keydown` event listener to the dialog element that intercepts Tab presses and redirects focus when at the first or last focusable element.
+
+```tsx
+useEffect(() => {
+  if (!isOpen || !dialogRef.current) return;
+
+  const dialog = dialogRef.current;
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      onClose();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusable = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), ' +
+        'select:not([disabled]), textarea:not([disabled]), ' +
+        '[tabindex]:not([tabindex="-1"])'
+      )
+    );
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey) {
+      if (document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  dialog.addEventListener('keydown', handleKeyDown);
+  return () => dialog.removeEventListener('keydown', handleKeyDown);
+}, [isOpen, onClose]);
+```
+
+**Why:** Without a focus trap, pressing Tab from the last element inside the modal moves focus to the browser chrome (address bar, toolbar) or back to page content behind the modal. The user loses their place and has no way to return to the modal with the keyboard.
+
+**Check:** With the modal open, Tab through all focusable elements. When you reach the last one, Tab again and confirm focus moves back to the first element. Shift+Tab from the first element should move to the last.
+
+---
+
+### Step 4 — Return focus to the trigger on close
+
+**What:** When the modal closes, move focus back to the button that opened it.
+
+**Where:** In the parent component that controls modal state.
+
+**How:** Store a ref on the trigger button and call `.focus()` on it inside the close handler. Use a `useEffect` that watches the `isOpen` state:
+
+```tsx
+// In the parent page component
+const triggerRef = useRef<HTMLButtonElement>(null);
+const [isOpen, setIsOpen] = useState(false);
+
+useEffect(() => {
+  if (!isOpen) {
+    triggerRef.current?.focus();
+  }
+}, [isOpen]);
+
+return (
+  <>
+    <button ref={triggerRef} onClick={() => setIsOpen(true)}>
+      Open modal
+    </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={() => setIsOpen(false)}
+      title="Example Modal"
+    >
+      <p>Modal content here.</p>
+    </Modal>
+  </>
+);
+```
+
+**Why:** When a modal closes, a keyboard user has no context for where they were on the page. Returning focus to the trigger element puts them exactly where they were before the modal opened — the only behavior that makes spatial sense.
+
+**Check:** Open the modal with the keyboard, then close it with Escape or the Close button. Confirm that focus returns to the button that opened the modal, with a visible focus ring on it.
+
+---
+
+### Step 5 — Test with keyboard only
+
+**What:** Perform a complete keyboard-only test of the modal open, interact, and close flow.
+
+**Where:** Your browser, mouse set aside.
+
+**How:** Tab to the trigger button. Press Enter or Space to open the modal. Verify focus moved inside. Tab through all modal elements. Verify the focus trap works (Tab cycles, Shift+Tab cycles in reverse). Press Escape and verify the modal closes and focus returns to the trigger. Repeat with the Close button instead of Escape.
+
+**Why:** This is the only way to verify that all four requirements — focus enters, focus is trapped, Escape works, focus returns — work together correctly as a system.
+
+**Check:** All five behaviors work without touching the mouse: open, focus enters, Tab cycles, Escape closes, focus returns.
+
+---
+
+### Step 6 — Test with NVDA or VoiceOver
+
+**What:** Verify that a screen reader announces the dialog correctly and the focus trap is effective.
+
+**Where:** NVDA on Windows (free download from nvaccess.org) or VoiceOver on macOS (built in, activate with `Cmd+F5`).
+
+**How:** With the screen reader running, navigate to the trigger button and activate it. Listen for the screen reader to announce the dialog name (from `aria-labelledby`) and the role ("dialog"). Tab through elements and confirm each is announced with its label and role. Close the modal and confirm the screen reader reads content at the trigger button.
+
+**Why:** ARIA attributes only have value if screen readers correctly interpret them. Testing with an actual screen reader confirms that `role="dialog"` and `aria-labelledby` produce the correct announcements.
+
+**Check:** The screen reader announces the dialog title and role when the modal opens. It does not read out content from behind the modal while the modal is open.
+
+## If stuck
+
+- **Focus not trapped — Tab escapes the modal:** Check that your `querySelectorAll` selector string is complete and that no focusable elements are being missed. Also check that you are attaching the event listener to the dialog element, not the document, so only Tab events inside the dialog are intercepted.
+- **Focus does not move into the modal on open:** Confirm that `isOpen` is `true` before the `useEffect` runs and that `dialogRef.current` is not null. Add a `console.log` to verify timing.
+- **Escape key does nothing:** Check that the `keydown` listener is attached and that the `event.key` check is exactly `'Escape'` (capital E, no typo).
+- **Focus returns to wrong element on close:** Make sure the trigger `ref` is attached directly to the button element with `ref={triggerRef}`, not to a wrapper div.
+- **Screen reader reads content behind the modal:** Add `inert` to all page regions outside the modal when it is open. Query all direct children of `body` except the modal and set `element.inert = true`.
+
+## Common mistakes
+
+- Forgetting `aria-labelledby` or `aria-label` on the dialog element. Without an accessible name, screen readers announce "dialog" with no context for what the dialog is about.
+- Using `display: none` to hide the modal but not unmounting it. Elements with `display: none` are removed from the accessibility tree, but React state persists. Unmounting is cleaner.
+- Not cleaning up the `keydown` event listener in the `useEffect` cleanup function. This causes the handler to fire multiple times as the component re-renders.
+- Attaching the focus trap to `document` instead of the dialog. A document-level listener fires for all Tab presses, even when other modals or components handle focus.
+- Returning focus to `document.body` instead of the specific trigger element. Focus on `body` is not visible and gives the user no context.
+- Assuming `aria-modal="true"` alone is sufficient for screen reader isolation. Not all screen readers fully support `aria-modal` — combining it with the `inert` attribute on surrounding content is more robust.
+
+<KeyTerms terms={[
+  "role='dialog': An ARIA role applied to a modal container that tells screen readers the element is a dialog window requiring a response or acknowledgment.",
+  "aria-modal='true': An ARIA attribute that signals to supporting screen readers that content outside the dialog should be treated as inert while the dialog is open.",
+  "aria-labelledby: An ARIA attribute that provides an accessible name for an element by referencing the id of another visible element, such as a heading inside a modal.",
+  "Focus trap: A pattern that prevents keyboard focus from leaving a defined region — such as an open modal — by intercepting Tab and Shift+Tab key events.",
+  "WAI-ARIA APG: The WAI-ARIA Authoring Practices Guide, a W3C resource that defines interaction patterns and keyboard behavior for common UI components.",
+  "inert attribute: An HTML attribute that prevents all user interaction — including keyboard focus and mouse clicks — on an element and all of its descendants.",
+  "Trigger element: The interactive element, typically a button, that a user activates to open a modal dialog; focus should return to this element when the dialog closes.",
+  "querySelectorAll: A browser DOM method that returns all elements matching a CSS selector string, used in focus trap implementations to find all focusable elements inside a dialog.",
+  "useRef: A React hook that holds a mutable reference to a DOM element or value that persists across renders, used to store trigger element references for focus restoration.",
+  "Escape key pattern: The convention that pressing the Escape key dismisses a modal dialog and returns focus to the triggering element."
+]} />
+
+<QuickSummary points={[
+  "An accessible modal requires four things: focus enters the dialog on open, focus is trapped inside while open, Escape closes it, and focus returns to the trigger on close.",
+  "Set role='dialog', aria-modal='true', and aria-labelledby on the dialog container — these are not optional extras, they are required for screen reader users.",
+  "The focus trap works by intercepting Tab and Shift+Tab keydown events and cycling focus between the first and last focusable elements inside the dialog.",
+  "Store a ref to the trigger button before opening the modal so you can call focus() on it when the modal closes.",
+  "Test with NVDA or VoiceOver — passing the keyboard test alone does not confirm that ARIA attributes produce correct screen reader announcements.",
+  "aria-modal='true' has inconsistent browser support — pair it with the inert attribute on surrounding content for maximum compatibility."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Implement a fully accessible modal dialog from scratch — without using any UI library — following the WAI-ARIA APG modal pattern. The modal should open from a trigger button, display a form with at least two inputs and a submit button, and include a close button.
+
+**Definition of done:**
+
+- Tab cycles only through elements inside the modal while it is open, never to content behind it.
+- Pressing Escape closes the modal.
+- Pressing the Close button closes the modal.
+- When the modal closes by any method, focus returns to the trigger button.
+- A screen reader announces the dialog title when the modal opens.
+- The dialog has `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` pointing to the visible title.

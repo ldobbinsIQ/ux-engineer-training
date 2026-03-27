@@ -1,0 +1,392 @@
+---
+title: "Forms: Labels, Inputs, and Validation Patterns"
+slug: "02-forms-and-inputs"
+moduleSlug: "02-html-forms"
+order: 2
+hiringSignal: false
+estimatedHours: 1.5
+tasks:
+  - "Build a form with label/input pairs using htmlFor and id"
+  - "Add required, minLength, and pattern attributes"
+  - "Wire up onSubmit and prevent default"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=accessible+html+forms+labels+inputs"
+      label: "Accessible HTML Forms: Labels and Inputs"
+  docs:
+    - url: "https://developer.mozilla.org/en-US/docs/Learn/Forms"
+      label: "MDN Web Forms Guide"
+---
+
+## Goal
+
+Build a properly labeled, accessible HTML form in React with native validation attributes, hint text connected via `aria-describedby`, and a working `onSubmit` handler — so every field is operable by keyboard and correctly announced by screen readers.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner–Intermediate
+
+## Why this matters for UX Engineers
+
+Forms are the primary way users accomplish goals in a product — signing up, checking out, updating settings. A form with missing or broken labels is one of the most common accessibility failures on the web. Hiring managers and accessibility auditors check label associations first.
+
+Beyond accessibility, proper form markup gives you native browser validation for free and makes your components predictable across frameworks. Getting this right once means you have a reusable pattern you can carry into every project.
+
+## What you will produce
+
+A React registration form component with correctly paired labels and inputs, validation attributes, visible hint text connected via `aria-describedby`, and an `onSubmit` handler that prevents default browser navigation.
+
+## Tools + Where you will work
+
+- **Cursor** — all file editing
+- **Browser** — testing form behavior and keyboard navigation
+- **Your Next.js project** — create the form as a new component file
+
+## Concept overview
+
+### The label/input contract
+
+Every text input, select, and textarea must have a visible label that is programmatically associated with it. The association is made by matching the `htmlFor` prop on the label to the `id` prop on the input. In plain HTML these attributes are called `for` and `id`; in React JSX, `for` becomes `htmlFor` because `for` is a reserved word in JavaScript.
+
+```tsx
+// Correct — label and input are associated
+<label htmlFor="email">Email address</label>
+<input id="email" type="email" name="email" />
+
+// Wrong — visual label but no programmatic association
+<span>Email address</span>
+<input type="email" name="email" />
+```
+
+A screen reader announces the label text when focus enters the input. Without the association, the user hears only the input type and current value — no context about what they are supposed to type.
+
+### Form anatomy
+
+<Diagram
+  title="Form Anatomy"
+  src="/diagrams/d3-design-to-code.svg"
+  caption="Every input needs a visible label, an id, optional hint text, and an error message connected via aria-describedby"
+  alt="Form anatomy showing label, input, hint text, and error relationships"
+/>
+
+### Grouping with fieldset and legend
+
+Radio buttons and checkboxes that belong to the same question must be grouped in a `fieldset` with a `legend`. The legend acts as the group label. Without it, a screen reader user hears each option's label but has no context for what question those options answer.
+
+```tsx
+<fieldset>
+  <legend>Preferred contact method</legend>
+  <label><input type="radio" name="contact" value="email" /> Email</label>
+  <label><input type="radio" name="contact" value="phone" /> Phone</label>
+</fieldset>
+```
+
+### Input types and why they matter
+
+Using the correct `type` attribute triggers the right keyboard on mobile, enables browser autofill, and provides semantic information to assistive technologies.
+
+| Type | Use for | Mobile keyboard |
+|---|---|---|
+| `text` | Generic single-line text | Standard |
+| `email` | Email addresses | Shows @ key |
+| `password` | Passwords | Obscures characters |
+| `tel` | Phone numbers | Numeric dial pad |
+| `number` | Numeric values | Numeric |
+| `url` | Web addresses | Shows .com key |
+| `search` | Search fields | Shows search action |
+
+### Native validation attributes
+
+HTML provides validation attributes that work before any JavaScript runs:
+
+- `required` — field must have a value before submit
+- `minLength` / `maxLength` — character count constraints
+- `pattern` — a regex the value must match
+- `min` / `max` — numeric range constraints
+- `type="email"` — enforces email format
+
+These are a baseline, not a replacement for server-side validation. Always validate on the server as well.
+
+### Hint text with aria-describedby
+
+Hint text (also called helper text) explains formatting requirements or additional context below an input. Connect it to the input using `aria-describedby` pointing to the hint element's `id`. Screen readers will read the label first, then the hint, when focus enters the field.
+
+```tsx
+<label htmlFor="password">Password</label>
+<input
+  id="password"
+  type="password"
+  aria-describedby="password-hint"
+/>
+<p id="password-hint">Must be at least 8 characters.</p>
+```
+
+### onSubmit and preventDefault
+
+In React, wire up form submission with the `onSubmit` prop on the `form` element. Always call `e.preventDefault()` first to stop the browser from navigating to a new page. Then run your validation and data-handling logic.
+
+```tsx
+function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  // handle form data here
+}
+
+<form onSubmit={handleSubmit}>
+  ...
+</form>
+```
+
+<VideoEmbed
+  title="Accessible HTML Forms: Labels and Inputs"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=accessible+html+forms+labels+inputs"
+  suggestedTerms="accessible html forms label input htmlFor aria-describedby react"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create a new form component file
+
+**What:** Create a `RegistrationForm.tsx` file.
+
+**Where:** In your Next.js project under `components/` or `app/components/`.
+
+**How:** In Cursor, use `Ctrl+N` to open a new file, then save it as `RegistrationForm.tsx`. Add a basic React component shell:
+
+```tsx
+export default function RegistrationForm() {
+  return (
+    <form>
+      {/* fields go here */}
+    </form>
+  );
+}
+```
+
+**Why:** Keeping the form in its own component makes it reusable and testable in isolation.
+
+**Check:** The file saves without errors and you can import it into a page without TypeScript complaints.
+
+---
+
+### Step 2 — Add the name field with a properly associated label
+
+**What:** Build the first label/input pair.
+
+**Where:** Inside the `form` element in `RegistrationForm.tsx`.
+
+**How:** Add a `label` with `htmlFor="full-name"` and an `input` with `id="full-name"`. Wrap each pair in a `div` for layout:
+
+```tsx
+<div>
+  <label htmlFor="full-name">Full name</label>
+  <input
+    id="full-name"
+    name="fullName"
+    type="text"
+    required
+    autoComplete="name"
+  />
+</div>
+```
+
+**Why:** The `htmlFor`/`id` pairing is the association. The `name` attribute is what gets submitted to the server. `autoComplete="name"` enables browser autofill.
+
+**Check:** Click the label text in the browser. Focus should jump to the input — this confirms the association is working.
+
+---
+
+### Step 3 — Add the email field
+
+**What:** Add an email input with type="email" and a hint.
+
+**Where:** Below the name field in the form.
+
+**How:**
+
+```tsx
+<div>
+  <label htmlFor="email">Email address</label>
+  <input
+    id="email"
+    name="email"
+    type="email"
+    required
+    autoComplete="email"
+    aria-describedby="email-hint"
+  />
+  <p id="email-hint">We will send your confirmation here.</p>
+</div>
+```
+
+**Why:** `type="email"` gives mobile users the right keyboard and enables browser-level format validation. The hint is connected via `aria-describedby` so screen readers announce it when the field receives focus.
+
+**Check:** On a mobile device (or DevTools device emulator) the email field shows an @ key on the keyboard.
+
+---
+
+### Step 4 — Add the password field with minLength and a hint
+
+**What:** Add a password field with a character minimum and visible hint.
+
+**Where:** Below the email field.
+
+**How:**
+
+```tsx
+<div>
+  <label htmlFor="password">Password</label>
+  <input
+    id="password"
+    name="password"
+    type="password"
+    required
+    minLength={8}
+    aria-describedby="password-hint"
+    autoComplete="new-password"
+  />
+  <p id="password-hint">Must be at least 8 characters.</p>
+</div>
+```
+
+**Why:** `minLength={8}` triggers native browser validation before the form submits. `autoComplete="new-password"` tells password managers this is a new credential field, not a sign-in field.
+
+**Check:** Try submitting with a 5-character password. The browser should block submission and show a native validation message.
+
+---
+
+### Step 5 — Add a phone field with a pattern attribute
+
+**What:** Add an optional phone field with a regex pattern.
+
+**Where:** Below the password field.
+
+**How:**
+
+```tsx
+<div>
+  <label htmlFor="phone">Phone number (optional)</label>
+  <input
+    id="phone"
+    name="phone"
+    type="tel"
+    pattern="[0-9]{10,15}"
+    aria-describedby="phone-hint"
+    autoComplete="tel"
+  />
+  <p id="phone-hint">Digits only, 10 to 15 characters.</p>
+</div>
+```
+
+**Why:** The `pattern` attribute validates the format against a regular expression. Since this field is optional (no `required` attribute), the pattern is only checked if the user types something.
+
+**Check:** Enter letters in the phone field and try to submit. The browser should show a validation error about the pattern not matching.
+
+---
+
+### Step 6 — Add a submit button and wire up onSubmit
+
+**What:** Add a submit button and attach an `onSubmit` handler to the form.
+
+**Where:** At the bottom of the form, and at the top of the component function.
+
+**How:** Add the handler function and update the form element:
+
+```tsx
+function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  const data = new FormData(e.currentTarget);
+  console.log({
+    fullName: data.get("fullName"),
+    email: data.get("email"),
+    password: data.get("password"),
+    phone: data.get("phone"),
+  });
+}
+
+// Inside the JSX:
+<form onSubmit={handleSubmit}>
+  {/* ...fields... */}
+  <button type="submit">Create account</button>
+</form>
+```
+
+**Why:** `e.preventDefault()` stops the default form-submit browser navigation. `FormData` is the built-in API for reading form values — it works with the `name` attributes you set on each input.
+
+**Check:** Fill in all required fields correctly and submit. Open the browser console and confirm the object is logged with your entered values.
+
+---
+
+### Step 7 — Test keyboard navigation through the form
+
+**What:** Confirm every field is reachable and operable by keyboard alone.
+
+**Where:** Your browser with the form rendered on a page.
+
+**How:** Click somewhere outside the form to start. Press `Tab` repeatedly and watch which element receives focus. Every label/input pair should receive focus in the visual order they appear on screen. Press `Enter` or `Space` on the submit button to trigger submission.
+
+**Why:** Forms are a high-risk area for keyboard traps. If a field is missing an `id` or has a duplicate `id`, focus behavior breaks in ways that only manifest through keyboard testing.
+
+**Check:** Tab moves through every input in order (name, email, password, phone, submit button) and Enter on the submit button triggers your `handleSubmit` function.
+
+## If stuck
+
+- **Clicking the label does not focus the input:** The `htmlFor` and `id` values do not match exactly. They are case-sensitive and must be identical strings.
+- **FormData returns null for a field:** Check that the input has a `name` attribute. The `id` is for accessibility; the `name` is for form data submission.
+- **TypeScript error on `e.currentTarget`:** Make sure your handler type is `React.FormEvent<HTMLFormElement>`.
+- **Browser is not showing validation messages:** Confirm the `form` element has `onSubmit` and that `e.preventDefault()` is called. Also check that inputs with `required` do not have the `noValidate` attribute on the form.
+
+## Common mistakes
+
+- Using `id` on the label instead of `htmlFor`. In JSX, the label attribute is `htmlFor`, never `for`.
+- Having two inputs with the same `id` on a page. IDs must be unique. Duplicate IDs silently break label associations and accessibility tree references.
+- Wrapping multiple unrelated inputs in one `fieldset`. Fieldset is for grouped controls that share a single question (like radio buttons). Do not use it as a generic form section wrapper.
+- Omitting `name` attributes from inputs. The `id` connects the label; the `name` sends the value to the server. Both are needed for different reasons.
+- Using `onClick` on a div as the submit trigger instead of `type="submit"` on a button inside a form. The native button inside a form handles Enter key, click, and form submission in one element.
+
+<KeyTerms terms={[
+  "htmlFor: The JSX attribute on a label element that associates it with an input by matching the input's id. In plain HTML this attribute is called 'for'.",
+  "id: A unique identifier on an input element that connects it to a label via htmlFor and to hint or error text via aria-describedby.",
+  "aria-describedby: An ARIA attribute whose value is the id of another element that provides additional description, such as hint text or an error message.",
+  "fieldset: An HTML element that groups related form controls together, typically used for radio button or checkbox groups.",
+  "legend: A child element of fieldset that provides the accessible group label for all controls inside the fieldset.",
+  "required: An HTML attribute that prevents form submission if the input is empty and marks the field as required in the accessibility tree.",
+  "minLength: An HTML attribute that specifies the minimum number of characters an input value must contain before the form can be submitted.",
+  "pattern: An HTML attribute containing a regular expression that the input value must match for the form to be considered valid.",
+  "type attribute: The attribute on an input element that defines its data type and behavior, such as email, password, tel, or number.",
+  "onSubmit: The React event handler attached to a form element that fires when the form is submitted.",
+  "preventDefault: A method called on a form submit event to stop the browser's default behavior of navigating to a new page on submission.",
+  "FormData: A built-in browser API for reading values from a submitted form using the name attributes of its inputs."
+]} />
+
+<QuickSummary points={[
+  "Every input must have a label associated via htmlFor on the label matching id on the input — clicking the label should move focus to the input.",
+  "Use the correct input type (email, password, tel, number) to get the right mobile keyboard, browser validation, and autofill behavior.",
+  "Connect hint text to its input using aria-describedby pointing to the hint element's id so screen readers announce it on focus.",
+  "Group radio buttons and checkboxes in a fieldset with a legend to give the group an accessible question label.",
+  "Add required, minLength, and pattern attributes for baseline native validation before any JavaScript runs.",
+  "Always call e.preventDefault() in onSubmit to stop browser navigation, then read form values using FormData and the input name attributes.",
+  "Test keyboard navigation by tabbing through every field — missing or duplicate ids will break focus order silently."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Build a complete registration form with the following fields:
+
+1. Full name (required, type text)
+2. Email address (required, type email, with hint "We will never share your email")
+3. Password (required, type password, minLength 8, with hint "At least 8 characters")
+4. Confirm password (required, type password)
+
+Add a submit button labeled "Create account". Wire up `onSubmit` with `preventDefault` and log the form values to the console.
+
+**Definition of done:**
+
+- Clicking any label moves focus directly to its associated input.
+- Tabbing through the form visits fields in the visual order shown on screen.
+- Submitting with an empty required field shows a browser validation message without JavaScript.
+- Submitting with a password shorter than 8 characters shows a native validation error.
+- A successful submit logs all four field values to the console.
+- The form has no duplicate `id` values.

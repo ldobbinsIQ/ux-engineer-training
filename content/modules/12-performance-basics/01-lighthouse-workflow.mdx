@@ -1,0 +1,257 @@
+---
+title: "Lighthouse Workflow for UX Engineers"
+slug: "01-lighthouse-workflow"
+moduleSlug: "12-performance-basics"
+order: 1
+hiringSignal: false
+estimatedHours: 1
+tasks:
+  - "Run a Lighthouse audit on a production build of a local Next.js app"
+  - "Screenshot the scores and identify the top 3 opportunities"
+  - "Fix one opportunity and re-run to show improvement"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=lighthouse+audit+workflow+chrome+devtools+performance"
+      label: "Lighthouse Audit Workflow"
+  docs:
+    - url: "https://developer.chrome.com/docs/lighthouse/overview"
+      label: "Chrome Lighthouse Overview"
+---
+
+## Goal
+
+Run a Lighthouse audit on your Next.js app, read the results accurately, and fix at least one opportunity — establishing a repeatable performance workflow you can apply to any project.
+
+## Time + Difficulty
+
+**Estimated time:** 1 hour
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Performance is user experience. A slow page is a bad user experience, regardless of how well-designed it looks. Lighthouse gives you a structured, automated way to identify performance problems before users encounter them. UX Engineers who can run and interpret Lighthouse audits — and fix at least the obvious opportunities — are significantly more valuable than those who treat performance as the backend team's problem.
+
+Lighthouse also audits Accessibility, Best Practices, and SEO, making it a single tool for four dimensions of quality that UX Engineers own.
+
+## What you will produce
+
+A screenshot of Lighthouse scores for your app (before and after fixing one opportunity), a list of the top 3 opportunities identified, and an explanation of what the fixed opportunity was and how you addressed it.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for making the fix
+- **Chrome DevTools** — the Lighthouse tab, accessed via F12 or right-click → Inspect
+- **Terminal in Cursor** — to build and start the production server before running the audit
+- **Browser** — Chrome, pointed at `http://localhost:3000`
+
+## Concept overview
+
+### Lighthouse categories
+
+Lighthouse audits five categories:
+
+1. **Performance** — measures loading speed using metrics like LCP, FCP, TBT, CLS, and Speed Index.
+2. **Accessibility** — checks for common accessibility failures: missing labels, insufficient color contrast, incorrect ARIA usage.
+3. **Best Practices** — checks for HTTPS, modern image formats, no console errors, and other best practices.
+4. **SEO** — checks for meta descriptions, crawlability, and mobile-friendly text sizes.
+5. **Progressive Web App (PWA)** — checks for offline support and app manifest (optional for most projects).
+
+For UX Engineers, Performance and Accessibility are the two most relevant categories.
+
+### Why to run on a production build, not dev
+
+The Next.js dev server includes unoptimized JavaScript bundles, source maps, fast-refresh code, and development-only warnings. Running Lighthouse against `npm run dev` will report artificially low performance scores that do not reflect your actual production performance. Always:
+
+1. Run `npm run build` to create the optimized production bundle.
+2. Run `npm start` to serve it locally.
+3. Open `http://localhost:3000` in Chrome.
+4. Run Lighthouse from DevTools.
+
+### How to run a Lighthouse audit
+
+1. Open Chrome and navigate to `http://localhost:3000`.
+2. Open DevTools (F12 or Cmd+Option+I on Mac).
+3. Click the **Lighthouse** tab (you may need to find it in the `>>` overflow menu).
+4. Select **Mobile** preset (it throttles CPU and network, giving a more realistic score).
+5. Check the categories you want to audit (Performance and Accessibility at minimum).
+6. Click **Analyze page load**.
+
+The audit takes 30–60 seconds. Lighthouse simulates a mid-tier mobile device with a slow 4G connection, which is why scores on mobile are typically lower than desktop.
+
+### Reading opportunities vs diagnostics
+
+The Lighthouse Performance report has two sections:
+
+- **Opportunities** — specific, actionable improvements with estimated time savings in milliseconds. These are the items to fix first.
+- **Diagnostics** — informational findings that may or may not have a direct impact. These are useful context but not always actionable.
+
+Fix opportunities before diagnostics. An opportunity labeled "Eliminate render-blocking resources" with a saving of 1.2s is worth more of your time than a diagnostic with no savings estimate.
+
+### Lighthouse score vs real user experience
+
+The Lighthouse score is a lab measurement on a simulated device — it is consistent and reproducible but not a direct measurement of what real users experience. Real User Monitoring (RUM) data from tools like Google Search Console's Core Web Vitals report reflects what actual users experience. Lighthouse is a development tool for finding and fixing problems; RUM data tells you whether the fixes landed in production.
+
+<VideoEmbed
+  title="Lighthouse Audit Workflow"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=lighthouse+audit+workflow+chrome+devtools+performance"
+  suggestedTerms="lighthouse audit chrome devtools performance score workflow tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Build the production bundle
+
+**What:** Create an optimized production build of your Next.js app.
+
+**Where:** In the Cursor terminal, from your project root.
+
+**How:** Run:
+
+```bash
+npm run build
+```
+
+Wait for the build to complete. Next.js will print a route summary showing the size of each page and the total JavaScript bundle.
+
+**Why:** The development server uses unoptimized code. Running Lighthouse against it gives artificially low scores. The production build applies tree shaking, minification, and code splitting — the optimizations that actually affect performance.
+
+**Check:** The build completes without errors. The output shows a list of routes with their sizes. If any route is unexpectedly large (above 300kB for the JavaScript), note it as a potential opportunity.
+
+---
+
+### Step 2 — Start the production server
+
+**What:** Serve the production build locally so Chrome can access it.
+
+**Where:** In the Cursor terminal (a new tab if needed).
+
+**How:** Run:
+
+```bash
+npm start
+```
+
+The server starts at `http://localhost:3000`.
+
+**Why:** `npm start` serves the pre-built output from `npm run build`. Any changes you make to source files are not reflected until you rebuild. Keep this distinction clear during the lesson: build once, then audit multiple times against the same build.
+
+**Check:** Navigate to `http://localhost:3000` in Chrome. The app loads correctly.
+
+---
+
+### Step 3 — Run a Lighthouse audit on the Mobile preset
+
+**What:** Generate a Lighthouse report for the main page of your app using the Mobile device preset.
+
+**Where:** In Chrome DevTools → Lighthouse tab.
+
+**How:** Follow these steps:
+
+1. Open Chrome DevTools (F12).
+2. Click the Lighthouse tab.
+3. Select **Mobile** in the Device section.
+4. Check **Performance** and **Accessibility** (uncheck the others to speed up the audit).
+5. Click **Analyze page load**.
+
+Wait for the audit to finish (30–60 seconds).
+
+**Why:** The Mobile preset applies CPU throttling (4x slowdown) and network throttling (simulated 4G). This is intentionally pessimistic because a significant portion of users are on mobile devices on variable connections. Seeing a score of 50 in Mobile does not mean your site is broken — it means it has room for improvement on mid-tier devices.
+
+**Check:** The audit completes and shows scores for Performance and Accessibility. Screenshot the scores before making any changes.
+
+---
+
+### Step 4 — Identify the top 3 opportunities
+
+**What:** Read the Opportunities section of the Performance report and identify the three items with the largest estimated time savings.
+
+**Where:** In the Lighthouse report, scroll below the score gauges to the **Opportunities** section.
+
+**How:** Click each opportunity to expand it. Note:
+- The opportunity name (for example, "Serve images in next-gen formats")
+- The estimated savings in seconds or milliseconds
+- The specific files or elements causing the issue
+
+Common opportunities in a new Next.js project:
+- **Eliminate render-blocking resources** — CSS or scripts loaded in `<head>` that block rendering
+- **Serve images in next-gen formats** — images served as JPEG/PNG instead of WebP or AVIF
+- **Properly size images** — images larger than their displayed size
+
+**Why:** Prioritizing by estimated savings ensures you fix the things that matter most first. A 2s saving from image optimization is more valuable than a 50ms saving from deferring a small script.
+
+**Check:** You have a list of the top 3 opportunities with their names and estimated savings. Screenshot or copy this list.
+
+---
+
+### Step 5 — Fix one opportunity and re-run
+
+**What:** Fix the highest-impact opportunity from your list and run a new Lighthouse audit to verify the improvement.
+
+**Where:** In Cursor (to make the code change), then re-run `npm run build && npm start`, then re-run the Lighthouse audit.
+
+**How:** The fix depends on the opportunity. Common quick wins:
+
+- **Images not in next-gen format / not properly sized** — replace `img` elements with the Next.js `Image` component (covered in Module 12, Lesson 3).
+- **Render-blocking scripts** — move third-party `script` tags to use `next/script` with `strategy="lazyOnload"`.
+- **Missing alt text (Accessibility)** — add `alt` attributes to all `img` elements.
+
+After making the fix, rebuild and restart:
+
+```bash
+npm run build && npm start
+```
+
+Run Lighthouse again using the same settings as Step 3.
+
+**Why:** Measuring before and after the fix confirms that the change actually improved the score and by how much. Without a before/after comparison, you cannot know whether your fix was effective.
+
+**Check:** The new Lighthouse score is higher than the before score (at least for the specific metric the opportunity affected). Screenshot the new score to document the improvement.
+
+## If stuck
+
+- **Lighthouse tab is missing from DevTools** — it may be hidden in the overflow menu. Click the `>>` icon at the top of the DevTools panel tabs and look for Lighthouse.
+- **Score varies between runs** — this is normal. Lighthouse applies throttling but CPU and network conditions on your machine vary slightly between runs. Run 3 audits and average the scores for a reliable baseline.
+- **Score is 100 for everything already** — your project may be a minimal starter with no images or heavy scripts. Add a large JPEG image to the page and a few Google Font imports to create realistic opportunities to fix.
+- **Build fails before the audit** — fix any TypeScript errors first. A failed build means Lighthouse cannot run against your code.
+
+## Common mistakes
+
+- Running Lighthouse against `npm run dev` (the development server). Always build first with `npm run build` and serve with `npm start`.
+- Running Lighthouse with extensions enabled. Browser extensions inject scripts that can skew scores. Use an Incognito window with extensions disabled, or a fresh Chrome profile.
+- Comparing scores across different presets (Mobile vs Desktop) without noting the difference. Desktop scores are always higher because there is no throttling. Always compare Mobile to Mobile or Desktop to Desktop.
+- Fixing the issue in code but forgetting to rebuild before re-running the audit. Lighthouse tests the built output, not your source files.
+- Treating the Lighthouse score as the only metric that matters. A score of 75 with great Core Web Vitals and no CLS is a better user experience than a score of 90 with poor INP.
+
+<KeyTerms terms={[
+  "Lighthouse: A Google tool built into Chrome DevTools that audits web pages for Performance, Accessibility, Best Practices, SEO, and PWA compliance.",
+  "Production build: The optimized output of npm run build, with minification, tree shaking, and code splitting applied. Always audit the production build, not the dev server.",
+  "Mobile preset: A Lighthouse configuration that simulates a mid-tier mobile device with CPU throttling (4x) and network throttling (4G), producing more realistic performance scores.",
+  "Opportunities: A Lighthouse section listing specific, actionable improvements with estimated time savings in milliseconds. Prioritize these over Diagnostics.",
+  "Diagnostics: A Lighthouse section with informational findings that provide context but may not have direct estimated savings. Address after Opportunities.",
+  "LCP (Largest Contentful Paint): A Core Web Vitals metric measuring how long it takes for the largest visible content element to load.",
+  "CLS (Cumulative Layout Shift): A Core Web Vitals metric measuring how much content shifts unexpectedly during page load.",
+  "Render-blocking resource: A script or stylesheet loaded in the document head that pauses the browser from rendering until it is fully downloaded and processed.",
+  "Lab measurement: A performance measurement taken in a controlled, simulated environment such as Lighthouse, as opposed to Real User Monitoring data from actual users.",
+  "Real User Monitoring (RUM): Performance data collected from actual users in production, as opposed to lab measurements. More representative of true user experience."
+]} />
+
+<QuickSummary points={[
+  "Always run Lighthouse on a production build (npm run build + npm start), never against the dev server, which has unoptimized assets.",
+  "Use the Mobile preset for audits — it applies CPU and network throttling for a realistic performance picture.",
+  "Prioritize the Opportunities section over Diagnostics — opportunities include estimated savings in milliseconds.",
+  "Screenshot scores before and after each fix to document the improvement.",
+  "Lighthouse is a lab tool — it gives consistent, reproducible measurements for development but does not directly measure what real users experience.",
+  "Run audits in an Incognito window to prevent browser extensions from skewing results."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Run Lighthouse on both the Mobile and Desktop presets for the same page of your app and record the scores for both. Write a two-sentence explanation of why the scores differ between mobile and desktop.
+
+**Definition of done:**
+
+- You have screenshots of both the Mobile and Desktop Lighthouse reports for the same page.
+- You can name at least one specific reason the scores differ (for example, CPU throttling on Mobile, network throttling, or different viewport size affecting image loading).
+- You have identified the top 3 opportunities from the Mobile audit and noted their estimated savings.

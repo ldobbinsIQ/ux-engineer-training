@@ -1,0 +1,280 @@
+---
+title: "State and Controlled Inputs"
+slug: "02-state-and-controlled-inputs"
+moduleSlug: "06-react-fundamentals"
+order: 2
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Build a controlled text input using useState"
+  - "Build a toggle button that flips a boolean state"
+  - "Build a form with multiple controlled inputs in one state object"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+controlled+inputs+usestate+forms"
+      label: "React Controlled Inputs"
+  docs:
+    - url: "https://react.dev/reference/react/useState"
+      label: "React useState"
+---
+
+## Goal
+
+Use `useState` to make React own the value of every input in a form, so you can validate, disable, and sync UI elements based on what the user is typing — before they ever hit submit.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Controlled inputs are the foundation of every interactive form in a React product. They let you validate in real time, disable the submit button until the form is valid, show character counters, and sync one input to another. Uncontrolled inputs cannot do any of these things reliably.
+
+Interviewers frequently ask candidates to build a controlled form from scratch in a take-home project or live coding session. Getting this pattern into muscle memory is one of the highest-leverage things you can do early in your React training.
+
+## What you will produce
+
+A page with three sections: a single controlled text input that displays its current value below it, a toggle button that switches between two labels, and a multi-field form where all inputs are stored in a single state object with a character counter on the message field.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all file changes
+- **Your Next.js project** — a new page file under `app/`
+- **Browser** — to test live state updates as you type
+
+## Concept overview
+
+### What useState does
+
+`useState` returns a pair: the current value and a setter function. Every time you call the setter, React re-renders the component with the new value. The component function runs again, and the new value appears in the UI.
+
+### Controlled vs uncontrolled inputs
+
+In an uncontrolled input, the browser owns the value and React reads it on demand using a ref. In a controlled input, React owns the value — it is stored in state and passed back to the input via the `value` prop. The input cannot display anything that is not in state.
+
+Controlled inputs are preferred in product UIs because you always know the exact current value. You can validate before submit, disable the submit button when the form is incomplete, and sync the value to other parts of the UI in real time.
+
+### Event handlers typed correctly
+
+The event object from an `onChange` handler is typed as `React.ChangeEvent<HTMLInputElement>` for text inputs and `React.ChangeEvent<HTMLTextAreaElement>` for textareas. The current input value is always at `event.target.value`.
+
+### One state object for multiple fields
+
+Instead of one `useState` call per field, a form with multiple fields is easier to manage with a single state object. Use the spread operator to update one key at a time without losing the other field values: `setState(prev => ({ ...prev, email: newValue }))`.
+
+<VideoEmbed
+  title="React Controlled Inputs"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=react+controlled+inputs+usestate+forms"
+  suggestedTerms="react usestate controlled input form typescript tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create a new page and add a controlled text input
+
+**What:** Build a single controlled input that stores its value in state.
+
+**Where:** Create `app/practice/state/page.tsx` in your Next.js project.
+
+**How:** Add the `'use client'` directive at the top (state requires a client component), then wire up the input:
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+
+export default function StatePracticePage() {
+  const [text, setText] = useState('');
+
+  return (
+    <main className="flex flex-col gap-4 p-8">
+      <input
+        type="text"
+        value={text}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setText(e.target.value)}
+        placeholder="Type something..."
+        className="rounded border p-2"
+      />
+      <p>Current value: {text}</p>
+    </main>
+  );
+}
+```
+
+**Why:** The `value={text}` prop makes React the source of truth. Without it, the input is uncontrolled. The `onChange` handler calls `setText` on every keystroke, triggering a re-render that shows the updated value in the paragraph below.
+
+**Check:** Type in the input and confirm the paragraph updates on every keystroke with no delay.
+
+---
+
+### Step 2 — Add a toggle button that flips a boolean
+
+**What:** Add a button that switches between two states — for example, "Show details" and "Hide details".
+
+**Where:** In the same `app/practice/state/page.tsx`, below the text input section.
+
+**How:** Add a second piece of state and a button that calls the setter with the negated value:
+
+```tsx
+const [isExpanded, setIsExpanded] = useState(false);
+
+// In the JSX:
+<button
+  type="button"
+  onClick={() => setIsExpanded(prev => !prev)}
+  className="rounded bg-blue-600 px-4 py-2 text-white"
+>
+  {isExpanded ? 'Hide details' : 'Show details'}
+</button>
+{isExpanded && <p>Here are the extra details.</p>}
+```
+
+**Why:** Using the functional form of the setter (`prev => !prev`) is safer than `setIsExpanded(!isExpanded)` when the update depends on the previous value. React may batch multiple updates, and the functional form always operates on the most recent state.
+
+**Check:** Clicking the button toggles the label and shows or hides the extra paragraph. Clicking rapidly does not get the state out of sync.
+
+---
+
+### Step 3 — Build a multi-field form with one state object
+
+**What:** Replace separate state variables with a single object holding all form fields.
+
+**Where:** In the same page, add a form section below the toggle.
+
+**How:** Define an interface for the form data and use a single `useState` call:
+
+```tsx
+interface FormData {
+  name: string;
+  email: string;
+  message: string;
+}
+
+const [form, setForm] = useState<FormData>({ name: '', email: '', message: '' });
+
+function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  const { name, value } = e.target;
+  setForm(prev => ({ ...prev, [name]: value }));
+}
+
+// In the JSX:
+<form className="flex flex-col gap-3">
+  <input name="name" value={form.name} onChange={handleChange} placeholder="Name" className="rounded border p-2" />
+  <input name="email" value={form.email} onChange={handleChange} placeholder="Email" className="rounded border p-2" />
+  <textarea name="message" value={form.message} onChange={handleChange} placeholder="Message" className="rounded border p-2" />
+</form>
+```
+
+**Why:** The `[name]: value` computed property key means one `handleChange` function works for every field. Adding a new field only requires adding it to the interface and the initial state object — the handler needs no changes.
+
+**Check:** Typing in any of the three fields updates only that field. The other two retain their values.
+
+---
+
+### Step 4 — Add a character counter to the message field
+
+**What:** Show how many characters the user has typed and how many remain, and prevent input beyond the limit.
+
+**Where:** Below the textarea in the form section.
+
+**How:** Define a constant for the max length and derive the count from state:
+
+```tsx
+const MAX_MESSAGE_LENGTH = 200;
+const remaining = MAX_MESSAGE_LENGTH - form.message.length;
+
+// Update the textarea:
+<textarea
+  name="message"
+  value={form.message}
+  onChange={handleChange}
+  maxLength={MAX_MESSAGE_LENGTH}
+  placeholder="Message"
+  className="rounded border p-2"
+/>
+<p className={remaining < 20 ? 'text-red-600' : 'text-gray-500'}>
+  {remaining} characters remaining
+</p>
+```
+
+**Why:** Deriving `remaining` from state means the counter is always in sync with the input — no separate counter state needed. The color change at 20 characters gives the user an early warning before they hit the limit.
+
+**Check:** Type in the message field and confirm the counter decrements on every keystroke. The counter turns red when fewer than 20 characters remain. The textarea refuses input once the limit is reached.
+
+---
+
+### Step 5 — Disable the submit button until the form is valid
+
+**What:** Add a submit button that is disabled when any required field is empty.
+
+**Where:** At the bottom of the form in the JSX.
+
+**How:** Derive a boolean from state and pass it to the button's `disabled` prop:
+
+```tsx
+const isFormValid = form.name.trim() !== '' && form.email.trim() !== '' && form.message.trim() !== '';
+
+<button
+  type="submit"
+  disabled={!isFormValid}
+  className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-40"
+>
+  Send message
+</button>
+```
+
+**Why:** This is the key advantage of controlled inputs — because React owns the values, you can compute UI state (like button disabled-ness) directly from input state without reading the DOM. An uncontrolled form cannot do this without a ref per field.
+
+**Check:** The button starts disabled. It becomes enabled only when all three fields have non-whitespace content. Clearing any field re-disables it immediately.
+
+## If stuck
+
+- **Infinite re-render loop:** You called `setState` directly in the component body (not inside a handler or effect). State setters must only be called in response to events or inside `useEffect`. Move any `setState` calls into an `onChange` or `onClick` handler.
+- **Input value is stuck and typing does nothing:** The `value` prop is set but there is no `onChange` handler. React is enforcing the controlled value and ignoring keystrokes. Add an `onChange` that calls the setter.
+- **"Warning: A component is changing an uncontrolled input to be controlled":** The initial state for a field is `undefined` instead of an empty string. Initialize all string fields with `''`.
+- **handleChange is not updating the right field:** Check that each input has a `name` attribute that exactly matches a key in the form state object.
+
+## Common mistakes
+
+- Using `useState` inside a conditional or loop. Hooks must always be called at the top level of the component function, in the same order on every render.
+- Mutating state directly: `form.name = 'new value'`. State must be replaced with a new object, not mutated in place.
+- Forgetting `'use client'` at the top of the file. `useState` does not work in server components — the directive is required.
+- Setting state inside the render body instead of in an event handler, which causes an infinite re-render loop.
+- Using `value={undefined}` on an input. This switches the input from controlled to uncontrolled, causing the React warning. Always initialize string state with `''`.
+
+<KeyTerms terms={[
+  "useState: A React hook that adds a state variable to a component. Returns the current value and a setter function that triggers a re-render when called.",
+  "Controlled input: An input whose value is stored in React state and passed back to the input via the value prop, making React the single source of truth.",
+  "Uncontrolled input: An input whose value is owned by the browser DOM. React reads it on demand via a ref rather than tracking it on every keystroke.",
+  "Setter function: The second value returned by useState, used to update the state variable. Calling it triggers a component re-render.",
+  "Functional update: A pattern where you pass a function to the setter instead of a value, for example setState(prev => !prev), ensuring the update is based on the latest state.",
+  "React.ChangeEvent: The TypeScript type for the event object passed to an onChange handler. Parameterized by the element type, for example React.ChangeEvent<HTMLInputElement>.",
+  "Computed property key: A JavaScript syntax that uses a variable as an object key inside square brackets, for example [name]: value, enabling one handler to update any field by name.",
+  "Derived state: A value computed from existing state rather than stored separately in its own useState call. The character counter remaining is an example.",
+  "Disabled prop: A boolean HTML attribute that prevents user interaction with a form element. In React, controlled by passing disabled={!isFormValid} based on state.",
+  "Re-render: The process of React calling a component function again after state changes to produce updated JSX."
+]} />
+
+<QuickSummary points={[
+  "useState returns the current value and a setter — calling the setter triggers a re-render with the new value.",
+  "A controlled input has both a value prop tied to state and an onChange handler that updates state on every keystroke.",
+  "Use a single state object for multi-field forms and update individual fields with the spread operator and computed property keys.",
+  "Derive values like character count and form validity from state rather than storing them in separate useState calls.",
+  "The functional update form (prev => !prev) is safer than reading state directly when the new value depends on the previous one.",
+  "Never call a state setter in the component body — only inside event handlers or useEffect — or you will cause an infinite re-render loop."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Build a character-limited textarea component called `LimitedTextarea` that accepts a `maxLength` prop (number) and an `onChange` prop (callback with the current string value). The component should display a live character counter below the textarea showing characters used and characters remaining. When the limit is reached, the counter should turn red and the textarea should refuse additional input.
+
+**Definition of done:**
+
+- The counter updates live on every keystroke with no lag.
+- The textarea stops accepting characters exactly at the limit — not one character over.
+- The counter text turns red when fewer than 20 characters remain.
+- The component accepts `maxLength` as a prop so the limit can be changed without editing the component itself.

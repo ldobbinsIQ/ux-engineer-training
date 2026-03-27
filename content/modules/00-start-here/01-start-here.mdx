@@ -1,0 +1,129 @@
+---
+title: "Start Here: How to Use This Program"
+slug: "01-start-here"
+moduleSlug: "00-start-here"
+order: 1
+hiringSignal: false
+estimatedHours: 0.25
+tasks:
+  - "Read the course structure in the Curriculum page"
+  - "Choose a weekly schedule and write it in your notes"
+  - "Create a /projects/sandbox folder in the terminal"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=what+is+a+ux+engineer+role"
+      label: "What Is a UX Engineer?"
+  docs:
+    - url: "https://nextjs.org/docs/app"
+      label: "Next.js App Router Docs"
+---
+
+## Goal
+By the end of this lesson, you will understand how the program is structured, have a weekly study schedule written down, and have a project workspace folder ready on your machine.
+
+## Time + Difficulty
+- **Time:** 15–20 min
+- **Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+- UX Engineers who ship consistently have a repeatable workflow — this program mirrors that rhythm
+- Knowing how lessons, practice tasks, and projects connect helps you see your own progress over time
+- Setting a schedule up front is the single most reliable predictor of finishing a self-directed course
+- Hiring managers look for engineers who can plan their own work and follow through without hand-holding
+
+## What you will produce
+- A written 2-sentence learning goal saved in your notes
+- A weekly schedule block (days + hours) written in your notes
+- A `/projects/sandbox` folder on your machine
+
+## Tools + Where you will work
+- **Tools:** Terminal, Cursor, Notes panel (in the app)
+- **Folder:** `~/projects/sandbox`
+- **Files you'll edit:** Notes (in-app)
+- **Commands you'll run:** `mkdir -p ~/projects/sandbox`
+
+## Concept overview
+This program is organized into Modules, each covering a skill area like workflow, HTML, CSS, React, or accessibility. Inside each Module are Lessons with step-by-step labs, followed by standalone Practice Tasks and larger Projects. Everything builds toward a Capstone you can put in your portfolio.
+
+Think of Modules as chapters, Lessons as guided labs, and Projects as the portfolio pieces that prove you can apply what you learned.
+
+**How this maps to UX thinking:** Good UX Engineers treat their own learning like a product — they define the goal, timebox the work, and iterate. This orientation lesson is your discovery sprint.
+
+**Mental model:**
+- Program structure: Module → Lesson → Practice Task → Project → Capstone
+- Each lesson has a single, measurable outcome
+- Practice tasks are done without copy-pasting — they test real retention
+- Projects are open-ended and portfolio-ready
+- The Capstone integrates everything into one shippable piece
+- 8–10 hours per week is enough to finish in 12–16 weeks
+- Notes are your scratchpad — use them freely
+
+## Step-by-step
+
+### Step 1: Read the program structure
+**What:** Open the Curriculum page in this app and read the full module list.
+**Where:** Curriculum page (top navigation)
+**How:** Click the Curriculum link in the nav. Scroll through all module names and lesson titles.
+**Why:** You will make better time estimates and feel less lost mid-lesson when you know the big picture.
+**Check:** You can name at least 3 modules and describe what they cover in one sentence each.
+
+### Step 2: Choose your weekly schedule
+**What:** Decide which days and hours you will study each week.
+**Where:** Your notes panel (in this app) or any note-taking tool you already use
+**How:** Write down 3–5 days per week and a 1–3 hour block for each day. Aim for 8–10 hours total per week.
+**Why:** A written schedule turns intention into a commitment you can hold yourself to.
+**Check:** Your schedule is written down and totals at least 8 hours per week.
+
+### Step 3: Write your 2-sentence learning goal
+**What:** Write one sentence on where you are now and one sentence on where you want to be.
+**Where:** Notes panel
+**How:** Use this format — "Right now I can [current skill level]. By the end of this program I want to be able to [target outcome]."
+**Why:** A concrete goal gives every lesson a personal reason to exist.
+**Check:** Your goal is specific enough that someone else could tell you in 3 months whether you achieved it.
+
+### Step 4: Create your project workspace
+**What:** Create a `/projects/sandbox` folder where all your lesson work will live.
+**Where:** Terminal
+**How:**
+```bash
+mkdir -p ~/projects/sandbox
+cd ~/projects/sandbox
+ls
+```
+**Why:** Having one predictable folder eliminates the "where did I put that?" problem for the entire course.
+**Check:** Running `ls ~/projects` shows a `sandbox` folder.
+
+## If stuck
+- **Notes panel not saving:** Try refreshing the page — your notes are persisted in your browser's local storage.
+- **mkdir fails with "permission denied":** Run `ls ~` to confirm your home directory is writable, or use `mkdir -p ~/Documents/projects/sandbox` instead.
+- **Terminal not opening in Cursor:** Use the menu: View → Terminal, or press Ctrl+` (backtick).
+
+## Common mistakes
+- Skipping the Curriculum page and jumping straight to Lesson 1 — you will miss the context that makes each lesson make sense
+- Setting an unrealistic schedule (7 days a week, 4 hours a day) that collapses in week 2 — be honest about your actual available time
+- Writing a vague learning goal like "get better at code" — a goal you cannot measure cannot guide your decisions
+- Not creating the `/projects/sandbox` folder now — later lessons assume it exists
+- Using a different folder name than the one specified in each lesson — the paths matter for the steps to work
+
+<KeyTerms terms={[
+  { term: "Module", definition: "A grouped set of lessons around one skill area, such as workflow, CSS, or React" },
+  { term: "Lesson", definition: "A single guided lab with a concrete outcome, steps, and a practice task" },
+  { term: "Practice Task", definition: "An independent assignment at the end of each lesson that tests retention without copy-pasting" },
+  { term: "Capstone", definition: "A final portfolio project that combines skills from all modules into one shippable piece" },
+  { term: "Notes panel", definition: "The in-app scratchpad where you save your learning goals, schedule, and lesson notes" },
+]} />
+
+<QuickSummary points={[
+  "The program runs Module → Lesson → Practice Task → Project → Capstone",
+  "8–10 hours per week is enough to finish in 12–16 weeks",
+  "A written schedule and a specific 2-sentence learning goal are the two highest-leverage things you can do right now",
+  "Your project workspace lives at ~/projects/sandbox — create it before moving on",
+]} />
+
+## Practice task
+Without looking back at the lesson, write a 2-sentence learning goal in your notes panel. Then write your weekly schedule — days and hours only, no app names needed. Finally, open a terminal and confirm the sandbox folder exists by running `ls ~/projects`.
+
+**Definition of done:**
+- A 2-sentence learning goal is saved in your notes panel
+- A weekly schedule totaling at least 8 hours per week is written in your notes
+- Running `ls ~/projects` in the terminal shows a `sandbox` folder

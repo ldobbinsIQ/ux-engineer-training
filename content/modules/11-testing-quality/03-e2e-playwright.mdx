@@ -1,0 +1,268 @@
+---
+title: "E2E Testing Basics with Playwright"
+slug: "03-e2e-playwright"
+moduleSlug: "11-testing-quality"
+order: 3
+hiringSignal: false
+estimatedHours: 1.5
+tasks:
+  - "Install Playwright and configure it for the local Next.js dev server"
+  - "Write a test that fills a form and submits it"
+  - "Assert the success state is visible after submission"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=playwright+e2e+testing+beginners+nextjs"
+      label: "Playwright E2E Testing for Next.js"
+  docs:
+    - url: "https://playwright.dev/docs/writing-tests"
+      label: "Playwright Writing Tests"
+---
+
+## Goal
+
+Write an end-to-end test that opens your Next.js app in a real browser, fills a form, submits it, and asserts the success state is visible — the complete user flow, automatically verified.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+E2E tests verify that complete user flows work in a real browser, catching bugs that unit and integration tests miss: routing problems, form submission to an actual API, animations that block interactions, and server-side rendering issues. They are the highest-confidence test type — a passing E2E test means the flow actually works for a user.
+
+For UX Engineers, E2E tests are particularly valuable for validating interaction flows: a form that fills, submits, and shows a success state is exactly the kind of flow that matters to users and product managers. Having one E2E test per critical user flow is a professional baseline.
+
+## What you will produce
+
+A Playwright configuration wired to your local Next.js dev server and an E2E test that navigates to a form, fills in the fields, submits, and asserts the success state is visible.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for configuration and test files
+- **Your Next.js project** — `playwright.config.ts` at the root, test files in an `e2e/` directory
+- **Terminal in Cursor** — to run `npx playwright test` and `npx playwright test --headed` for debugging
+
+## Concept overview
+
+### What E2E tests do that unit tests cannot
+
+E2E tests run your application in a real Chromium (or Firefox or WebKit) browser, navigating URLs, clicking, typing, and reading the DOM exactly as a user would. They catch:
+
+- Routing and navigation bugs (clicking a link goes to the wrong page)
+- Form submission flows that involve server calls
+- Accessibility issues that only appear in a real browser
+- Race conditions between async data loading and user interaction
+
+The trade-off is speed: E2E tests are much slower than unit tests (seconds vs milliseconds per test). The testing pyramid recommends a small number of E2E tests covering critical user journeys, with unit and integration tests covering logic in bulk.
+
+### Playwright setup for Next.js
+
+The key configuration is the `webServer` option in `playwright.config.ts`. This tells Playwright to start your Next.js dev server before running tests and shut it down after. You specify the command (`npm run dev`), the URL to wait for (`http://localhost:3000`), and whether to reuse an existing server if it is already running.
+
+### Locators
+
+Playwright locators find elements in the page. Like RTL, Playwright recommends accessible locators first:
+
+- `page.getByRole('button', { name: 'Submit' })` — finds by ARIA role and accessible name
+- `page.getByLabel('Email')` — finds an input by its associated label
+- `page.getByText('Success!')` — finds by visible text
+- `page.getByTestId('submit-btn')` — finds by `data-testid` (last resort)
+
+Playwright locators are lazy — they do not query the DOM immediately. They are evaluated when you call an action like `.click()` or an assertion like `.toBeVisible()`.
+
+### Assertions
+
+Playwright's built-in assertions auto-wait for conditions to be true, with a configurable timeout. You do not need manual `waitFor` calls for most assertions:
+
+- `await expect(locator).toBeVisible()` — waits for the element to be visible
+- `await expect(locator).toHaveValue('hello')` — waits for an input to have a specific value
+- `await expect(locator).toHaveText('Success!')` — waits for an element's text to match
+- `await expect(page).toHaveURL('/dashboard')` — waits for the page URL to match
+
+### Headed mode for debugging
+
+Run `npx playwright test --headed` to see the browser window during the test. This is invaluable for debugging — you can watch the test fill the form and see exactly where it fails.
+
+<VideoEmbed
+  title="Playwright E2E Testing for Next.js"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=playwright+e2e+testing+beginners+nextjs"
+  suggestedTerms="playwright e2e testing nextjs form submit assertions beginners tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Install Playwright and browser binaries
+
+**What:** Add Playwright as a development dependency and download the browser binaries it needs.
+
+**Where:** In the Cursor terminal, from your project root.
+
+**How:** Run:
+
+```bash
+npm install --save-dev @playwright/test
+npx playwright install chromium
+```
+
+**Why:** `@playwright/test` is the test runner and assertion library. `npx playwright install chromium` downloads the Chromium binary that Playwright controls during tests. Installing only Chromium (instead of all three browsers) keeps the install fast for local development.
+
+**Check:** The `@playwright/test` package appears in `devDependencies`. Running `npx playwright --version` prints a version number.
+
+---
+
+### Step 2 — Create playwright.config.ts with webServer configuration
+
+**What:** Create a Playwright configuration file that starts your Next.js dev server automatically before tests run.
+
+**Where:** Create `playwright.config.ts` in the project root.
+
+**How:** Add this configuration:
+
+```ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './e2e',
+  timeout: 30000,
+  use: {
+    baseURL: 'http://localhost:3000',
+    headless: true,
+  },
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
+});
+```
+
+**Why:** `webServer.command` starts the Next.js dev server. `webServer.url` is the URL Playwright polls to know when the server is ready. `reuseExistingServer: !process.env.CI` means that during local development, if you already have `npm run dev` running, Playwright reuses it instead of starting a second instance. In CI, it always starts a fresh server.
+
+**Check:** Create an empty `e2e/` directory and run `npx playwright test`. Playwright should start the server, find no tests, and exit cleanly.
+
+---
+
+### Step 3 — Write a form fill and submit test
+
+**What:** Write an E2E test that navigates to a page with a form, fills in the fields, and submits.
+
+**Where:** Create `e2e/contact-form.spec.ts`.
+
+**How:** Write the test:
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('user can fill and submit the contact form', async ({ page }) => {
+  await page.goto('/contact');
+
+  await page.getByLabel('Name').fill('Jane Smith');
+  await page.getByLabel('Email').fill('jane@example.com');
+  await page.getByLabel('Message').fill('Hello, I have a question.');
+
+  await page.getByRole('button', { name: 'Send message' }).click();
+
+  await expect(page.getByText('Your message has been sent')).toBeVisible();
+});
+```
+
+**Why:** Each step of the test mirrors a step in the user's mental model: go to the page, fill in the name, fill in the email, fill in the message, click the button, see the confirmation. `page.getByLabel` finds inputs by their associated label text, which is the correct way to query form fields. `toBeVisible()` auto-waits for the success message to appear after the async submission.
+
+**Check:** Run `npx playwright test --headed` to watch the test execute in the browser. Confirm each field fills correctly and the success message appears.
+
+---
+
+### Step 4 — Assert the success state is visible
+
+**What:** Add additional assertions to the success state to verify the content is complete and correct.
+
+**Where:** In `e2e/contact-form.spec.ts`, extend the existing test.
+
+**How:** Add more assertions after the submit:
+
+```ts
+await expect(page.getByRole('heading', { name: 'Message sent' })).toBeVisible();
+await expect(page.getByText('We will get back to you within 24 hours.')).toBeVisible();
+await expect(page.getByRole('link', { name: 'Return to home' })).toBeVisible();
+```
+
+**Why:** Multiple assertions verify the full success state, not just that something appeared. If the success heading appears but the subtext is wrong or the return link is missing, only checking one assertion would miss those failures.
+
+**Check:** Run `npx playwright test`. All assertions pass. Run with `--headed` to confirm visually.
+
+---
+
+### Step 5 — Run in headless mode and confirm both tests pass
+
+**What:** Run the full test suite in headless mode (the default) to confirm tests pass without the browser window open.
+
+**Where:** In the Cursor terminal.
+
+**How:** Run:
+
+```bash
+npx playwright test
+```
+
+To see a report of which tests passed and failed:
+
+```bash
+npx playwright show-report
+```
+
+**Why:** Headless mode is how tests run in CI. Confirming they pass headlessly ensures there are no interactions that only work in a visible browser window (for example, elements that are visible but outside the viewport in headless mode due to different default window sizes).
+
+**Check:** The terminal shows all tests passing. The report (if opened) shows test duration and any screenshots taken on failure.
+
+## If stuck
+
+- **Server not started — check webServer config in playwright.config.ts** — confirm the `webServer.command` matches your actual start script in `package.json`. If your dev server uses a different port, update both `url` and `baseURL` to match.
+- **Test times out waiting for the success message** — the form submission may be failing silently. Run with `--headed` and watch for network errors or form validation messages that block submission.
+- **page.getByLabel('Name') not found** — confirm the label's `for` attribute matches the input's `id`, or that the label wraps the input directly. If neither is true, the label is not properly associated and the locator cannot find the input.
+- **Tests pass locally but fail in CI** — check that `reuseExistingServer` is `false` in CI (`!process.env.CI`). A CI environment starts fresh, so no server is pre-running. Also confirm the `webServer.timeout` is long enough for the server to start.
+- **"Executable doesn't exist" error** — run `npx playwright install chromium` to download the browser binary. This step is separate from the npm install.
+
+## Common mistakes
+
+- Using `page.locator('.submit-btn')` (CSS selector) instead of `page.getByRole('button', { name: 'Submit' })`. CSS selectors break on style refactors and do not test accessibility.
+- Forgetting `await` before Playwright actions and assertions. Every interaction and assertion in Playwright is async — missing `await` means the test moves on before the action completes.
+- Hard-coding `setTimeout` waits (`await page.waitForTimeout(2000)`) instead of using auto-waiting assertions. `toBeVisible()` waits automatically; explicit sleeps make tests slow and flaky.
+- Running `npm run build && npm start` (production build) instead of `npm run dev` in the webServer config. Production builds are correct for performance testing but slower to restart and harder to debug during development.
+- Testing against a live production URL instead of localhost. E2E tests should always run against a controlled environment so they are reproducible and do not affect real data.
+
+<KeyTerms terms={[
+  "End-to-end (E2E) test: A test that runs the complete application in a real browser and verifies user flows from start to finish, including navigation, forms, and server interactions.",
+  "Playwright: A browser automation framework that controls Chromium, Firefox, and WebKit for E2E testing, with a built-in test runner and assertion library.",
+  "webServer config: A Playwright configuration option that starts a local server before tests run and shuts it down after, ensuring tests run against a live application.",
+  "Locator: A Playwright object that represents a way to find one or more elements in the page. Locators are lazy and re-queried each time an action is performed.",
+  "page.getByRole: A Playwright locator that finds elements by ARIA role and accessible name, the preferred locator for buttons, links, headings, and form controls.",
+  "page.getByLabel: A Playwright locator that finds a form input by the text of its associated label element.",
+  "toBeVisible: A Playwright assertion that waits for an element to be present in the DOM and visible on the page, auto-retrying until the timeout expires.",
+  "Headless mode: A browser mode where the browser window is not displayed, used for fast test execution in CI environments.",
+  "Headed mode: A browser mode where the browser window is visible, used for debugging E2E tests by watching them execute.",
+  "Auto-waiting: Playwright's built-in behavior of retrying assertions and actions until they succeed or the timeout expires, eliminating most manual wait calls."
+]} />
+
+<QuickSummary points={[
+  "E2E tests run the full application in a real browser, catching bugs that unit and integration tests miss such as routing, form submission, and server interactions.",
+  "Configure Playwright's webServer option to start your Next.js dev server automatically before tests run.",
+  "Use page.getByRole and page.getByLabel as the primary locators — they test accessibility at the same time as functionality.",
+  "Playwright assertions (toBeVisible, toHaveText) auto-wait for conditions — never use hard-coded setTimeout waits.",
+  "Run with --headed during development to watch the browser and debug failures visually.",
+  "Keep E2E tests focused on critical user journeys — a small number of well-written E2E tests is better than many slow, fragile ones."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Write an E2E test for a login form that tests both the success case (valid credentials show a dashboard) and the error case (invalid credentials show an error message).
+
+**Definition of done:**
+
+- Both tests (success and error case) pass in headless mode with `npx playwright test`.
+- Tests use `getByRole` and `getByLabel` locators — no CSS selectors or `getByTestId`.
+- No `page.waitForTimeout` calls — all waiting is done through auto-waiting assertions.
+- The error case test asserts both that the error message appears and that the user is not navigated away from the login page.

@@ -1,0 +1,322 @@
+---
+title: "Server vs Client Components"
+slug: "02-server-vs-client"
+moduleSlug: "07-nextjs-fundamentals"
+order: 2
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Identify which components in a Next.js page are server vs client"
+  - "Move an interactive counter to a client component with 'use client'"
+  - "Keep a data-fetching parent as a server component and pass data as props"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=nextjs+server+client+components+explained"
+      label: "Next.js Server vs Client Components"
+  docs:
+    - url: "https://nextjs.org/docs/app/getting-started/server-and-client-components"
+      label: "Next.js Server and Client Components"
+---
+
+## Goal
+
+Understand where each component runs — server or browser — so you can fetch data without an API route, keep interactive UI in client components, and compose the two correctly without breaking either.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+Server components are one of the most significant mental model shifts in modern React. Companies adopting Next.js App Router expect engineers to know where to place the `'use client'` boundary and why. Getting this wrong causes either broken interactivity (hooks in server components) or unnecessary JavaScript shipped to the browser (everything marked as client).
+
+Understanding the boundary also directly affects UX: server-rendered HTML arrives before any JavaScript executes, which means users see content faster. Knowing when to keep a component on the server is a performance decision and a UX decision simultaneously.
+
+## What you will produce
+
+A Next.js page where a server component fetches data and renders a list, and a separate client component handles an interactive toggle — with no `'use client'` on the data-fetching parent.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all file changes
+- **Your Next.js project** — the `app/` directory
+- **Browser DevTools** — to inspect what HTML is present before JavaScript hydrates
+
+## Concept overview
+
+### Server components: run only on the server
+
+By default, every component in the `app/` directory is a server component. Server components render on the server and send HTML to the browser. They can read files, query databases, and call internal APIs directly — without exposing credentials to the browser. They cannot use `useState`, `useEffect`, or any browser-only API.
+
+### Client components: run in the browser
+
+Adding `'use client'` at the very top of a file (before imports) marks that file and everything it imports as a client component. Client components can use all React hooks, respond to user events, and access browser APIs like `localStorage` and `window`. They are sent to the browser as JavaScript that runs and hydrates the server-rendered HTML.
+
+### The rendering boundary
+
+The `'use client'` directive creates a rendering boundary. Everything above the boundary in the component tree is server-rendered HTML. Everything below the boundary is JavaScript that ships to the browser. You want this boundary to be as deep in the tree as possible — keep the expensive, data-heavy components on the server and push interactivity into small, focused client components.
+
+### Passing server data to client components
+
+A server component can pass data to a client component via props, just like any parent-to-child prop. The data must be serializable (no functions, no class instances, no Promises) because it crosses the server-client boundary as JSON.
+
+<Diagram
+  title="Server vs Client Rendering Boundary"
+  src="/diagrams/d8-nextjs-server-client.svg"
+  caption="Server components fetch and render on the server; 'use client' creates a boundary where the component runs in the browser"
+  alt="Diagram showing Next.js server and client component boundary"
+/>
+
+<VideoEmbed
+  title="Next.js Server vs Client Components"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=nextjs+server+client+components+explained"
+  suggestedTerms="nextjs server client components use client boundary rendering"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create a server component page and read its constraints
+
+**What:** Create a page in the `app/` directory and verify that it is a server component by attempting to use a hook.
+
+**Where:** Create `app/practice/boundary/page.tsx`.
+
+**How:** Write a simple server component with a deliberate hook attempt to see the error:
+
+```tsx
+// Do NOT add 'use client' — this should be a server component
+import { useState } from 'react'; // This will error
+
+export default function BoundaryPage() {
+  const [count, setCount] = useState(0); // Error: hooks not allowed here
+  return <main className="p-8"><p>Count: {count}</p></main>;
+}
+```
+
+**Why:** Reading the exact error message is the fastest way to build the mental model. Next.js will tell you: "You're importing a component that needs useState. It only works in a Client Component but none of its parents are marked with 'use client'."
+
+**Check:** Cursor and the terminal both show the error. Note the exact message. Then remove the `useState` import and the hook call to restore a valid server component.
+
+---
+
+### Step 2 — Extract the interactive part into a client component
+
+**What:** Create a separate client component file for the counter and import it into the server page.
+
+**Where:** Create `components/Counter.tsx`.
+
+**How:** Add `'use client'` as the very first line, before any imports:
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+
+interface CounterProps {
+  initialCount?: number;
+}
+
+export function Counter({ initialCount = 0 }: CounterProps) {
+  const [count, setCount] = useState(initialCount);
+
+  return (
+    <div className="flex items-center gap-4 rounded border p-4">
+      <button
+        type="button"
+        onClick={() => setCount(prev => prev - 1)}
+        className="rounded bg-gray-100 px-3 py-1"
+      >
+        −
+      </button>
+      <span className="text-lg font-bold">{count}</span>
+      <button
+        type="button"
+        onClick={() => setCount(prev => prev + 1)}
+        className="rounded bg-gray-100 px-3 py-1"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+```
+
+**Why:** The `'use client'` directive at the top of this file tells Next.js that this component — and everything it imports — runs in the browser. The server page can now import and render `Counter` because the boundary is in `Counter.tsx`, not in the page.
+
+**Check:** Import `Counter` into `app/practice/boundary/page.tsx` and render `<Counter />`. The page should compile without errors and the counter should be interactive in the browser.
+
+---
+
+### Step 3 — Keep the parent as a server component and fetch data
+
+**What:** Fetch a list of items directly in the server page (no `useEffect`, no `useState`) and pass the data to both a server-rendered list and a client component.
+
+**Where:** Update `app/practice/boundary/page.tsx`.
+
+**How:** Make the page function async and use `fetch` directly:
+
+```tsx
+import { Counter } from '@/components/Counter';
+
+interface Post {
+  id: number;
+  title: string;
+}
+
+export default async function BoundaryPage() {
+  const res = await fetch('https://jsonplaceholder.typicode.com/posts?_limit=5');
+  const posts: Post[] = await res.json();
+
+  return (
+    <main className="flex flex-col gap-6 p-8">
+      <h1 className="text-2xl font-bold">Server + Client</h1>
+
+      {/* Server-rendered list — no JavaScript needed */}
+      <ul className="flex flex-col gap-2">
+        {posts.map(post => (
+          <li key={post.id} className="rounded border p-3">
+            {post.title}
+          </li>
+        ))}
+      </ul>
+
+      {/* Client component — needs JavaScript for interactivity */}
+      <Counter initialCount={posts.length} />
+    </main>
+  );
+}
+```
+
+**Why:** The `async`/`await` fetch runs on the server — no browser involved, no API route needed. The post list renders as static HTML in the initial server response. The `Counter` is the only JavaScript that ships to the browser for this page.
+
+**Check:** The page loads with the post list visible before JavaScript finishes loading. The counter starts at 5 (the number of posts). Incrementing and decrementing the counter works.
+
+---
+
+### Step 4 — Inspect the server-rendered HTML
+
+**What:** Verify that the post list is in the initial HTML response and does not require JavaScript to be visible.
+
+**Where:** Browser DevTools, Sources or Network tab.
+
+**How:** Right-click the page and choose "View Page Source" (not Inspect — that shows the live DOM after JavaScript has run). Search for one of the post titles in the source.
+
+**Why:** "View Page Source" shows the raw HTML sent by the server before any JavaScript runs. Finding the post title there confirms it was server-rendered. If you only find it in the live DOM but not in the source, it was client-rendered.
+
+**Check:** At least one post title from the fetched list appears in the raw page source HTML.
+
+---
+
+### Step 5 — Build a list with a client-side "mark as done" toggle
+
+**What:** Create a client component that receives a pre-fetched list as a prop and manages local toggle state for each item.
+
+**Where:** Create `components/TodoList.tsx`, then use it in the boundary page.
+
+**How:** The client component manages a `Set` of completed IDs in state:
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+
+interface Item {
+  id: number;
+  title: string;
+}
+
+export function TodoList({ items }: { items: Item[] }) {
+  const [completedIds, setCompletedIds] = useState<Set<number>>(new Set());
+
+  function toggle(id: number) {
+    setCompletedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  return (
+    <ul className="flex flex-col gap-2">
+      {items.map(item => (
+        <li
+          key={item.id}
+          className="flex items-center gap-3 rounded border p-3"
+        >
+          <input
+            type="checkbox"
+            checked={completedIds.has(item.id)}
+            onChange={() => toggle(item.id)}
+          />
+          <span className={completedIds.has(item.id) ? 'line-through text-gray-400' : ''}>
+            {item.title}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+Then in `app/practice/boundary/page.tsx`, replace the plain `ul` with `<TodoList items={posts} />`.
+
+**Why:** The server fetches the data; the client component handles the interaction. The `items` array is serializable JSON (objects with number and string fields), so it crosses the server-client boundary cleanly as a prop.
+
+**Check:** The list loads with items visible on first paint. Clicking a checkbox marks the item as done with a strikethrough — without a page reload.
+
+## If stuck
+
+- **"useState is not allowed in server components":** You forgot to add `'use client'` at the top of the file, or you added it below the imports instead of before them. The directive must be the very first line of the file.
+- **Client component is not receiving the data prop:** Check that the server page is passing the fetched data as a prop: `<TodoList items={posts} />`. Verify the prop name matches the interface.
+- **"Only plain objects can be passed to Client Components from Server Components":** You are passing a non-serializable value across the boundary — for example, a Date object, a function, or a class instance. Convert to a plain value (string, number, object literal) before passing.
+- **Post titles do not appear in View Page Source:** The fetch is happening on the client (perhaps via `useEffect`) rather than on the server. Make sure the page function is `async` and you are using top-level `await fetch`, not a `useEffect`.
+
+## Common mistakes
+
+- Adding `'use client'` to every component by default. This defeats the purpose of server components. Only add it to components that need hooks or browser APIs.
+- Importing a server-only module into a client component. A client component that imports `fs` or `crypto` will throw a build error. Keep server-only logic in server components or API routes.
+- Passing a Promise as a prop to a client component. Promises are not serializable. Await the data in the server component first, then pass the resolved value.
+- Expecting `useEffect` to be the way to fetch data in Next.js App Router. In App Router, server components fetch data with top-level `await`. `useEffect` fetching is only needed in client components that cannot be converted to server components.
+- Forgetting that `'use client'` propagates to all imports. If a client component imports a module, that module is also treated as a client module. Keep server-only utilities in files that are never imported by client components.
+
+<KeyTerms terms={[
+  "Server component: A React component that renders only on the server. It can fetch data directly, access server resources, and has no JavaScript sent to the browser for the component itself.",
+  "Client component: A React component marked with the 'use client' directive that runs in the browser. It can use React hooks, respond to events, and access browser APIs.",
+  "use client directive: A string literal placed as the very first line of a file, before any imports, that marks the file and all its imports as client components.",
+  "Rendering boundary: The point in the component tree where server rendering ends and client-side JavaScript begins, created by the 'use client' directive.",
+  "Hydration: The process of attaching React event handlers and state to server-rendered HTML in the browser, making it interactive.",
+  "Async server component: A server component function declared with the async keyword, enabling top-level await for data fetching without useEffect.",
+  "Serializable prop: A value that can be safely converted to JSON and passed across the server-client boundary as a prop. Includes strings, numbers, plain objects, and arrays, but not functions or class instances.",
+  "View Page Source: A browser action that shows the raw HTML sent by the server before JavaScript has run, used to verify that content was server-rendered.",
+  "Server-side fetch: A fetch call made during server rendering, inside an async server component, that runs on the server and returns data included in the initial HTML response.",
+  "Prop drilling boundary: The constraint that data passed from a server component to a client component must cross the rendering boundary as serializable props."
+]} />
+
+<QuickSummary points={[
+  "All components in app/ are server components by default — they render on the server, can fetch data directly, and send no component JavaScript to the browser.",
+  "Adding 'use client' as the very first line of a file marks it and all its imports as client components that run in the browser and can use hooks.",
+  "Push the 'use client' boundary as deep in the component tree as possible — keep data-heavy components on the server and make only interactive leaves into client components.",
+  "Server components can pass data to client components via serializable props — strings, numbers, and plain objects work; functions, Dates, and class instances do not.",
+  "Top-level async/await in a server component page replaces useEffect for data fetching — the fetch runs on the server and the data is in the HTML before JavaScript loads.",
+  "View Page Source (not Inspect) shows what the server actually sent and is the reliable way to confirm a component is server-rendered."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Build a page where a server component fetches a list of 10 items from a public API using async/await. Pass the list to a client component called `DoneList` that renders each item with a checkbox. Checking the checkbox marks the item with a strikethrough. The server component page file must have no `'use client'` directive, no `useState`, and no `useEffect`.
+
+**Definition of done:**
+
+- The list items are visible in "View Page Source" before JavaScript loads, confirming server rendering.
+- Checking a checkbox toggles the strikethrough styling without a page reload.
+- The page component file (`page.tsx`) has no `'use client'` directive and no React hooks.
+- The `DoneList` component file has `'use client'` as its very first line.
+- Cursor shows zero TypeScript errors across all files involved.

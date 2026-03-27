@@ -1,0 +1,195 @@
+---
+title: "Project 4: UXE Capstone — Mini Product + Case Study Generator"
+slug: "04-uxe-capstone"
+order: 4
+hiringSignal: true
+hiringSignalCategory: "Prototyping + Production Polish"
+estimatedHours: 20
+deliverables:
+  - "A cohesive mini product combining design system + dashboard + assistant-like UI"
+  - "Consistent navigation and reused design system components throughout"
+  - "An accessibility audit page showing Lighthouse scores and manual findings"
+  - "A test suite with at least 5 unit/RTL tests and 1 Playwright E2E test"
+  - "A Case Study Generator page that outputs structured markdown"
+  - "A README and a written case study"
+resources:
+  docs:
+    - url: "https://nextjs.org/docs/app"
+      label: "Next.js App Router Docs"
+    - url: "https://www.w3.org/WAI/ARIA/apg/patterns/"
+      label: "WAI-ARIA APG Patterns"
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=ux+engineer+portfolio+project+case+study"
+      label: "UX Engineer Portfolio Project"
+---
+
+## Overview
+
+The capstone combines everything from the course into a single cohesive mini product. It is not an add-on to the previous projects — it is a new application that reuses the components, patterns, and thinking from Projects 1, 2, and 3, and adds two new pieces: an assistant-like UI and a Case Study Generator page.
+
+The finished capstone is the centerpiece of your UX Engineer portfolio. It demonstrates that you can design and build a small product from scratch, make and document technical decisions, write tests, audit for accessibility, and communicate your work clearly in writing.
+
+## Product Concept
+
+Build a simple task management or user management tool with 3–5 pages. The exact domain is your choice — pick one that you can describe clearly in a case study. Suggested options:
+
+- **Task manager:** Users can view a list of tasks, filter by status, create new tasks, and mark them complete.
+- **User directory:** Admins can view a paginated user table, filter by name and role, view a user detail page, and invite new users.
+- **Content queue:** A list of content items (articles, posts, or tickets) with status filters, sort by date or priority, and a detail view.
+
+Whatever domain you choose, the product must have at least three pages: a list/dashboard page, a detail or form page, and the Case Study Generator page. Navigation between pages must be consistent (shared layout, same nav component on all pages).
+
+## Integration Requirements
+
+### Design system components from Project 2
+
+Every interactive element in the capstone must use a component from your Project 2 design system, not a raw HTML element or one-off styled element. Specifically:
+
+- All buttons must use the `Button` component.
+- All text inputs and selects must use the `Input` and `Select` components.
+- Any modal dialogs must use the `Modal` component.
+- Any notification feedback must use the `Toast` component via `useToast`.
+- Cards or panels must use the `Card` component.
+
+If a new component is needed (for example, a sidebar nav or a breadcrumb), build it using design system tokens, following the same patterns as your existing components.
+
+### Data-dense table from Project 3 patterns
+
+The list or dashboard page must include:
+
+- A sortable, paginated table (at minimum 3 sortable columns).
+- Filter controls (search + at least one dropdown) synced to URL query parameters.
+- Skeleton loader, empty state, and error state.
+
+You may reuse the `DataTable` component from Project 3 directly, or rebuild it using the patterns you learned.
+
+### Assistant-like UI
+
+Add one assistant-like interactive element to the product. This does not require a live AI API — it can be a local, rule-based simulation. Choose one:
+
+**Option A — Chat input with responses:** A text input at the bottom of a page where the user types a query (for example, "show me overdue tasks") and a pre-written response appears below. The response can be hardcoded or selected by keyword matching.
+
+**Option B — Suggestion chips:** After a user creates or edits an item, show a row of contextual suggestion chips below the form ("Add a due date", "Assign to a team member", "Set priority to High"). Clicking a chip pre-fills a related field.
+
+**Option C — Smart textarea with character count and prompt assistance:** A textarea that shows a live character count, a "Get suggestions" button that fills the field with a relevant placeholder template, and a tone indicator (for example, "Formal", "Casual") based on keyword detection.
+
+All three options require the assistant element to be keyboard accessible and screen reader compatible.
+
+## Case Study Generator Page
+
+Create a page at `/case-study` with a form that lets you fill in the sections of a UX Engineer case study. When you submit the form, the page generates formatted markdown that you can copy and paste directly into a portfolio README or a case study document.
+
+### Form sections
+
+The form has the following sections, each with a `textarea` (or structured inputs for the last section):
+
+1. **Problem** — What problem did you solve? What was the user need or business requirement? (2–4 sentences)
+2. **Constraints** — What constraints did you work within? Time, tech stack, existing codebase, accessibility requirements, etc.
+3. **Design Decisions** — What were the key visual and interaction design decisions you made? Why did you make them?
+4. **Technical Decisions** — What were the key technical decisions? Why did you choose this state management approach, this component architecture, this rendering strategy?
+5. **Accessibility Decisions** — What specific accessibility decisions did you make? Which ARIA patterns did you implement? What did you test manually?
+6. **Results** — What did you ship? What metrics improved (Lighthouse scores, CLS, test coverage)?
+7. **Next Steps** — If you had more time, what would you build or improve? Be specific.
+
+### Generated output
+
+When the form is submitted, the page renders a formatted markdown block below the form:
+
+```markdown
+## [Project Name]
+
+### Problem
+[User's answer]
+
+### Constraints
+[User's answer]
+
+### Design Decisions
+[User's answer]
+
+### Technical Decisions
+[User's answer]
+
+### Accessibility Decisions
+[User's answer]
+
+### Results
+[User's answer]
+
+### Next Steps
+[User's answer]
+```
+
+Include a "Copy to clipboard" button that copies the generated markdown. Use the Clipboard API (`navigator.clipboard.writeText`) and show a Toast notification confirming the copy.
+
+### Auto-save to localStorage
+
+Auto-save form state to `localStorage` every time a field changes (debounced at 500ms) so the user does not lose their work if they navigate away. Restore the saved state on page load if it exists. Include a "Clear saved draft" button that deletes the localStorage entry and resets the form.
+
+## Accessibility Audit Page
+
+Create a page at `/audit` that documents the accessibility state of your capstone. This page is a living document — update it as you fix issues.
+
+### Required sections
+
+**Automated findings:** Run Lighthouse on each page of your product and record the Accessibility score. For any page that scores below 90, list each specific finding and whether you fixed it.
+
+**Manual testing:** Test each page with keyboard-only navigation. Document:
+- Which interactive elements are reachable by Tab.
+- Whether focus is always visible.
+- Whether all form inputs have proper labels.
+- Whether all dynamic content updates (toast notifications, sort changes, filter results) are announced by a screen reader.
+
+**ARIA patterns used:** List each ARIA pattern you implemented (for example, `aria-sort` on table headers, `aria-live` on toast notifications, `role="dialog"` on modals) and confirm each is correctly implemented.
+
+**Known issues:** List any remaining accessibility issues that you did not fix, with a brief explanation of the tradeoff that led to leaving them unfixed.
+
+## Test Suite Requirements
+
+### Unit and RTL tests (at least 5)
+
+Write at least 5 tests covering utility functions and component behavior. At minimum, cover:
+
+- One utility function test (for example, the sort function or the filter function).
+- One component render test that queries by role, not by test ID.
+- One interaction test that fires a user event and asserts a state change.
+- One edge case test (empty input, null data, or a boundary condition).
+- One test for a component that uses conditional rendering (for example, the error state appearing when `status === 'error'`).
+
+### Playwright E2E test (at least 1)
+
+Write at least one E2E test that covers a complete user flow. Recommended flows:
+
+- Creating a new item through the form, verifying it appears in the list.
+- Applying a filter, verifying the results update, and clearing the filter.
+- Opening a modal, interacting with it, and verifying it closes and returns focus.
+
+The E2E test must use `getByRole` and `getByLabel` locators — no CSS selectors or `getByTestId`.
+
+## README Requirements
+
+Your README must include:
+
+1. **What this is** — a 2–3 sentence description of the product concept.
+2. **How to run it** — the commands to install and start the app.
+3. **Architecture decisions** — at least 3 specific decisions with your reasoning (for example, why you chose client-side filtering vs server-side, why you chose this state management approach).
+4. **Accessibility notes** — a summary of the ARIA patterns you implemented.
+5. **Test coverage** — a list of what each test covers.
+6. **Lighthouse scores** — a screenshot or table of scores for each page.
+7. **What you would do next** — if you had 2 more weeks, what would you build or improve?
+
+## Written Case Study
+
+Fill out the Case Study Generator page for this capstone and save the generated markdown as `CASE-STUDY.md` in the project root. This is the document you will share with interviewers — write it with the same care you would give a cover letter.
+
+## Evaluation Rubric
+
+**Technical correctness (25%):** Does the app work? Do the table sort, filter, and pagination function correctly? Does the modal trap focus? Does the toast auto-dismiss?
+
+**Accessibility (25%):** Lighthouse Accessibility score 90+ on all pages. Focus is always visible. ARIA patterns are correctly implemented. Dynamic updates are announced.
+
+**Code quality (20%):** TypeScript throughout with no `any` types. Components use design system tokens. Test suite passes. No console errors in production.
+
+**Documentation (15%):** README covers all required sections. Audit page is complete and honest about known issues. Comments in complex code explain the why, not the what.
+
+**Case study quality (15%):** The written case study is specific, honest, and demonstrates that you understand the tradeoffs you made. Vague answers ("I chose React because it is popular") score low. Specific answers ("I chose client-side filtering because the dataset is under 500 rows and the latency of a server round-trip would feel sluggish for a search input — I would switch to server-side if the dataset grew beyond 10,000 rows") score high.

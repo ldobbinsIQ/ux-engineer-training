@@ -1,0 +1,276 @@
+---
+title: "Project 2: Mini Design System"
+slug: "02-mini-design-system"
+order: 2
+hiringSignal: true
+hiringSignalCategory: "Design Systems"
+estimatedHours: 16
+deliverables:
+  - "Tokenized CSS variables (color, spacing, radius, shadow, typography)"
+  - "Components: Button, Input, Select, Modal, Toast, Card, Tabs — all with variants and states"
+  - "A /design-system gallery page documenting all components"
+  - "Accessibility notes on each component"
+resources:
+  docs:
+    - url: "https://storybook.js.org/docs/writing-docs/mdx"
+      label: "Storybook MDX Docs"
+    - url: "https://www.w3.org/WAI/ARIA/apg/patterns/"
+      label: "WAI-ARIA APG Patterns"
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=design+system+components+react+typescript"
+      label: "Design System Components in React"
+---
+
+## Problem Statement
+
+Most UI components built without a design system are inconsistent: buttons have slightly different border radii on different pages, inputs use different focus styles, and colors drift from the spec. A design system solves this by defining a shared vocabulary of tokens and components that all pages draw from.
+
+In this project, you will build a minimal but real design system: CSS design tokens, seven typed React components with all their variants and states, and a gallery page that documents everything in one place. When you are done, every page in your Next.js app will use the same button, the same input, and the same modal — and changing a token will update every component at once.
+
+## Token System Requirements
+
+### File location
+
+Define all tokens in a single CSS file: `styles/tokens.css`. Import it in your root layout so tokens are available globally.
+
+### Primitive tokens
+
+Primitive tokens are the raw values — every color, every spacing unit, every font size. They have no semantic meaning yet; they are just named values.
+
+```css
+:root {
+  /* Color primitives */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-400: #9ca3af;
+  --color-gray-600: #4b5563;
+  --color-gray-900: #111827;
+  --color-red-50: #fef2f2;
+  --color-red-500: #ef4444;
+  --color-red-700: #b91c1c;
+  --color-green-500: #22c55e;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-full: 9999px;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+
+  /* Typography */
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+}
+```
+
+### Semantic tokens
+
+Semantic tokens reference primitive tokens and give them meaning. Using semantic tokens in components means you can change the meaning (for example, switching the primary color from blue to purple) by updating one token, not every component.
+
+```css
+:root {
+  /* Interactive */
+  --color-interactive-default: var(--color-blue-600);
+  --color-interactive-hover: var(--color-blue-700);
+  --color-interactive-focus-ring: var(--color-blue-500);
+
+  /* Text */
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-disabled: var(--color-gray-400);
+  --color-text-on-dark: #ffffff;
+
+  /* Background */
+  --color-bg-default: #ffffff;
+  --color-bg-subtle: var(--color-gray-50);
+  --color-bg-muted: var(--color-gray-100);
+
+  /* Border */
+  --color-border-default: var(--color-gray-200);
+  --color-border-focus: var(--color-blue-500);
+  --color-border-error: var(--color-red-500);
+
+  /* Feedback */
+  --color-error: var(--color-red-500);
+  --color-error-bg: var(--color-red-50);
+  --color-success: var(--color-green-500);
+}
+```
+
+### Dark mode support
+
+Support dark mode by overriding semantic tokens in a `prefers-color-scheme: dark` media query or on a `[data-theme="dark"]` attribute. You do not need to redesign every component — only the semantic token values change.
+
+```css
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text-primary: #f9fafb;
+    --color-text-secondary: #d1d5db;
+    --color-bg-default: #111827;
+    --color-bg-subtle: #1f2937;
+    --color-bg-muted: #374151;
+    --color-border-default: #374151;
+  }
+}
+```
+
+## Component Requirements
+
+Build each component in its own file in `components/ui/`. Every component must be typed with TypeScript interfaces and use CSS tokens (no hardcoded hex values in component styles).
+
+### Button
+
+**Variants:** `primary`, `secondary`, `ghost`, `destructive`
+**Sizes:** `sm`, `md`, `lg`
+**States:** default, hover, focus, disabled, loading
+
+Loading state: render a spinner icon (an SVG or a CSS animation) before the label text and set `aria-disabled={true}` while loading. Do not use the HTML `disabled` attribute during loading because it removes the element from the accessibility tree — use `aria-disabled` instead and prevent the click handler from firing.
+
+Destructive variant: uses `--color-error` as the background. Used for delete and remove actions.
+
+```tsx
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  children: React.ReactNode;
+  type?: 'button' | 'submit' | 'reset';
+}
+```
+
+### Input
+
+**States:** default, focus, error, disabled
+**Sub-components:** label, hint text, error text
+
+The Input component must accept and render a `label`, an optional `hint` (help text shown below the label), and an optional `error` message (shown below the field in red when validation fails). Wire `aria-describedby` on the `input` element to point to the hint and/or error element's `id`.
+
+```tsx
+interface InputProps {
+  id: string;
+  label: string;
+  hint?: string;
+  error?: string;
+  disabled?: boolean;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+```
+
+### Select
+
+Same sub-component requirements as Input (label, hint, error with `aria-describedby`). Accepts an array of `{ value: string; label: string }` options.
+
+### Modal
+
+**Requirements:**
+- Renders into a portal using `ReactDOM.createPortal` targeting `document.body`
+- Focus is trapped inside the modal while it is open (Tab cycles through focusable elements inside the modal only)
+- Pressing Escape closes the modal
+- The first focusable element inside the modal receives focus when it opens
+- The trigger element that opened the modal receives focus when it closes
+- Background content has `inert` applied while the modal is open
+- `role="dialog"` and `aria-modal="true"` on the modal container
+- `aria-labelledby` on the modal container pointing to the modal heading's `id`
+
+Reference the WAI-ARIA Modal Dialog pattern at `https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/` for the complete keyboard interaction specification.
+
+### Toast
+
+**Variants:** `info`, `success`, `warning`, `error`
+**Behaviors:** auto-dismiss after 5 seconds (configurable via a `duration` prop), manual dismiss via a close button
+
+`info`, `success`, and `warning` toasts use `role="status"` and `aria-live="polite"` — they are announced by screen readers without interrupting the user's current focus context.
+
+`error` toasts use `role="alert"` and `aria-live="assertive"` — they interrupt the screen reader immediately to announce the error.
+
+A `ToastProvider` component wraps the app and manages a queue of active toasts. A `useToast` hook lets any component trigger a toast from anywhere in the component tree.
+
+### Card
+
+**Slots:** `header` (optional), `body` (required via `children`), `footer` (optional)
+
+Accept `header`, `children` (body content), and `footer` as props. Each slot is optional except `children`. The card uses `--shadow-sm` and `--radius-md` from the token system.
+
+### Tabs
+
+**Requirements:**
+- `role="tablist"` on the tab container element
+- `role="tab"` on each tab button
+- `role="tabpanel"` on each panel
+- `aria-selected="true"` on the active tab, `aria-selected="false"` on all inactive tabs
+- Left/Right arrow keys move focus between tabs and activate the focused tab
+- Home key moves to the first tab; End key moves to the last tab
+- `aria-controls` on each tab pointing to its panel's `id`
+- `aria-labelledby` on each panel pointing to its tab's `id`
+- `tabIndex={0}` on the active tab, `tabIndex={-1}` on all inactive tabs (roving tabindex pattern)
+
+Reference the WAI-ARIA Tabs pattern at `https://www.w3.org/WAI/ARIA/apg/patterns/tabs/`
+
+## Gallery Page Requirements
+
+Create a Next.js page at `/design-system` that documents all components. Structure the gallery page as follows:
+
+### Token swatches section
+
+At the top of the gallery, display all semantic color tokens as colored swatches (a square filled with the token value) with the token name and hex value displayed below each swatch. Group swatches by category: interactive, text, background, border, feedback.
+
+### Component preview section
+
+For each component, display a section with:
+
+1. The component name as a heading.
+2. All variants and states rendered side by side on a neutral background.
+3. A label beneath or beside each variant/state identifying it.
+4. For interactive states (hover, focus, disabled), show them statically using CSS classes that simulate the state appearance, since interactive states cannot be shown in a static gallery.
+
+### Accessibility notes section
+
+Below each component preview, include an accessibility notes block covering:
+
+- Which keyboard interactions the component supports (Tab, Enter, Space, Escape, arrow keys)
+- Which ARIA attributes the component uses, and the purpose of each
+- Any known screen reader behavior differences or caveats
+
+### Do and Don't examples
+
+For at least three components (Button, Input, and Modal are recommended), include a side-by-side Do / Don't comparison showing a correct usage and a common incorrect usage with a brief explanation of the difference.
+
+## Evaluation Criteria
+
+**Token correctness:** All components reference semantic tokens from `styles/tokens.css`. No hardcoded hex values appear in component CSS. Changing a semantic token in `tokens.css` visibly updates every component that uses it.
+
+**Component completeness:** Every component has all required variants and states. Edge cases are handled: a Button with very long text wraps correctly, an Input with a long error message does not overflow its container, the Modal closes on Escape and returns focus to the trigger.
+
+**Accessibility:** Tab navigation works correctly through all interactive components. The Modal traps focus and returns focus on close. Tabs respond to arrow keys. The correct ARIA attributes are present and properly referenced.
+
+**Gallery documentation:** The gallery page makes every variant and state visible at a glance without requiring interaction. Accessibility notes are accurate and specific to each component's implementation.

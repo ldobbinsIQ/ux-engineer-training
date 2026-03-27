@@ -1,0 +1,318 @@
+---
+title: "Writing Component Documentation"
+slug: "03-component-docs"
+moduleSlug: "09-design-systems"
+order: 3
+hiringSignal: true
+hiringSignalCategory: "Design Systems"
+estimatedHours: 1.5
+tasks:
+  - "Write a usage guide for the Button component with do/don't examples"
+  - "Document all props in a table format"
+  - "Add accessibility notes (keyboard behavior, ARIA requirements)"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=design+system+component+documentation+storybook"
+      label: "Design System Documentation"
+  docs:
+    - url: "https://storybook.js.org/docs/writing-docs/mdx"
+      label: "Storybook Writing Docs"
+---
+
+## Goal
+
+Write documentation for a design system component that is complete enough for a developer unfamiliar with the codebase to use the component correctly, including its prop API, usage guidance, and accessibility requirements.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+The UX Engineer role sits at the intersection of design and engineering. Writing component documentation is one of the most visible expressions of that position: you are defining the contract between how designers intend a component to be used and how engineers implement it.
+
+Poor documentation creates component misuse at scale. If a team of ten engineers uses a Button component for six months with incomplete documentation, they will each make different assumptions about edge cases — resulting in inconsistent UI across the product. Good documentation prevents that divergence before it starts.
+
+In interviews at design-system-focused companies, candidates are sometimes asked to review a component and its documentation and describe what is missing. Knowing what complete docs look like is tested directly.
+
+## What you will produce
+
+A complete documentation page for the Button component (in Markdown or MDX format) that includes: a purpose statement, usage guidance, a do/don't section, a complete props table, and an accessibility section covering keyboard behavior, ARIA requirements, and screen reader announcements.
+
+## Tools + Where you will work
+
+- **Cursor** — for writing the documentation file
+- **Your Next.js project or a Markdown file** — the documentation can live as `docs/button.md` or as a Storybook MDX story
+- **The Button component from lesson 02** — the component you are documenting
+
+## Concept overview
+
+### What good component docs include
+
+A complete component documentation page covers six areas:
+
+1. **Purpose** — One to two sentences describing what the component is for and when to use it. Not a description of its appearance.
+
+2. **Usage** — Practical guidance on when to use each variant, size, and state. Includes import statement and a basic code example.
+
+3. **Props table** — Every prop documented with its name, type, default value, required/optional status, and a plain-English description.
+
+4. **Do and don't** — Explicit guidance on correct and incorrect usage, with enough specificity to be actionable. "Use a primary button for the single most important action on a page" is specific. "Use buttons correctly" is not.
+
+5. **Accessibility** — The keyboard interaction pattern, ARIA role, any required ARIA attributes, and what a screen reader announces when the component is focused and activated.
+
+6. **Examples** — Rendered examples (if in Storybook or MDX) or code examples showing the most important usage scenarios.
+
+### Documentation as a contract
+
+Component documentation is a contract between three groups: designers (who specify what the component should look like and when to use which variant), engineers (who implement and consume the component), and QA (who verify that the implementation matches the spec).
+
+When documentation is incomplete, each group fills in the gaps with their own assumptions — and those assumptions rarely align. Documentation that specifies "the destructive variant should only be used for actions that are difficult to reverse, such as deleting data or revoking access" prevents the engineering team from using it for form reset buttons because they happen to be red.
+
+### Props table structure
+
+A well-formatted props table has these columns:
+
+| Prop | Type | Default | Required | Description |
+|---|---|---|---|---|
+| variant | 'primary' \| 'secondary' \| 'destructive' \| 'ghost' | 'primary' | No | Controls the visual style and semantic weight of the button |
+| size | 'sm' \| 'md' \| 'lg' | 'md' | No | Controls the padding and font size |
+| isLoading | boolean | false | No | Shows a spinner and prevents interaction while an async operation is in progress |
+| disabled | boolean | false | No | Marks the button as unavailable. Removes it from the tab order |
+| onClick | (event: MouseEvent) => void | undefined | No | Called when the button is pressed and not disabled or loading |
+
+Every prop should have a description that explains its purpose, not just its type. "boolean" is not a description.
+
+### Writing accessibility notes
+
+The accessibility section should cover three things:
+
+**Keyboard interaction:** What keyboard keys activate the component? What keyboard keys dismiss or close anything it opens?
+
+For a Button: Enter and Space both activate the button. There are no other keyboard interactions.
+
+**ARIA:** What role does the element have? Are any ARIA attributes required, recommended, or forbidden?
+
+For a Button: The native button element has the implicit `button` role. No additional ARIA is required for a standard button. An icon-only button requires `aria-label`.
+
+**Screen reader announcement:** When a user Tabs to the element, what does the screen reader say? When they activate it, what is announced?
+
+For a Button: Focus → screen reader announces the button label and "button". Activation → screen reader may announce nothing (the change that results from the click is what gets announced, not the button press itself).
+
+### MDX as a documentation format
+
+MDX (Markdown with JSX) is the standard format for design system documentation because it allows embedding live component examples inside prose documentation. Storybook uses MDX natively for its "Docs" stories. The format you are writing in for this training app is also MDX.
+
+In a Storybook context, you can render a live Button directly inside the docs page:
+
+```mdx
+import { Button } from '../Button';
+
+## Examples
+
+<Button variant="primary">Save changes</Button>
+<Button variant="secondary">Cancel</Button>
+<Button variant="destructive">Delete account</Button>
+```
+
+<VideoEmbed
+  title="Design System Documentation"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=design+system+component+documentation+storybook"
+  suggestedTerms="design system component documentation storybook props table accessibility notes do dont"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create the documentation file and write the purpose statement
+
+**What:** Create a new documentation file and write the opening purpose statement for the Button component.
+
+**Where:** Create `docs/button.md` in your project root. If you are using Storybook, create `stories/Button.mdx` instead.
+
+**How:** Start with a heading and a purpose statement that answers: what is this component for, and when should it be used?
+
+```markdown
+# Button
+
+Buttons let users take actions and make choices with a single tap or click. Use a Button when the action is the primary goal of the current view or step.
+
+A Button is not the right choice for navigation between pages — use a link for that. If an action opens a new URL, use an anchor element styled as a button rather than a button with a router push.
+```
+
+**Why:** The purpose statement prevents the most common misuse: engineers reaching for a Button component when they need a link, or using the wrong variant for an action's semantic weight. One paragraph of guidance prevents dozens of future misuse instances.
+
+**Check:** The purpose statement explains what the component is for and when not to use it.
+
+---
+
+### Step 2 — Write the props table
+
+**What:** Document every prop the Button component accepts in a Markdown table.
+
+**Where:** In the documentation file, under a "Props" heading.
+
+**How:** Create a table with columns: Prop, Type, Default, Required, Description. Include every prop — including those inherited from the native button element that you intentionally expose.
+
+```markdown
+## Props
+
+| Prop | Type | Default | Required | Description |
+|---|---|---|---|---|
+| variant | 'primary' \| 'secondary' \| 'destructive' \| 'ghost' | 'primary' | No | Controls the visual style and semantic weight. Use 'primary' for the main action, 'secondary' for alternatives, 'destructive' for irreversible actions, and 'ghost' for low-prominence actions. |
+| size | 'sm' \| 'md' \| 'lg' | 'md' | No | Controls padding and font size. Use 'sm' inside dense data tables or toolbars, 'md' for most UI, and 'lg' for hero calls to action. |
+| isLoading | boolean | false | No | When true, replaces the button content with a spinner and prevents click events. Use during async operations to prevent double submission. |
+| disabled | boolean | false | No | Makes the button unavailable and removes it from the keyboard tab order. Prefer 'isLoading' for async operations. |
+| type | 'button' \| 'submit' \| 'reset' | 'button' | No | The HTML button type. Always specify 'submit' explicitly for form submission buttons to prevent accidental form submissions. |
+| onClick | function | undefined | No | Called when the button is pressed and is neither disabled nor loading. |
+| className | string | undefined | No | Additional CSS class names appended to the button's class list. Use for layout overrides only — do not use to override visual styles. |
+| children | ReactNode | undefined | Yes | The button label. Should always be a non-empty text string or include a visually-hidden label for icon-only buttons. |
+```
+
+**Why:** A complete props table is the first thing an engineer looks for when trying to use a component. Descriptions that explain when to use a prop (not just what type it is) save developers from having to read the source code to understand intent.
+
+**Check:** Every prop has a non-trivial description. The type column uses the exact TypeScript type from the component definition.
+
+---
+
+### Step 3 — Write the do/don't section
+
+**What:** Create an explicit do and don't section with specific, actionable guidance.
+
+**Where:** In the documentation file, under a "Usage" heading.
+
+**How:** Write at least four do/don't pairs. Each pair should be specific — what to do, and a concrete example of the wrong thing being corrected. Avoid vague guidance.
+
+```markdown
+## Usage
+
+**Do:** Use one primary button per view as the primary call to action.
+
+**Don't:** Use two primary buttons side by side — this removes the visual hierarchy that tells users which action matters most. Use primary + secondary or primary + ghost instead.
+
+---
+
+**Do:** Use the destructive variant only for actions that are difficult or impossible to reverse — deleting data, revoking access, canceling an order.
+
+**Don't:** Use the destructive variant for actions that are merely negative or less preferred, such as canceling a filter or resetting a form to defaults. Use secondary or ghost for those.
+
+---
+
+**Do:** Write button labels as verb phrases that describe the action: "Save changes", "Send message", "Delete account".
+
+**Don't:** Write button labels as generic terms that require context to understand: "OK", "Yes", "Submit". These are ambiguous when read by screen readers out of context.
+
+---
+
+**Do:** Use isLoading during async operations to prevent double submission and communicate progress.
+
+**Don't:** Disable the button and show a separate loading spinner. The user has no way to know the button is loading if it is disabled and out of the tab order.
+```
+
+**Why:** Do/don't guidance makes implicit knowledge explicit. Every convention in this list exists because someone on a real team made the opposite choice. Documenting the convention prevents repeating that mistake.
+
+**Check:** Each don't has a specific alternative (not just "don't do X"). Each do has a concrete example or explanation of why it matters.
+
+---
+
+### Step 4 — Write the accessibility section
+
+**What:** Document the keyboard interaction pattern, ARIA role, and screen reader behavior for the Button component.
+
+**Where:** In the documentation file, under an "Accessibility" heading.
+
+**How:** Cover four areas: keyboard interaction, ARIA role, required ARIA attributes, and screen reader announcement behavior.
+
+```markdown
+## Accessibility
+
+### Keyboard interaction
+
+| Key | Action |
+|---|---|
+| Tab | Moves focus to the button |
+| Shift+Tab | Moves focus away from the button (to the previous focusable element) |
+| Enter | Activates the button |
+| Space | Activates the button |
+
+### ARIA role
+
+The Button component renders as a native `button` element, which carries the implicit ARIA role of `button`. No additional `role` attribute is needed.
+
+### Required ARIA attributes
+
+**Icon-only buttons** — A button that contains only an icon with no visible text must have an `aria-label` attribute describing the action. Without it, screen readers announce only "button" with no context.
+
+```tsx
+// Correct — icon-only button with aria-label
+<Button aria-label="Delete item">
+  <TrashIcon aria-hidden="true" />
+</Button>
+```
+
+**Loading state** — The loading state uses `aria-disabled="true"` rather than `disabled` to keep the button in the tab order. A visually-hidden "Loading" text inside the button provides the screen reader announcement.
+
+### Screen reader behavior
+
+**On focus:** Screen readers announce the button's accessible name followed by its role. For example, focusing the "Save changes" button announces: "Save changes, button."
+
+**On activation:** Screen readers do not announce the button press itself. They announce the result — for example, if a modal opens, the screen reader announces the modal title. If a success toast appears in a live region, the toast message is announced.
+
+**While loading:** Focus remains on the button (it is not removed from the tab order). Screen readers announce "Loading, button" when the button is focused during the loading state.
+```
+
+**Why:** Engineers who implement accessible components need this information. Engineers who consume components need to know what ARIA attributes they are responsible for adding (like `aria-label` on icon-only buttons). Without this section, accessibility is guesswork.
+
+**Check:** The section covers keyboard interaction, ARIA role, any required ARIA attributes the consumer must add, and what a screen reader announces in each state.
+
+## If stuck
+
+- **You are not sure what type to write for a prop:** Look at the TypeScript definition in the component file. The prop types are the source of truth. Copy them exactly.
+- **You are not sure what the screen reader announces:** Install NVDA or enable VoiceOver and test the component yourself. Focus the element and listen. Then activate it and listen again.
+- **The do/don't section feels generic:** Look at the specific design decisions made in this component — why is `destructive` a separate variant? Why does loading use `aria-disabled` instead of `disabled`? Each design decision is a candidate for a do/don't rule.
+- **You do not know what to include in the keyboard interaction table:** Use the WAI-ARIA APG (Authoring Practices Guide) as the reference. For a button, the pattern is simple: Tab, Shift+Tab, Enter, Space. For more complex components like comboboxes or menus, the APG specifies every key.
+
+## Common mistakes
+
+- Writing a props table where the Description column just repeats the type (writing "boolean" as the description for a boolean prop adds no information).
+- Skipping the do/don't section because it seems optional. This section is the highest-value part of the documentation — it prevents the most common misuse patterns.
+- Writing accessibility notes that say only "this component is accessible." Document specifically what keyboard interactions are supported and what screen readers announce.
+- Documenting the component as it is built today without noting anything that callers must provide (like `aria-label` on icon-only buttons). Documentation that omits consumer responsibilities creates inaccessible implementations.
+- Using developer-language in the description column of the props table. Descriptions should be readable by designers and product managers, not just engineers.
+- Never updating the docs when the component changes. Stale documentation is worse than none — it actively misleads. Treat documentation updates as part of the component change.
+
+<KeyTerms terms={[
+  "Props table: A structured table in component documentation that lists every prop with its name, type, default value, required status, and plain-language description.",
+  "Do and don't: A documentation section that provides explicit, specific guidance on correct and incorrect usage of a component, with enough context to be actionable.",
+  "Component contract: The implicit agreement between component authors and consumers about how the component should be used, what props it accepts, and what behaviors it guarantees.",
+  "MDX: A file format that combines Markdown prose with JSX component rendering, used by Storybook and other documentation tools to embed live examples alongside written documentation.",
+  "Storybook: An open-source tool for building and documenting UI components in isolation, widely used in design systems for component development and documentation.",
+  "Accessibility notes: A documentation section that specifies keyboard interaction patterns, ARIA role and attributes, and screen reader announcement behavior for a component.",
+  "Keyboard interaction table: A table in accessibility documentation that lists every relevant keyboard key and the action it triggers for a specific component.",
+  "Icon-only button: A button that displays only an icon without visible text, which requires an aria-label attribute to provide an accessible name for screen reader users.",
+  "WAI-ARIA APG: The WAI-ARIA Authoring Practices Guide, a W3C specification that defines standard keyboard interaction patterns for common UI components, used as the reference for keyboard behavior documentation.",
+  "Purpose statement: The opening paragraph of component documentation that explains what the component is for, when to use it, and crucially when not to use it in favor of a different element or component."
+]} />
+
+<QuickSummary points={[
+  "Complete component documentation covers six areas: purpose, usage guidance, props table, do/don't examples, accessibility notes, and code examples.",
+  "The props table must include descriptions that explain when and why to use a prop, not just its TypeScript type.",
+  "The do/don't section is the highest-value part of documentation — it makes implicit conventions explicit and prevents scale-level misuse.",
+  "The accessibility section must document keyboard interaction, ARIA role, any required ARIA attributes that consumers must add, and screen reader announcements.",
+  "Documentation is a contract — when a component changes, its documentation must change at the same time or it actively misleads other developers.",
+  "Icon-only buttons require aria-label and this must be called out explicitly in documentation, as it is the consumer's responsibility to add it."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Write complete documentation for the Input component you built in module 02. Include the purpose statement, props table, do/don't section, and accessibility section. Write it as if a developer who has never seen the component before will use it as their only reference.
+
+**Definition of done:**
+
+- A developer unfamiliar with the codebase can use the component correctly from the docs alone — verified by having a classmate or colleague read the docs without looking at the source code and then implementing a usage example.
+- The props table covers every prop with a non-trivial description.
+- The do/don't section has at least four specific, actionable pairs.
+- The accessibility section specifies: keyboard interaction keys and their actions, the ARIA role, any ARIA attributes the consumer must add (such as for error states), and what the screen reader announces on focus and on invalid submission.
+- The documentation file is stored in the project at a consistent location (docs/, stories/, or similar).

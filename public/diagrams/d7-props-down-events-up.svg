@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400">
+  <defs>
+    <marker id="arrowDown" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrowUp" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="400" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="400" y="34" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1e293b" text-anchor="middle">Props Down, Events Up</text>
+
+  <!-- Parent box (top, wide) -->
+  <rect x="200" y="56" width="400" height="80" rx="12" fill="#dbeafe" stroke="#3b82f6" stroke-width="2.5"/>
+  <text x="400" y="90" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1e293b" text-anchor="middle">Parent</text>
+  <text x="400" y="112" font-family="system-ui, sans-serif" font-size="12" fill="#3b82f6" text-anchor="middle">owns state: const [name, setName] = useState('')</text>
+
+  <!-- Child box (middle) -->
+  <rect x="250" y="178" width="300" height="70" rx="12" fill="#f1f5f9" stroke="#6b7280" stroke-width="2"/>
+  <text x="400" y="208" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1e293b" text-anchor="middle">Child</text>
+  <text x="400" y="230" font-family="system-ui, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">receives props, renders UI</text>
+
+  <!-- Grandchild box (bottom) -->
+  <rect x="290" y="295" width="220" height="65" rx="12" fill="#f1f5f9" stroke="#6b7280" stroke-width="2"/>
+  <text x="400" y="322" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1e293b" text-anchor="middle">Grandchild</text>
+  <text x="400" y="344" font-family="system-ui, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">&lt;input /&gt; element</text>
+
+  <!-- Props arrows (left side, going DOWN) -->
+  <!-- Parent → Child -->
+  <line x1="255" y1="136" x2="255" y2="176" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrowDown)"/>
+  <!-- Child → Grandchild -->
+  <line x1="295" y1="248" x2="295" y2="293" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arrowDown)"/>
+
+  <!-- Props labels -->
+  <text x="170" y="158" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#3b82f6" text-anchor="middle">props</text>
+  <text x="170" y="172" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#3b82f6" text-anchor="middle">(data)</text>
+  <text x="210" y="158" font-family="system-ui, sans-serif" font-size="10" fill="#3b82f6" text-anchor="middle">value={name}</text>
+  <text x="210" y="271" font-family="system-ui, sans-serif" font-size="10" fill="#3b82f6" text-anchor="middle">value={name}</text>
+
+  <!-- Events arrows (right side, going UP) -->
+  <!-- Grandchild → Child -->
+  <line x1="505" y1="293" x2="505" y2="250" stroke="#22c55e" stroke-width="2.5" marker-end="url(#arrowUp)"/>
+  <!-- Child → Parent -->
+  <line x1="545" y1="178" x2="545" y2="138" stroke="#22c55e" stroke-width="2.5" marker-end="url(#arrowUp)"/>
+
+  <!-- Events labels -->
+  <text x="630" y="158" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#22c55e" text-anchor="middle">events</text>
+  <text x="630" y="172" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#22c55e" text-anchor="middle">(callbacks)</text>
+  <text x="592" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#22c55e" text-anchor="middle">onChange={setName}</text>
+  <text x="585" y="271" font-family="system-ui, sans-serif" font-size="10" fill="#22c55e" text-anchor="middle">onChange={setName}</text>
+
+  <!-- Left bracket label -->
+  <line x1="185" y1="56" x2="160" y2="56" stroke="#3b82f6" stroke-width="1.5"/>
+  <line x1="160" y1="56" x2="160" y2="360" stroke="#3b82f6" stroke-width="1.5"/>
+  <line x1="160" y1="360" x2="185" y2="360" stroke="#3b82f6" stroke-width="1.5"/>
+
+  <!-- Right bracket label -->
+  <line x1="615" y1="56" x2="640" y2="56" stroke="#22c55e" stroke-width="1.5"/>
+  <line x1="640" y1="56" x2="640" y2="360" stroke="#22c55e" stroke-width="1.5"/>
+  <line x1="640" y1="360" x2="615" y2="360" stroke="#22c55e" stroke-width="1.5"/>
+</svg>

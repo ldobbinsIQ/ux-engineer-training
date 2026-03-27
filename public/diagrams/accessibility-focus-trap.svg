@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" font-family="system-ui, -apple-system, sans-serif">
+  <rect width="800" height="300" fill="#fafafa" rx="12"/>
+
+  <!-- Title -->
+  <text x="400" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="#111">Accessibility: Focus Trap in a Modal Dialog</text>
+
+  <!-- Page background (dimmed) -->
+  <rect x="20" y="50" width="360" height="210" rx="8" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="200" y="74" text-anchor="middle" font-size="12" font-weight="600" fill="#94a3b8">Page Content (inert while modal is open)</text>
+
+  <!-- Page buttons (dimmed/unreachable) -->
+  <rect x="60" y="90" width="120" height="36" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="120" y="114" text-anchor="middle" font-size="11" fill="#94a3b8">Nav Link</text>
+
+  <rect x="210" y="90" width="120" height="36" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="270" y="114" text-anchor="middle" font-size="11" fill="#94a3b8">Open Button</text>
+
+  <rect x="110" y="160" width="160" height="60" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="190" y="196" text-anchor="middle" font-size="11" fill="#94a3b8">Page content...</text>
+
+  <!-- Modal dialog -->
+  <rect x="400" y="50" width="380" height="230" rx="10" fill="white" stroke="#3b82f6" stroke-width="2"/>
+  <rect x="400" y="50" width="380" height="44" rx="10" fill="#3b82f6" opacity="0.1"/>
+  <text x="590" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">Modal Dialog</text>
+
+  <!-- Focus ring indicator on close button -->
+  <rect x="740" y="58" width="28" height="28" rx="6" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="3,2"/>
+  <text x="754" y="77" text-anchor="middle" font-size="14" fill="#1d4ed8">×</text>
+
+  <!-- Modal content -->
+  <text x="590" y="120" text-anchor="middle" font-size="11" fill="#475569">Focus is trapped inside the modal.</text>
+  <text x="590" y="136" text-anchor="middle" font-size="11" fill="#475569">Tab cycles through focusable elements only.</text>
+
+  <!-- Focusable elements inside modal -->
+  <!-- Input -->
+  <rect x="420" y="155" width="340" height="36" rx="6" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+  <text x="445" y="178" font-size="11" fill="#64748b">Email address...</text>
+  <text x="755" y="145" text-anchor="middle" font-size="9" fill="#3b82f6">1st focusable</text>
+
+  <!-- Cancel button -->
+  <rect x="420" y="210" width="155" height="36" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="498" y="233" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">Cancel</text>
+
+  <!-- Submit button (focused) -->
+  <rect x="590" y="210" width="155" height="36" rx="6" fill="#3b82f6"/>
+  <rect x="586" y="206" width="163" height="44" rx="9" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="3,2"/>
+  <text x="668" y="233" text-anchor="middle" font-size="11" font-weight="600" fill="white">Submit</text>
+
+  <!-- Tab cycle arrow -->
+  <path d="M754 86 Q780 86 780 160 Q780 250 668 250 Q590 250 498 248 Q430 246 420 175" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#greenarrow)"/>
+  <text x="786" y="180" font-size="10" fill="#10b981" text-anchor="start">Tab</text>
+  <text x="786" y="192" font-size="10" fill="#10b981" text-anchor="start">cycles</text>
+  <text x="786" y="204" font-size="10" fill="#10b981" text-anchor="start">here</text>
+
+  <!-- Label bottom -->
+  <text x="200" y="275" text-anchor="middle" font-size="10" fill="#94a3b8">aria-hidden="true" prevents screen readers from reaching page content</text>
+  <text x="590" y="290" text-anchor="middle" font-size="10" fill="#1d4ed8">role="dialog" aria-modal="true" aria-labelledby="dialog-title"</text>
+
+  <defs>
+    <marker id="greenarrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#10b981"/>
+    </marker>
+  </defs>
+</svg>

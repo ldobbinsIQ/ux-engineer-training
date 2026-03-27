@@ -1,0 +1,371 @@
+---
+title: "Tokens and Theming in a Design System"
+slug: "01-tokens-and-theming"
+moduleSlug: "09-design-systems"
+order: 1
+hiringSignal: true
+hiringSignalCategory: "Design Systems"
+estimatedHours: 1.5
+tasks:
+  - "Define a two-tier token system: primitive tokens and semantic tokens"
+  - "Apply semantic tokens in components instead of hardcoded values"
+  - "Implement dark mode by overriding semantic tokens on the html element"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=design+tokens+css+variables+design+system"
+      label: "Design Tokens with CSS Variables"
+  docs:
+    - url: "https://storybook.js.org/docs/writing-docs/mdx"
+      label: "Storybook MDX Docs"
+---
+
+## Goal
+
+Build a two-tier design token system using CSS custom properties — primitives that hold raw values and semantic tokens that give those values meaning — and use it to implement dark mode with a single class override.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+Design tokens are the connective tissue between design tools and code. Every mature design system at scale — Material Design, Salesforce Lightning, Adobe Spectrum, GitHub Primer — uses a layered token system. Understanding primitive vs semantic tokens is the question that separates UX Engineers who have read about design systems from those who have built them.
+
+Tokens also make theming and rebrandability possible. Without a token system, changing a brand color requires searching hundreds of files. With tokens, it is a one-line change. Interviewers at companies with design systems test this concept directly.
+
+## What you will produce
+
+A CSS token file with primitive and semantic layers, a component that uses only semantic tokens (no hardcoded hex values), and a working dark mode toggle that switches themes by adding a class to the `html` element.
+
+## Tools + Where you will work
+
+- **Cursor** — for CSS and component files
+- **Chrome or Edge DevTools** — to inspect computed CSS custom property values
+- **Your Next.js project** — `app/globals.css` and the `components/` directory
+
+## Concept overview
+
+### What are design tokens?
+
+A design token is a named value that represents a design decision — a color, a spacing amount, a border radius, a font size. The name carries meaning; the value is what gets applied. Changing the value at the token level ripples the change through every place that token is used.
+
+Without tokens, a stylesheet is littered with raw values:
+
+```css
+/* Without tokens — fragile */
+.button { background-color: #3b82f6; }
+.link { color: #3b82f6; }
+.badge { border-color: #3b82f6; }
+```
+
+With tokens, the value lives in one place and everything that uses it references the token by name:
+
+```css
+/* With tokens — maintainable */
+.button { background-color: var(--color-primary); }
+.link { color: var(--color-primary); }
+.badge { border-color: var(--color-primary); }
+```
+
+### Primitive tokens vs semantic tokens
+
+**Primitive tokens** hold raw values. They have descriptive names that say what the value is, not what it is used for. They form the full palette of available values.
+
+```css
+:root {
+  /* Color primitives */
+  --color-blue-100: #dbeafe;
+  --color-blue-500: #3b82f6;
+  --color-blue-700: #1d4ed8;
+  --color-gray-50:  #f9fafb;
+  --color-gray-900: #111827;
+  --color-red-500:  #ef4444;
+  --color-green-500: #22c55e;
+
+  /* Spacing primitives */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+}
+```
+
+**Semantic tokens** reference primitive tokens and give them meaning in context. They answer the question "what is this value used for?" not "what is the value?"
+
+```css
+:root {
+  /* Semantic color tokens */
+  --color-primary:          var(--color-blue-500);
+  --color-primary-hover:    var(--color-blue-700);
+  --color-surface:          var(--color-gray-50);
+  --color-text-default:     var(--color-gray-900);
+  --color-text-muted:       var(--color-gray-500);
+  --color-error:            var(--color-red-500);
+  --color-success:          var(--color-green-500);
+
+  /* Semantic spacing tokens */
+  --space-component-padding: var(--space-4);
+  --space-section-gap:       var(--space-8);
+}
+```
+
+### Why two tiers?
+
+The separation exists because primitives and semantic tokens solve different problems.
+
+When you need to change the brand color from blue to purple, you update `--color-primary: var(--color-purple-500)`. Every component that uses `--color-primary` updates automatically. You do not touch `--color-blue-500` — it still exists in the primitive layer for any non-primary use.
+
+When you need dark mode, you do not redefine all 40 primitive colors. You only redefine the semantic tokens that need to change:
+
+```css
+.dark {
+  --color-surface:      var(--color-gray-900);
+  --color-text-default: var(--color-gray-50);
+  --color-primary:      var(--color-blue-300);
+}
+```
+
+The primitive layer stays the same. The semantic layer switches meaning.
+
+### Token categories
+
+A complete token system covers:
+
+| Category | Example tokens |
+|---|---|
+| Color | `--color-primary`, `--color-surface`, `--color-text-default` |
+| Spacing | `--space-component-padding`, `--space-section-gap` |
+| Border radius | `--radius-sm`, `--radius-md`, `--radius-full` |
+| Shadow | `--shadow-sm`, `--shadow-md`, `--shadow-lg` |
+| Typography | `--font-size-sm`, `--font-weight-bold`, `--line-height-tight` |
+| Duration | `--duration-fast`, `--duration-normal` |
+
+### Tailwind CSS and tokens
+
+If your project uses Tailwind CSS, you can bridge the gap between Tailwind's utility classes and your token system by referencing CSS custom properties in your Tailwind config. Tailwind v3+ supports `var()` references directly in the theme configuration, and Tailwind v4 makes the design system CSS-first — tokens defined in CSS are automatically usable as utility classes.
+
+<VideoEmbed
+  title="Design Tokens with CSS Variables"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=design+tokens+css+variables+design+system"
+  suggestedTerms="design tokens CSS custom properties semantic tokens primitive tokens dark mode theming"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Define primitive tokens in :root
+
+**What:** Create the full palette of raw values as CSS custom properties under `:root`.
+
+**Where:** `app/globals.css` (or a dedicated `styles/tokens.css` file imported into `globals.css`).
+
+**How:** Define a color scale, spacing scale, radius scale, and at least one shadow scale. Keep the names purely descriptive — they describe the value, not its purpose.
+
+```css
+:root {
+  /* Colors */
+  --color-blue-100: #dbeafe;
+  --color-blue-300: #93c5fd;
+  --color-blue-500: #3b82f6;
+  --color-blue-700: #1d4ed8;
+  --color-gray-50:  #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-400: #9ca3af;
+  --color-gray-700: #374151;
+  --color-gray-900: #111827;
+  --color-red-500:  #ef4444;
+  --color-green-500: #22c55e;
+  --color-white:    #ffffff;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+```
+
+**Why:** The primitive layer is shared and stable. It changes only when you add new values to the scale (for example, a new gray shade). It never changes to accommodate a theme or brand.
+
+**Check:** Open DevTools, inspect the `html` element, and confirm the CSS custom properties appear in the computed styles panel.
+
+---
+
+### Step 2 — Define semantic tokens that reference primitives
+
+**What:** Add semantic tokens as a second layer, still under `:root`, that map primitive values to purposes.
+
+**Where:** Below the primitives in the same CSS file, still inside `:root`.
+
+**How:** Create semantic tokens for every design decision that varies by theme or context. Components will only ever use semantic tokens.
+
+```css
+:root {
+  /* ... primitive tokens above ... */
+
+  /* Semantic: Color */
+  --color-primary:          var(--color-blue-500);
+  --color-primary-hover:    var(--color-blue-700);
+  --color-primary-subtle:   var(--color-blue-100);
+
+  --color-surface:          var(--color-white);
+  --color-surface-raised:   var(--color-gray-50);
+  --color-surface-overlay:  var(--color-gray-100);
+
+  --color-text-default:     var(--color-gray-900);
+  --color-text-muted:       var(--color-gray-400);
+
+  --color-border:           var(--color-gray-100);
+  --color-border-focus:     var(--color-blue-500);
+
+  --color-error:            var(--color-red-500);
+  --color-success:          var(--color-green-500);
+
+  /* Semantic: Spacing */
+  --space-component-padding-x: var(--space-4);
+  --space-component-padding-y: var(--space-2);
+  --space-section-gap:         var(--space-8);
+  --space-stack-gap:           var(--space-4);
+}
+```
+
+**Why:** Components that reference `--color-primary` do not care what hex value it resolves to. When the brand changes, you update the semantic token in one place. Components require no changes.
+
+**Check:** In DevTools, confirm that `--color-primary` resolves to the expected hex value via the computed custom property chain.
+
+---
+
+### Step 3 — Apply semantic tokens in a component
+
+**What:** Build or update a component that uses only semantic tokens — no hardcoded values.
+
+**Where:** Create or edit `components/Button.tsx` and its accompanying styles.
+
+**How:** Every color, spacing, and radius value in the component should reference a semantic token. A hardcoded `#3b82f6` in a component is a token system violation.
+
+```css
+.button-primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: var(--space-component-padding-y) var(--space-component-padding-x);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.button-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.button-primary:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+```
+
+**Why:** If a component references a semantic token, it automatically gets the correct value in any theme — light, dark, high-contrast — without any component-level code changes.
+
+**Check:** The component renders correctly using only CSS custom properties. Search your component CSS for any raw hex values, RGB values, or px values that should be tokens — there should be none.
+
+---
+
+### Step 4 — Implement dark mode with a class override
+
+**What:** Add a `.dark` selector block that overrides only the semantic tokens that need to change for dark mode.
+
+**Where:** In `globals.css`, below the `:root` token definitions.
+
+**How:** Only semantic tokens are overridden — never primitives. The dark theme repoints semantic tokens to different primitives.
+
+```css
+.dark {
+  --color-surface:          var(--color-gray-900);
+  --color-surface-raised:   var(--color-gray-700);
+  --color-surface-overlay:  var(--color-gray-700);
+
+  --color-text-default:     var(--color-gray-50);
+  --color-text-muted:       var(--color-gray-400);
+
+  --color-border:           var(--color-gray-700);
+
+  --color-primary:          var(--color-blue-300);
+  --color-primary-hover:    var(--color-blue-100);
+}
+```
+
+Add a dark mode toggle button to your page that adds or removes the `dark` class on the `html` element:
+
+```tsx
+function toggleDarkMode() {
+  document.documentElement.classList.toggle('dark');
+}
+```
+
+**Why:** Class-based dark mode is the most flexible approach. It allows users to toggle the theme regardless of their OS preference, and it composites correctly with Tailwind's `dark:` variant system.
+
+**Check:** Clicking the toggle button switches the page to dark mode. Every component that uses semantic tokens updates automatically. No component-level code change was needed.
+
+## If stuck
+
+- **Semantic token is not resolving to the expected value:** Open DevTools, select the element, and look at the Computed panel. Find the custom property and trace the chain. Each `var()` reference should resolve step by step.
+- **Dark mode toggle adds the class but nothing changes visually:** Confirm that `.dark` is applied to `html` (the root element), not to `body` or a wrapper div. Custom properties on `:root` and `html` are inherited by all descendant elements.
+- **Component is not using the updated theme colors:** Check that the component is using semantic tokens (e.g., `--color-surface`) and not hardcoded primitives (e.g., `--color-gray-50`). Primitive tokens do not change between themes.
+- **Tailwind utility classes do not respond to dark mode:** If using Tailwind, configure `darkMode: 'class'` in `tailwind.config.ts` so that the `.dark` class triggers Tailwind's `dark:` variants.
+
+## Common mistakes
+
+- Using primitive tokens in components instead of semantic tokens. Components should never reference `--color-blue-500` directly — they should reference `--color-primary`.
+- Creating semantic tokens that are just renamed primitives with no semantic meaning (naming a token `--color-blue` instead of `--color-primary` adds no value).
+- Overriding primitive tokens in the dark mode selector instead of semantic tokens. Primitives are constant reference points — their values never change.
+- Mixing hardcoded values with token references in the same component. If a component uses tokens for color but hardcodes spacing, spacing is no longer themeable.
+- Not testing dark mode on all components. Dark mode issues are easy to introduce and easy to miss if you only check one or two components.
+- Using `prefers-color-scheme` media query only, without a class-based override. Media query only prevents users from overriding the OS preference within the app.
+
+<KeyTerms terms={[
+  "Design token: A named CSS custom property that represents a design decision — a color, spacing value, radius, or other visual attribute — so the value can be changed in one place and propagate everywhere it is used.",
+  "Primitive token: A design token that holds a raw value and is named descriptively (such as color-blue-500 or space-4). Primitives form the palette of all available values.",
+  "Semantic token: A design token that references a primitive and assigns it a purpose (such as color-primary or space-component-padding). Components use semantic tokens, never primitives directly.",
+  "CSS custom property: A variable defined in CSS with a double-dash prefix (such as --color-primary) that can be referenced using the var() function throughout a stylesheet.",
+  "Theme: A set of semantic token overrides that change the visual appearance of an entire system — such as a dark mode theme or a high-contrast theme — without modifying component code.",
+  "Dark mode: A theme variant that uses darker surface colors and lighter text colors to reduce screen brightness, implemented by overriding semantic color tokens on the html element.",
+  "Token tier: One layer in a two-tier token system. The primitive tier holds raw values; the semantic tier maps those values to purposes.",
+  "var() function: A CSS function that substitutes the value of a CSS custom property at the point of use, enabling tokens to be referenced by name.",
+  "Class-based theming: A pattern where a CSS class on the root element (such as .dark on html) triggers a set of token overrides, enabling user-controlled theme switching.",
+  "Rebrandability: The ability to change the visual identity of an application by updating a small set of token values, with all components updating automatically."
+]} />
+
+<QuickSummary points={[
+  "Primitive tokens hold raw values (hex colors, pixel sizes) named by what they are. Semantic tokens reference primitives and are named by what they are used for.",
+  "Components should only reference semantic tokens — never hardcoded values and never primitive tokens directly.",
+  "Dark mode is implemented by overriding semantic tokens on the .dark class applied to the html element. Primitive tokens never change.",
+  "A two-tier system means a brand color change requires updating one semantic token — not searching the entire codebase for hex values.",
+  "Class-based dark mode is more flexible than a media-query-only approach because it allows users to override the OS preference.",
+  "Every category of visual design decision — color, spacing, radius, shadow, typography — should be tokenized, not just color."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Add a "brand" tier to your token system that allows changing the entire primary color scale with one variable. Implement it so that changing `--brand-hue` (a hue value in degrees) automatically recalculates all `--color-primary-*` tokens using HSL color functions.
+
+**Definition of done:**
+
+- Changing `--brand-hue` on the `html` element in DevTools changes the primary color across all components without modifying any component CSS.
+- Dark mode still works correctly after adding the brand tier.
+- No component file references a hardcoded hex value or a primitive color token.
+- The token structure has three clearly separated sections in the CSS: primitives, semantic tokens, and the dark mode override block.

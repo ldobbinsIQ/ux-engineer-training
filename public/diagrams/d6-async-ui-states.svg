@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400">
+  <defs>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f97316"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="400" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="400" y="34" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1e293b" text-anchor="middle">Async UI State Machine</text>
+
+  <!-- State: idle (top-left) -->
+  <rect x="80" y="100" width="140" height="70" rx="12" fill="#f1f5f9" stroke="#6b7280" stroke-width="2.5"/>
+  <text x="150" y="132" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#6b7280" text-anchor="middle">idle</text>
+  <text x="150" y="153" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">waiting for action</text>
+
+  <!-- State: loading (top-right) -->
+  <rect x="580" y="100" width="140" height="70" rx="12" fill="#dbeafe" stroke="#3b82f6" stroke-width="2.5"/>
+  <text x="650" y="132" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#3b82f6" text-anchor="middle">loading</text>
+  <text x="650" y="153" font-family="system-ui, sans-serif" font-size="11" fill="#3b82f6" text-anchor="middle">fetching data…</text>
+
+  <!-- State: success (bottom-left) -->
+  <rect x="80" y="290" width="140" height="70" rx="12" fill="#dcfce7" stroke="#22c55e" stroke-width="2.5"/>
+  <text x="150" y="322" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#22c55e" text-anchor="middle">success</text>
+  <text x="150" y="343" font-family="system-ui, sans-serif" font-size="11" fill="#22c55e" text-anchor="middle">data displayed</text>
+
+  <!-- State: error (bottom-right) -->
+  <rect x="580" y="290" width="140" height="70" rx="12" fill="#fee2e2" stroke="#ef4444" stroke-width="2.5"/>
+  <text x="650" y="322" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#ef4444" text-anchor="middle">error</text>
+  <text x="650" y="343" font-family="system-ui, sans-serif" font-size="11" fill="#ef4444" text-anchor="middle">request failed</text>
+
+  <!-- Arrow: idle → loading (top, left to right) -->
+  <line x1="222" y1="130" x2="578" y2="130" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <text x="400" y="120" font-family="system-ui, sans-serif" font-size="11" fill="#3b82f6" text-anchor="middle">fetch starts</text>
+
+  <!-- Arrow: loading → success (right side down, then to success) -->
+  <line x1="580" y1="155" x2="430" y2="155" stroke="#22c55e" stroke-width="2"/>
+  <line x1="430" y1="155" x2="430" y2="310" stroke="#22c55e" stroke-width="2"/>
+  <line x1="430" y1="310" x2="222" y2="310" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <text x="330" y="148" font-family="system-ui, sans-serif" font-size="11" fill="#22c55e" text-anchor="middle">data received</text>
+
+  <!-- Arrow: loading → error (right side down) -->
+  <line x1="650" y1="170" x2="650" y2="288" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <text x="720" y="232" font-family="system-ui, sans-serif" font-size="11" fill="#ef4444" text-anchor="middle">request</text>
+  <text x="720" y="246" font-family="system-ui, sans-serif" font-size="11" fill="#ef4444" text-anchor="middle">fails</text>
+
+  <!-- Arrow: error → loading (retry, curved via top) -->
+  <path d="M 580 310 Q 500 230 580 170" stroke="#f97316" stroke-width="2" fill="none" marker-end="url(#arrowOrange)"/>
+  <text x="488" y="240" font-family="system-ui, sans-serif" font-size="11" fill="#f97316" text-anchor="middle">retry</text>
+
+  <!-- Arrow: success → loading (refetch, curved via bottom) -->
+  <path d="M 220 340 Q 400 390 580 340" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowBlue)"/>
+  <text x="400" y="388" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" text-anchor="middle">refetch</text>
+</svg>

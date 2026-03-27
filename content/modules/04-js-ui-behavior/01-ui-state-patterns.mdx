@@ -1,0 +1,322 @@
+---
+title: "UI State: Loading, Error, and Empty"
+slug: "01-ui-state-patterns"
+moduleSlug: "04-js-ui-behavior"
+order: 1
+hiringSignal: false
+estimatedHours: 1
+tasks:
+  - "Model a fetch call using a discriminated union state (idle/loading/success/error)"
+  - "Render a skeleton loader for the loading state"
+  - "Render an empty state component when data array is length 0"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+loading+error+empty+state+ui+patterns"
+      label: "React UI State Patterns"
+  docs:
+    - url: "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API"
+      label: "MDN Fetch API"
+---
+
+## Goal
+
+Model every async component using four explicit UI states — idle, loading, success, and error — and render the correct UI for each one, including a skeleton loader and an empty state.
+
+## Time + Difficulty
+
+**Estimated time:** 1 hour
+**Difficulty:** Beginner–Intermediate
+This lesson focuses on patterns you will repeat in every data-fetching component you ever build. The concepts are straightforward; the discipline of always handling all four states is the skill.
+
+## Why this matters for UX Engineers
+
+Most junior developers write components that handle only the success state. They display a list of items when data arrives, but forget to communicate anything during the wait or when something goes wrong. Users stare at a blank screen with no feedback, assume the app is broken, and leave.
+
+A UX Engineer's job is to own the full experience of a component — including the moments before and between data. Missing empty state is consistently one of the most common UX bugs found in code reviews. Skeleton loaders communicate progress without guessing how long the wait will be, which feels significantly more polished than a spinning icon. Error states with a retry button turn a dead end into a recoverable moment.
+
+Handling all four states is not extra work — it is the baseline of professional frontend code.
+
+## What you will produce
+
+A `UserList` React component that:
+
+- Shows nothing (or a neutral placeholder) in the idle state
+- Shows a skeleton loader in the loading state
+- Shows a list of user names in the success state
+- Shows an error message with a retry button in the error state
+- Shows an empty state message when the fetched array has zero items
+
+## Tools + Where you will work
+
+- **Editor:** Cursor
+- **Browser:** Chrome or Firefox with DevTools open
+- **Framework:** React (any project with JSX support — Vite + React is fine)
+- **Network throttling:** Chrome DevTools Network tab, set to "Slow 3G"
+
+## Concept overview
+
+Every component that loads data asynchronously can be in exactly one of four states at any given moment:
+
+**Idle** — The component has mounted but no fetch has started yet. This state is often skipped in simple components that fetch immediately on mount, but it matters in components that wait for user input (like a search box) before fetching.
+
+**Loading** — A request is in flight. The UI should communicate progress. Two common approaches: a spinner (simple, generic) and a skeleton loader (mimics the shape of incoming content, feels more intentional). Skeleton loaders are preferred in modern interfaces because they reduce perceived wait time.
+
+**Success** — Data arrived. Render the content. But check: is the array empty? An empty array is technically a success, but rendering nothing is confusing. Always handle the zero-item case explicitly.
+
+**Error** — The request failed (network error, HTTP 4xx/5xx, malformed response). Show a human-readable message and give the user a path forward — almost always a retry button.
+
+<Diagram title="Async UI States" src="/diagrams/d6-async-ui-states.svg" caption="Every data-fetching component should explicitly handle all four states" alt="State machine showing idle to loading to success or error" />
+
+The cleanest way to model these states in TypeScript (or even plain JavaScript with JSDoc) is a **discriminated union** — a single `state` variable that can only hold one shape at a time:
+
+```ts
+type FetchState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: User[] }
+  | { status: "error"; message: string };
+```
+
+This means your rendering logic is a switch or a series of `if` checks on `state.status`. You cannot accidentally access `state.data` in the error branch because TypeScript will not allow it.
+
+**Skeleton loader vs spinner:** A spinner says "something is happening." A skeleton loader says "here is where your content will appear." Skeletons reduce layout shift and set user expectations. Use skeleton loaders for list or card layouts; spinners are fine for button-level or inline operations.
+
+**Error state anatomy:** A good error state has three parts — an icon or visual cue, a plain-language message (not a raw HTTP status code), and a clear action (usually "Try again").
+
+<VideoEmbed title="React UI State Patterns" fallbackSearchUrl="https://www.youtube.com/results?search_query=react+loading+error+empty+state+ui+patterns" suggestedTerms="react loading error empty state ui patterns" watchFirst={true} duration="~15 min" />
+
+## Step-by-step
+
+### Step 1 — Create the UserList component file
+
+**What:** Create a new React component file named `UserList.tsx` (or `UserList.jsx`).
+
+**Where:** Inside your project's `src/components/` directory. If that folder does not exist, create it.
+
+**How:** In Cursor, open the Explorer panel, right-click `src/components/`, and select New File. Name it `UserList.tsx`.
+
+**Why:** Isolating this component in its own file lets you test each state branch independently without affecting the rest of the app.
+
+**Check:** The file appears in your project tree under `src/components/UserList.tsx`.
+
+---
+
+### Step 2 — Define the FetchState discriminated union
+
+**What:** At the top of `UserList.tsx`, define a `User` type and a `FetchState` union type covering all four states.
+
+**Where:** At the module level, before the component function.
+
+**How:** Add the following types:
+
+```ts
+type User = {
+  id: number;
+  name: string;
+};
+
+type FetchState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: User[] }
+  | { status: "error"; message: string };
+```
+
+**Why:** A discriminated union makes it impossible to represent an invalid combination (like having both `data` and an error message at the same time). It also gives TypeScript enough information to narrow the type inside each branch of your render logic.
+
+**Check:** Cursor shows no TypeScript errors on the type definitions. If you hover over `FetchState`, the tooltip should show all four variants.
+
+---
+
+### Step 3 — Set up component state and render branches
+
+**What:** Create the `UserList` component with a `state` variable initialized to `{ status: "idle" }`, and render a different UI for each state.
+
+**Where:** In `UserList.tsx`, below your type definitions.
+
+**How:**
+
+```tsx
+import { useState } from "react";
+
+export function UserList() {
+  const [state, setState] = useState<FetchState>({ status: "idle" });
+
+  if (state.status === "idle") {
+    return <p>Press "Load" to fetch users.</p>;
+  }
+
+  if (state.status === "loading") {
+    return (
+      <ul aria-label="Loading users">
+        {[1, 2, 3].map((n) => (
+          <li key={n} className="skeleton-row" aria-hidden="true" />
+        ))}
+      </ul>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <div role="alert">
+        <p>{state.message}</p>
+        <button onClick={() => setState({ status: "idle" })}>Try again</button>
+      </div>
+    );
+  }
+
+  // status === "success"
+  if (state.data.length === 0) {
+    return <p>No users found.</p>;
+  }
+
+  return (
+    <ul>
+      {state.data.map((user) => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+**Why:** Each `if` block narrows the TypeScript type. In the `"error"` branch, `state.message` is available. In the `"success"` branch, `state.data` is available. TypeScript enforces these boundaries at compile time.
+
+**Check:** In Cursor, try writing `state.data` inside the `"error"` branch — TypeScript should underline it with an error. Delete that line. No errors should remain.
+
+---
+
+### Step 4 — Add a skeleton loader style
+
+**What:** Add a minimal CSS class that gives the skeleton rows a pulsing grey appearance.
+
+**Where:** In your project's global CSS file (e.g., `src/index.css`) or a component-scoped CSS module.
+
+**How:**
+
+```css
+.skeleton-row {
+  height: 1.25rem;
+  background: #e2e8f0;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+```
+
+**Why:** A skeleton loader without visual styling is just invisible. The pulse animation signals activity without asserting a specific time estimate.
+
+**Check:** Temporarily set the initial state to `{ status: "loading" }` and reload the page. You should see three animated grey bars. Reset the initial state to `{ status: "idle" }` when done.
+
+---
+
+### Step 5 — Test each state manually
+
+**What:** Temporarily hard-code each state value to verify all four branches render correctly.
+
+**Where:** In the `useState` initializer in `UserList.tsx`.
+
+**How:** Change the initial value to each of the following in turn and confirm the output in the browser:
+
+```ts
+// Test idle:
+useState<FetchState>({ status: "idle" })
+
+// Test loading:
+useState<FetchState>({ status: "loading" })
+
+// Test error:
+useState<FetchState>({ status: "error", message: "Could not load users. Please try again." })
+
+// Test success with data:
+useState<FetchState>({ status: "success", data: [{ id: 1, name: "Ada Lovelace" }] })
+
+// Test empty success:
+useState<FetchState>({ status: "success", data: [] })
+```
+
+**Why:** Before wiring up a real fetch, confirming each branch renders correctly in isolation is the fastest way to find layout and logic bugs.
+
+**Check:** All five cases produce the correct UI. The skeleton rows pulse. The error message is visible. The empty state shows "No users found." The list renders the user name.
+
+---
+
+### Step 6 — Simulate slow network in DevTools
+
+**What:** Use Chrome DevTools network throttling to verify the loading state appears long enough to be seen by a real user.
+
+**Where:** Chrome DevTools (F12) → Network tab → throttle dropdown (set to "Slow 3G").
+
+**How:** Set the initial state to `{ status: "loading" }`. Open DevTools, go to the Network tab, select "Slow 3G" from the throttling dropdown. Reload the page. Observe that the skeleton loader appears immediately without a flash of blank content.
+
+**Why:** On fast connections the loading state may appear for under 100ms — invisible to the user. On a slow 3G connection it becomes clearly visible. Skeleton loaders are especially valuable here because they give users immediate visual feedback that content is coming.
+
+**Check:** The skeleton animation is visible for several seconds. No layout jump occurs when switching between states.
+
+## If stuck
+
+**The TypeScript error says "Property 'data' does not exist on type FetchState"**
+You are accessing `state.data` without narrowing the type first. Make sure you are inside an `if (state.status === "success")` block before reading `state.data`.
+
+**The skeleton rows are invisible**
+Confirm the `.skeleton-row` CSS class is being imported or is in a globally loaded stylesheet. Check the browser DevTools Elements panel to see if the `li` elements are rendering but have no styles applied.
+
+**The component is not showing up in the browser**
+Make sure `UserList` is imported and rendered in your `App.tsx` (or equivalent root component). Check the browser console for import errors.
+
+**The "Try again" button does nothing useful**
+That is expected at this stage — you have not wired up a real fetch yet. Lesson 02 covers retry logic with a live fetch call.
+
+## Common mistakes
+
+- **Skipping the empty state.** Returning `state.data.map(...)` without a length check renders nothing when the array is empty. Users see a blank area with no explanation.
+- **Using multiple boolean flags instead of a union.** Having `isLoading`, `isError`, and `data` as separate state variables allows impossible combinations like `isLoading: true` and `isError: true` simultaneously.
+- **Putting raw error objects in state.** `catch (err) { setState({ status: "error", message: err }) }` will break because `err` is typed as `unknown`. Always convert to a string: `message: err instanceof Error ? err.message : "Unknown error"`.
+- **Forgetting `role="alert"` on error messages.** Screen readers need this attribute to announce the error to users who cannot see the visual change.
+- **Hard-coding "Something went wrong" without useful context.** Give users enough information to know whether to retry, check their connection, or contact support.
+
+<KeyTerms terms={[
+  { term: "Discriminated union", definition: "A TypeScript union type where each member has a shared literal property (the discriminant) that uniquely identifies it, allowing TypeScript to narrow the type inside conditional branches." },
+  { term: "Idle state", definition: "The initial state of a data-fetching component before any request has been made — often shown when the component is waiting for user input to trigger a fetch." },
+  { term: "Loading state", definition: "The state while a network request is in flight. The UI should communicate that work is happening, typically with a skeleton loader or spinner." },
+  { term: "Success state", definition: "The state after a request completes successfully and data is available for rendering. Always check whether the returned data collection is empty before rendering." },
+  { term: "Error state", definition: "The state when a request fails due to a network problem or an unexpected server response. A good error state includes a human-readable message and a retry action." },
+  { term: "Skeleton loader", definition: "A placeholder UI that mimics the shape and layout of incoming content, animated to signal loading activity. Preferred over spinners for list and card layouts because it sets user expectations about content shape." },
+  { term: "Empty state", definition: "The UI shown when a successful response contains zero items. Missing empty states are one of the most common UX bugs — users should always understand why they are seeing nothing." },
+  { term: "Type narrowing", definition: "The process by which TypeScript uses a conditional check (such as an equality check on a discriminant property) to refine a union type to one of its specific members inside that branch." },
+  { term: "Retry button", definition: "A UI control in an error state that allows the user to re-attempt a failed operation without reloading the page. Transforms a dead end into a recoverable experience." }
+]} />
+
+<QuickSummary points={[
+  "Every data-fetching component needs four explicit states: idle, loading, success, and error.",
+  "A discriminated union with a 'status' field is the cleanest way to model these states — it prevents impossible combinations and enables TypeScript type narrowing.",
+  "Skeleton loaders are preferred over spinners for list and card layouts because they communicate the shape of incoming content and reduce perceived wait time.",
+  "Always check for an empty array after a successful fetch — rendering nothing without explanation is one of the most common UX bugs.",
+  "Error states need three elements: a human-readable message, a visual cue, and a retry action.",
+  "Test each state branch in isolation by temporarily hard-coding the initial state value before wiring up a real fetch call."
+]} />
+
+## Practice task + Definition of done
+
+**Practice task:** Starting from your completed `UserList` component, ensure all four states (idle, loading, error, and empty success) are covered and styled.
+
+Work through these checkpoints:
+
+1. Add a "Load users" button in the idle state that transitions to `{ status: "loading" }` when clicked.
+2. After 1.5 seconds (use `setTimeout` to simulate a fetch), transition to `{ status: "success", data: [] }` to verify the empty state.
+3. Add a second button in the idle state labeled "Simulate error" that transitions directly to `{ status: "error", message: "Network request failed. Check your connection and try again." }`.
+4. Confirm the retry button in the error state transitions back to `{ status: "idle" }`.
+
+**Definition of done:**
+
+- All four states are reachable by clicking buttons in the browser — no code changes required to switch states.
+- The skeleton loader is visually distinct from blank space (pulsing animation visible).
+- The empty state shows a message explaining why the list is empty.
+- The error state shows a non-technical message and a functional retry button.
+- TypeScript reports zero errors (`tsc --noEmit` passes, or no red underlines in Cursor).
+- Accessing `state.data` outside the `"success"` branch produces a TypeScript error in Cursor.

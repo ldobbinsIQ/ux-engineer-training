@@ -1,0 +1,293 @@
+---
+title: "Semantic HTML for Product UI"
+slug: "01-semantic-html"
+moduleSlug: "02-html-forms"
+order: 1
+hiringSignal: false
+estimatedHours: 1
+tasks:
+  - "Replace div-based layout with semantic elements in a sample page"
+  - "Add a nav with aria-label, main, and footer to a Next.js page"
+  - "Verify structure in browser DevTools accessibility tree"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=semantic+html+for+accessibility"
+      label: "Semantic HTML for Accessibility"
+  docs:
+    - url: "https://developer.mozilla.org/en-US/docs/Web/HTML/Element"
+      label: "MDN HTML Elements Reference"
+---
+
+## Goal
+
+Replace meaningless div-based markup with semantic HTML elements so that your page communicates structure to browsers, assistive technologies, and search engines — not just to sighted users.
+
+## Time + Difficulty
+
+**Estimated time:** 1 hour
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Screen readers and other assistive technologies rely on HTML semantics to describe a page to users who cannot see it. When every element is a `div`, a screen reader user hears a wall of unlabeled text with no landmarks to navigate by. Hiring managers reviewing your code look for semantic markup as a signal that you understand the platform.
+
+Using the right element also gives you free behavior: a `button` is keyboard-focusable and activatable by default, while a `div` with an onClick handler is not. Semantic HTML reduces the amount of ARIA you need to bolt on afterward.
+
+## What you will produce
+
+A Next.js page file where the layout is built with `header`, `nav`, `main`, `article`, `section`, `aside`, and `footer` — with the accessibility tree showing named landmarks in DevTools.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all file changes
+- **Chrome or Edge DevTools** — Accessibility panel to inspect the tree
+- **Your Next.js project** — the `app/` or `pages/` directory
+
+## Concept overview
+
+### The problem with div soup
+
+A page built entirely from `div` elements gives the browser no structural information. Everything looks the same in the accessibility tree: an anonymous group with no role and no name. A screen reader user cannot jump to the main content, skip the navigation, or identify the page footer.
+
+### Landmark elements and their roles
+
+Each semantic element maps to an implicit ARIA landmark role that assistive technologies expose:
+
+| Element | Implicit Role | Use it for |
+|---|---|---|
+| `header` | `banner` | Site-level header (logo, primary nav) |
+| `nav` | `navigation` | Sets of navigation links |
+| `main` | `main` | The primary content of the page |
+| `article` | `article` | Self-contained, independently distributable content |
+| `section` | `region` (when named) | Thematic grouping within a page |
+| `aside` | `complementary` | Tangentially related content |
+| `footer` | `contentinfo` | Site-level footer |
+
+### Div soup vs semantic structure
+
+**Before — every element is a div, the tree is flat and unlabeled:**
+
+```html
+<div class="wrapper">
+  <div class="top-bar">
+    <div class="links">...</div>
+  </div>
+  <div class="content">
+    <div class="article">...</div>
+    <div class="sidebar">...</div>
+  </div>
+  <div class="bottom">...</div>
+</div>
+```
+
+**After — landmarks are visible to assistive technologies:**
+
+```html
+<header>
+  <nav aria-label="Primary">...</nav>
+</header>
+<main>
+  <article>...</article>
+  <aside>...</aside>
+</main>
+<footer>...</footer>
+```
+
+### When to add aria-label
+
+If you have more than one `nav` on a page, each must have a distinct `aria-label` so a screen reader user can tell them apart. Use `aria-label="Primary"` and `aria-label="Breadcrumb"` rather than repeating the word "navigation" (the landmark role already says that).
+
+<VideoEmbed
+  title="Semantic HTML for Accessibility"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=semantic+html+for+accessibility"
+  suggestedTerms="semantic html accessibility landmark roles screen reader"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Open the target file in Cursor
+
+**What:** Locate the page file you will refactor.
+
+**Where:** Open Cursor, then open your Next.js project. Navigate to `app/page.tsx` (App Router) or `pages/index.tsx` (Pages Router).
+
+**How:** Use `Ctrl+P` (or `Cmd+P` on Mac) in Cursor to open the file picker, then type `page.tsx` and select the file.
+
+**Why:** You need to see the existing markup before making changes. Identify every `div` that is acting as a structural container — header zone, navigation zone, main content zone, sidebar zone, footer zone.
+
+**Check:** You can see the file contents in the editor and can identify at least four structural zones marked with divs.
+
+---
+
+### Step 2 — Replace the outermost wrapper divs with landmark elements
+
+**What:** Swap structural `div` elements for their semantic equivalents.
+
+**Where:** In the JSX returned by your page component.
+
+**How:** Work from the outside in. Replace the header-zone div with `<header>`, the content div with `<main>`, and the footer div with `<footer>`. Do not change any div that is purely for styling purposes (e.g., a centering wrapper or a flex container inside the landmark).
+
+**Why:** The outer shell is where landmarks live. Inner layout divs can stay as divs because they carry no structural meaning — they just control spacing and alignment.
+
+**Check:** Save the file. The page still renders in the browser with no visible change.
+
+---
+
+### Step 3 — Add a nav element with aria-label
+
+**What:** Wrap your list of navigation links in a `nav` element.
+
+**Where:** Inside the `header` you created in Step 2.
+
+**How:** Replace the div around your nav links with `<nav aria-label="Primary">`. If you have a second nav (for example a footer nav), use `<nav aria-label="Footer">`.
+
+```tsx
+<header>
+  <nav aria-label="Primary">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/about">About</a></li>
+    </ul>
+  </nav>
+</header>
+```
+
+**Why:** The `aria-label` gives the landmark a human-readable name. Without it, a page with two `nav` elements shows "navigation" twice in the landmark list with no way to distinguish them.
+
+**Check:** Save and reload. No visual change should occur.
+
+---
+
+### Step 4 — Add article, section, and aside where appropriate
+
+**What:** Identify content zones inside `main` and apply `article`, `section`, or `aside`.
+
+**Where:** Inside the `<main>` element.
+
+**How:** Use `article` for any self-contained piece of content that makes sense on its own (a blog post, a product card detail, a news item). Use `section` for a thematic grouping that needs a heading — every `section` should have an `h2` or `h3` as its first child. Use `aside` for sidebars, related links, or supplementary content.
+
+**Why:** These elements give the content regions meaning. Search engines use `article` to identify primary content. Screen reader users can skip past an `aside` if they want only the main article.
+
+**Check:** Each `section` in your markup has a heading element as its first child.
+
+---
+
+### Step 5 — Replace button-like divs with actual button elements
+
+**What:** Find any `div` or `span` that has an `onClick` and replace it with `<button>`.
+
+**Where:** Anywhere in the JSX.
+
+**How:** Search the file for `onClick` using `Ctrl+F`. For each match, check whether the element is a `div` or `span`. Replace those with `<button type="button">`. If the element navigates to a URL, use `<a href="...">` instead.
+
+**Why:** A `button` element is natively focusable, activatable with Enter and Space, and announces its role to screen readers. A div with onClick is invisible to keyboard-only users and screen readers unless you manually add `role="button"`, `tabIndex={0}`, and keyboard event handlers — which is extra work for an inferior result.
+
+**Check:** All interactive elements are either `button` or `a` tags, not divs with onClick.
+
+---
+
+### Step 6 — Open DevTools and inspect the accessibility tree
+
+**What:** Verify that your landmark structure is visible in the browser's accessibility tree.
+
+**Where:** Chrome or Edge DevTools, Accessibility panel.
+
+**How:** Right-click anywhere on the page and choose Inspect. In the DevTools panel, click the three-dot menu and select "More tools" then "Accessibility". Alternatively, open the Elements panel and find the "Accessibility" sub-tab when an element is selected. Enable "Show accessibility tree" if the option appears.
+
+**Why:** The accessibility tree is the actual structure that screen readers consume. Visual rendering in the browser does not confirm correct semantics — only the accessibility tree does.
+
+**Check:** The tree shows distinct landmarks: `banner`, `navigation`, `main`, and `contentinfo`. Each landmark the navigation label "Primary" (or whatever you used in aria-label).
+
+---
+
+### Step 7 — Test keyboard navigation
+
+**What:** Confirm that a keyboard-only user can navigate the page structure.
+
+**Where:** Your browser, with mouse set aside.
+
+**How:** Press `Tab` to move through interactive elements. Use a screen reader if you have one (NVDA on Windows is free). On macOS, enable VoiceOver with `Cmd+F5` and press `Ctrl+Option+U` to open the landmark rotor.
+
+**Why:** Structural correctness is not useful if the navigation experience is broken. This step confirms that your semantic markup translates into a real improvement for keyboard and assistive technology users.
+
+**Check:** You can Tab through the nav links, reach the main content, and Tab to the footer without getting trapped anywhere.
+
+## If stuck
+
+- **DevTools accessibility tree looks empty:** Make sure you are viewing the page over `localhost` (not a file:// URL) and that the page has loaded fully before inspecting.
+- **"Region" landmark is not showing for a section:** A `section` only gets the `region` role when it has an accessible name. Add `aria-labelledby="your-heading-id"` or `aria-label="Section name"` to the `section` element.
+- **Two nav elements are both labeled "navigation":** Add unique `aria-label` values to each `nav` element.
+- **Breaking JSX errors after replacing divs:** Remember that `header`, `nav`, `main`, etc. are lowercase in JSX. Capitalized tags (`Header`, `Nav`) are treated as React components, not HTML elements.
+
+## Common mistakes
+
+- Using `section` as a generic wrapper div. A `section` should have a heading and represent a distinct thematic block of content.
+- Adding `role="main"` to a `div` instead of using the `main` element. The element is always preferable to a role attribute.
+- Putting two `main` elements on a page. There should be exactly one `main` per page.
+- Forgetting `aria-label` on secondary nav elements. Every nav beyond the first needs a label.
+- Using `article` for every card in a list. Use `article` only when the item is genuinely self-contained and could be distributed on its own (like a blog post). A product card in a grid is better marked up as an `li` inside a `ul`.
+
+<KeyTerms terms={[
+  "Semantic HTML: HTML elements chosen for their meaning rather than their appearance, such as nav, main, and article instead of generic div elements.",
+  "Landmark role: An ARIA role that marks a major section of a page, such as banner, navigation, main, and contentinfo, enabling screen reader users to jump between regions.",
+  "Accessibility tree: A browser-generated representation of the page that assistive technologies read, derived from the DOM and ARIA attributes.",
+  "ARIA (Accessible Rich Internet Applications): A set of HTML attributes that add accessibility information to elements when native HTML semantics are insufficient.",
+  "aria-label: An ARIA attribute that provides an accessible name for an element, used to distinguish multiple landmarks of the same type.",
+  "div soup: A pattern where a page is built entirely from div elements with no semantic structure, making it inaccessible to assistive technologies.",
+  "Screen reader: Software that reads page content aloud and allows navigation by keyboard, used by people who are blind or have low vision.",
+  "Implicit ARIA role: The default accessibility role that a native HTML element carries without any additional ARIA attributes.",
+  "Keyboard navigation: The ability to use a page using only a keyboard, a requirement for users who cannot use a mouse.",
+  "Banner landmark: The implicit ARIA role of the header element, representing site-level header content."
+]} />
+
+<QuickSummary points={[
+  "Semantic elements like header, nav, main, article, aside, and footer map to ARIA landmark roles that screen readers use for navigation.",
+  "A page with only div elements has no landmarks, forcing screen reader users to read the entire page linearly from top to bottom.",
+  "Add aria-label to nav elements whenever a page has more than one nav so users can distinguish between them.",
+  "Every section element should have a heading as its first child or an aria-label; without a name, section does not register as a region landmark.",
+  "Replace any div or span that has an onClick handler with a button element to get keyboard focus, Enter/Space activation, and role announcement for free.",
+  "The DevTools accessibility tree is the ground truth for what assistive technologies see — visual rendering does not confirm correct semantics."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Take the following div-heavy snippet and rewrite it using proper semantic HTML. Add `aria-label` to the nav, ensure the section has a heading, and replace the clickable div with a button.
+
+```html
+<div class="page">
+  <div class="header">
+    <div class="logo">Acme</div>
+    <div class="nav">
+      <div class="nav-link">Home</div>
+      <div class="nav-link">Products</div>
+      <div class="nav-link">Contact</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="hero">
+      <div class="hero-content">
+        <div class="title">Welcome to Acme</div>
+        <div class="cta" onclick="handleClick()">Get started</div>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feature">Fast</div>
+      <div class="feature">Reliable</div>
+      <div class="feature">Affordable</div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="copyright">2024 Acme Inc.</div>
+  </div>
+</div>
+```
+
+**Definition of done:**
+
+- The accessibility tree in DevTools shows `banner`, `navigation`, `main`, and `contentinfo` landmarks.
+- The navigation landmark has a human-readable name (not just "navigation").
+- The "Get started" element is a `button`, not a div.
+- The features area is wrapped in a `section` with a visible heading.
+- No `div` remains in a position where a semantic element exists for that purpose.

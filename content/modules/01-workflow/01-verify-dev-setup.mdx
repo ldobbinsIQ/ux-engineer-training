@@ -1,0 +1,176 @@
+---
+title: "Verify Local Dev Setup (Node, npm, Next.js)"
+slug: "01-verify-dev-setup"
+moduleSlug: "01-workflow"
+order: 1
+hiringSignal: false
+estimatedHours: 0.5
+tasks:
+  - "Run node -v and npm -v and confirm versions"
+  - "Scaffold a Next.js project with create-next-app"
+  - "Start the dev server and view it in the browser"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=create+next+app+typescript+tailwind+app+router"
+      label: "Create Next.js App with TypeScript + Tailwind"
+  docs:
+    - url: "https://nextjs.org/docs/app/api-reference/cli/create-next-app"
+      label: "create-next-app Reference"
+---
+
+## Goal
+By the end of this lesson, you will have a working Next.js project running locally in your browser and understand the basic local development loop.
+
+## Time + Difficulty
+- **Time:** 25–35 min
+- **Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+- Every UX Engineer interview includes a take-home or live-coding exercise — having a working local setup means you can start immediately
+- Understanding the dev loop (edit → save → hot reload) is the foundation every other lesson builds on
+- Scaffolding a project correctly with the right flags (TypeScript, Tailwind, App Router) mirrors real team onboarding
+- Employers expect new hires to verify their own environment without needing a setup guide
+- Seeing your code in the browser within minutes reinforces the feedback loop that makes learning fast
+
+## What you will produce
+- A confirmed Node v20+ and npm v10+ version printout in the terminal
+- A scaffolded Next.js project at `~/projects/week-1/next-starter`
+- A running dev server with the Next.js welcome page visible at `localhost:3000`
+
+## Tools + Where you will work
+- **Tools:** Terminal, Cursor, Browser
+- **Folder:** `~/projects/week-1/next-starter`
+- **Files you'll edit:** None in this lesson — scaffold only
+- **Commands you'll run:** `node -v`, `npm -v`, `npx create-next-app@latest`, `npm run dev`
+
+## Concept overview
+Next.js is a React framework that handles routing, server rendering, and bundling so you can focus on building UI. When you run `npm run dev`, Next.js starts a local server that watches your files and pushes changes to the browser instantly — this is called hot reload. The App Router (introduced in Next.js 13) uses a file-system-based routing convention where folders inside `app/` become URL paths.
+
+**How this maps to UX thinking:** The local dev loop is your design sandbox. Just as a designer iterates on frames in Figma, you iterate on components in the browser — the faster your feedback loop, the more you can explore.
+
+**Mental model:**
+- Node.js is the runtime that executes JavaScript outside the browser
+- npm is the package manager that installs and manages your project's dependencies
+- `create-next-app` scaffolds a production-ready folder structure in seconds
+- The `app/` directory is where your pages and layouts live with the App Router
+- `npm run dev` starts the development server — it stays running while you work
+- Hot reload means the browser updates automatically when you save a file
+- `localhost:3000` is the local address where your app runs during development
+
+<Diagram title="Local Dev Loop" src="/diagrams/d1-local-dev-loop.svg" caption="Your code changes flow through Cursor → terminal → dev server → browser hot reload" alt="Diagram showing the local development loop" />
+
+## Step-by-step
+
+### Step 1: Verify Node and npm versions
+**What:** Confirm that Node v20 or higher and npm v10 or higher are installed.
+**Where:** Terminal (Cursor: View → Terminal or Ctrl+`)
+**How:**
+```bash
+node -v
+npm -v
+```
+**Why:** Next.js 14+ requires Node 18.17 or higher — v20 is the recommended LTS version as of 2024.
+**Check:** `node -v` prints `v20.x.x` or higher; `npm -v` prints `10.x.x` or higher.
+
+### Step 2: Create the projects/week-1 folder
+**What:** Create the folder structure where this week's projects will live.
+**Where:** Terminal
+**How:**
+```bash
+mkdir -p ~/projects/week-1
+cd ~/projects/week-1
+```
+**Why:** Keeping projects organized by week makes it easy to reference older work and matches how real teams structure repositories.
+**Check:** Running `pwd` shows a path ending in `week-1`.
+
+### Step 3: Scaffold the Next.js project
+**What:** Use `create-next-app` to generate a new Next.js project with TypeScript, Tailwind CSS, and the App Router.
+**Where:** Terminal (inside `~/projects/week-1`)
+**How:**
+```bash
+npx create-next-app@latest next-starter
+```
+When prompted, answer the questions exactly like this:
+```
+Would you like to use TypeScript? › Yes
+Would you like to use ESLint? › Yes
+Would you like to use Tailwind CSS? › Yes
+Would you like your code inside a `src/` directory? › No
+Would you like to use App Router? › Yes
+Would you like to use Turbopack for next dev? › No
+Would you like to customize the import alias? › No
+```
+**Why:** These choices match the configuration most teams use in production — TypeScript catches errors early, Tailwind eliminates naming CSS classes, and the App Router is the current Next.js standard.
+**Check:** The terminal shows "Success! Created next-starter" and a new `next-starter` folder appears in `~/projects/week-1`.
+
+### Step 4: Open the project in Cursor
+**What:** Open the scaffolded project folder in Cursor so you can see the file structure.
+**Where:** Terminal
+**How:**
+```bash
+cursor ~/projects/week-1/next-starter
+```
+Alternatively, use File → Open Folder in Cursor and navigate to `~/projects/week-1/next-starter`.
+**Why:** Seeing the folder structure in the sidebar helps you understand what `create-next-app` generated before you start the server.
+**Check:** The Cursor sidebar shows folders including `app/`, `public/`, and files including `package.json` and `tailwind.config.ts`.
+
+### Step 5: Start the dev server
+**What:** Run the development server and open the app in your browser.
+**Where:** Terminal (inside the `next-starter` folder)
+**How:**
+```bash
+cd ~/projects/week-1/next-starter
+npm run dev
+```
+Then open your browser and go to `http://localhost:3000`.
+**Why:** Confirming the server starts and the page loads is your proof that the scaffold is valid and your environment is working.
+**Check:** The browser shows the Next.js default welcome page with the Next.js logo; the terminal shows "Ready in Xs" with no errors.
+
+### Step 6: Make a small edit and observe hot reload
+**What:** Edit the main page file to confirm hot reload is working.
+**Where:** Cursor — `app/page.tsx`
+**How:** Open `app/page.tsx` in Cursor. Find any visible text on the page (such as "Get started by editing") and change it to something recognizable, like "Hello, UX Engineer!". Save the file (Ctrl+S).
+**Why:** Hot reload is the core of the dev loop — verifying it works now saves debugging time in every future lesson.
+**Check:** The browser updates within 1–2 seconds of saving, showing your new text without a manual refresh.
+
+## If stuck
+- **Port 3000 already in use:** Run `npm run dev -- -p 3001` to use port 3001 instead, then visit `localhost:3001`.
+- **"node: command not found" or wrong version:** Node may not be on your PATH. Restart Cursor, open a new terminal, and run `node -v` again. If still missing, check that Node was installed to a standard location (not a sandboxed environment).
+- **create-next-app hangs at "Installing packages":** This is a slow npm download — wait up to 3 minutes before interrupting. If it fails, run `npm cache clean --force` and try again.
+- **Cursor does not open from the terminal command:** Use File → Open Folder instead and navigate manually to the project folder.
+- **Tailwind styles not working after scaffold:** Confirm `tailwind.config.ts` includes `./app/**/*.{ts,tsx}` in the `content` array. If it was generated correctly by `create-next-app`, this will already be set.
+
+## Common mistakes
+- Choosing "Yes" for `src/` directory — later lessons reference paths like `app/page.tsx` directly; the `src/` prefix breaks those references
+- Choosing "Yes" for Turbopack — Turbopack is still experimental and can produce confusing errors in some setups
+- Running `npm run dev` from the wrong folder — you must be inside `next-starter`, not inside `week-1`
+- Closing the terminal window that is running the dev server — the server stops, and the browser will show "This site can't be reached"
+- Editing files in the `public/` folder expecting to see React changes — `public/` is for static assets, not your app UI
+- Not saving the file after editing — hot reload only triggers on a file save, not on typing alone
+
+<KeyTerms terms={[
+  { term: "Node.js", definition: "A JavaScript runtime that lets you run JavaScript code outside the browser, required to use npm and Next.js" },
+  { term: "npm", definition: "Node Package Manager — the tool you use to install dependencies and run scripts defined in package.json" },
+  { term: "create-next-app", definition: "An official CLI command that scaffolds a new Next.js project with a pre-configured folder structure" },
+  { term: "App Router", definition: "The Next.js routing system where folders inside the app/ directory map to URL paths" },
+  { term: "Hot reload", definition: "A dev server feature that automatically updates the browser when you save a file, without a full page refresh" },
+  { term: "localhost:3000", definition: "The local network address where your Next.js dev server runs during development" },
+  { term: "TypeScript", definition: "A typed superset of JavaScript that catches type errors at compile time before they reach the browser" },
+]} />
+
+<QuickSummary points={[
+  "Node v20+ and npm v10+ are required — verify with node -v and npm -v before anything else",
+  "create-next-app scaffolds a full project in seconds — use TypeScript, Tailwind, App Router, no src/ dir",
+  "npm run dev starts the local server; visit localhost:3000 to see your app",
+  "Hot reload means saving a file updates the browser automatically — this is the core of the dev loop",
+  "Always run npm run dev from inside the project folder, not from a parent directory",
+]} />
+
+## Practice task
+Create a second Next.js app named `next-sandbox` inside `~/projects/week-1/`. Start it on port 3001 by running `npm run dev -- -p 3001`. With `next-starter` still running on port 3000, open both `localhost:3000` and `localhost:3001` in separate browser tabs simultaneously.
+
+**Definition of done:**
+- `~/projects/week-1/next-sandbox` folder exists with a valid Next.js scaffold
+- `localhost:3000` shows the next-starter welcome page
+- `localhost:3001` shows the next-sandbox welcome page
+- Both tabs are open and showing their respective apps at the same time

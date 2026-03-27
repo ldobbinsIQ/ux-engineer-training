@@ -1,0 +1,366 @@
+---
+title: "Component Composition Patterns"
+slug: "04-composition-patterns"
+moduleSlug: "06-react-fundamentals"
+order: 4
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Build a Modal component with title, children, and footer slot props"
+  - "Build a compound Tabs component (Tabs, TabList, Tab, TabPanel)"
+  - "Use the children prop to pass a ButtonGroup into a Toolbar"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+composition+patterns+compound+components"
+      label: "React Composition Patterns"
+  docs:
+    - url: "https://react.dev/learn/passing-props-to-a-component#passing-jsx-as-children"
+      label: "React: Passing JSX as Children"
+---
+
+## Goal
+
+Move beyond single-prop components and learn the two composition patterns used in every serious design system: slot props for flexible layout, and compound components for shared state between related elements.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+Configuration-based components — ones that accept a long list of boolean props like `showFooter`, `hasCloseButton`, `footerButtonLabel` — become hard to use and impossible to extend. Composition patterns solve this by letting the caller provide the content rather than the component controlling every detail.
+
+Compound components (like `Tabs` / `Tab` / `TabPanel`) appear in every major design system including Radix UI, Headless UI, and Reach UI. Understanding how they work makes you a more capable consumer of these libraries and a better author of custom components.
+
+## What you will produce
+
+Three component families: a `Modal` with open children and named slot props, a compound `Tabs` system with internal context, and a `Toolbar` that accepts a `ButtonGroup` via the children prop.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all file changes
+- **Your Next.js project** — a `components/` directory at the project root
+- **Browser** — to verify all interaction states
+
+## Concept overview
+
+### children for open composition
+
+The `children` prop is React's built-in slot for anything the caller wants to place inside a component. A component that accepts `children` does not need to know what will go there — it just renders it in the right place. This is called open composition.
+
+### Named slot props
+
+When a component needs multiple injection points — a header zone, a content zone, and a footer zone — use additional props typed as `ReactNode`. By convention these are named after the zone: `title?: ReactNode`, `footer?: ReactNode`. The caller passes JSX as the prop value.
+
+### Compound component pattern with context
+
+A compound component is a family of components that work together and share state through React context. The parent component (`Tabs`) owns the state and provides it via a context. The child components (`Tab`, `TabPanel`) read from the context to know which tab is active. This pattern avoids prop drilling and gives callers an expressive, declarative API.
+
+### Why composition beats configuration
+
+A Modal with a `footerContent` prop that accepts `ReactNode` can render any footer the caller provides: a single button, a button group, a disclaimer with a link, or nothing at all. A Modal with a `footerButtonLabel` prop can only ever render one button. Composition grows with requirements; configuration requires adding new props for every new case.
+
+<VideoEmbed
+  title="React Composition Patterns"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=react+composition+patterns+compound+components"
+  suggestedTerms="react composition patterns compound components context slot props"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Build a Modal with children and a footer slot prop
+
+**What:** Create a `Modal` component that renders open children in its body and accepts a `footer` prop for custom footer content.
+
+**Where:** Create `components/Modal.tsx` in your Next.js project.
+
+**How:** Define the props interface with `children` and an optional `footer` slot:
+
+```tsx
+import React from 'react';
+
+interface ModalProps {
+  title: string;
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}
+
+export function Modal({ title, isOpen, onClose, children, footer }: ModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            Close
+          </button>
+        </div>
+        <div className="mb-4">{children}</div>
+        {footer && <div className="border-t pt-4">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+```
+
+**Why:** The `footer` slot is optional and typed as `ReactNode`. When the caller passes `footer={<Button label="Confirm" />}`, that JSX is rendered in the footer zone. When the caller omits `footer`, the border and zone do not render at all — the `{footer && ...}` guard handles this cleanly.
+
+**Check:** Render `<Modal title="Test" isOpen={true} onClose={() => {}}>Some content</Modal>` in a page. The modal overlay should appear with the title, the content, and no footer section. Add a `footer` prop and confirm the footer zone appears.
+
+---
+
+### Step 2 — Test the Modal with different footer configurations
+
+**What:** Call the Modal from a page with three different footer configurations to prove the slot pattern works.
+
+**Where:** Create or update `app/practice/composition/page.tsx`.
+
+**How:** Render three buttons that each open the same Modal with different footer content:
+
+```tsx
+'use client';
+import { useState } from 'react';
+import { Modal } from '@/components/Modal';
+import { Button } from '@/components/Button';
+
+export default function CompositionPage() {
+  const [activeModal, setActiveModal] = useState<'confirm' | 'info' | 'form' | null>(null);
+
+  return (
+    <main className="flex flex-col gap-4 p-8">
+      <Button label="Open Confirm Modal" onClick={() => setActiveModal('confirm')} />
+      <Button label="Open Info Modal" onClick={() => setActiveModal('info')} />
+
+      <Modal
+        title="Confirm Action"
+        isOpen={activeModal === 'confirm'}
+        onClose={() => setActiveModal(null)}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button label="Cancel" variant="ghost" onClick={() => setActiveModal(null)} />
+            <Button label="Confirm" variant="primary" onClick={() => setActiveModal(null)} />
+          </div>
+        }
+      >
+        <p>Are you sure you want to proceed?</p>
+      </Modal>
+
+      <Modal
+        title="Information"
+        isOpen={activeModal === 'info'}
+        onClose={() => setActiveModal(null)}
+      >
+        <p>This modal has no footer slot — just content.</p>
+      </Modal>
+    </main>
+  );
+}
+```
+
+**Why:** This test shows that the same Modal component handles both a no-footer case and a two-button footer case without any changes to the Modal itself. The caller provides the behavior; the component provides the chrome.
+
+**Check:** Both modals open and close correctly. The Confirm modal has the two-button footer; the Info modal has no footer section at all.
+
+---
+
+### Step 3 — Build compound Tabs components
+
+**What:** Create a `Tabs` family — `Tabs`, `TabList`, `Tab`, and `TabPanel` — that share active tab state through context.
+
+**Where:** Create `components/Tabs.tsx`.
+
+**How:** Define a context and build the four components:
+
+```tsx
+'use client';
+import React, { createContext, useContext, useState } from 'react';
+
+interface TabsContextValue {
+  activeTab: string;
+  setActiveTab: (id: string) => void;
+}
+
+const TabsContext = createContext<TabsContextValue | null>(null);
+
+function useTabsContext() {
+  const ctx = useContext(TabsContext);
+  if (!ctx) throw new Error('Tabs subcomponents must be used inside Tabs');
+  return ctx;
+}
+
+export function Tabs({ children, defaultTab }: { children: React.ReactNode; defaultTab: string }) {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  return (
+    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+      <div>{children}</div>
+    </TabsContext.Provider>
+  );
+}
+
+export function TabList({ children }: { children: React.ReactNode }) {
+  return <div role="tablist" className="flex border-b">{children}</div>;
+}
+
+export function Tab({ id, children }: { id: string; children: React.ReactNode }) {
+  const { activeTab, setActiveTab } = useTabsContext();
+  const isActive = activeTab === id;
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={isActive}
+      onClick={() => setActiveTab(id)}
+      className={`px-4 py-2 text-sm font-medium ${isActive ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function TabPanel({ id, children }: { id: string; children: React.ReactNode }) {
+  const { activeTab } = useTabsContext();
+  if (activeTab !== id) return null;
+  return <div role="tabpanel" className="py-4">{children}</div>;
+}
+```
+
+**Why:** Context lets `Tab` and `TabPanel` know which tab is active without the caller having to wire up the state manually. The `useTabsContext` helper throws a descriptive error if a sub-component is used outside `Tabs`, preventing hard-to-debug runtime failures.
+
+**Check:** Render the Tabs family in your page. Clicking each tab should activate the corresponding panel and visually highlight the active tab.
+
+---
+
+### Step 4 — Use Tabs in the composition page
+
+**What:** Verify the compound component API is clean and declarative from the caller's perspective.
+
+**Where:** In `app/practice/composition/page.tsx`, add the Tabs usage below the modal buttons.
+
+**How:** Import all four components and compose them:
+
+```tsx
+import { Tabs, TabList, Tab, TabPanel } from '@/components/Tabs';
+
+// In the JSX:
+<Tabs defaultTab="overview">
+  <TabList>
+    <Tab id="overview">Overview</Tab>
+    <Tab id="specs">Specifications</Tab>
+    <Tab id="reviews">Reviews</Tab>
+  </TabList>
+  <TabPanel id="overview">
+    <p>This is the overview content.</p>
+  </TabPanel>
+  <TabPanel id="specs">
+    <p>These are the technical specifications.</p>
+  </TabPanel>
+  <TabPanel id="reviews">
+    <p>Customer reviews go here.</p>
+  </TabPanel>
+</Tabs>
+```
+
+**Why:** The compound component API reads like the semantics it represents. A reader unfamiliar with the implementation can understand the structure immediately from the JSX alone. There are no confusing `activeIndex={2}` props or `panels={[...]}` arrays.
+
+**Check:** All three tabs switch their panels correctly. The active tab is visually highlighted.
+
+---
+
+### Step 5 — Refactor PageHeader to accept an actions slot
+
+**What:** Take a hardcoded PageHeader and refactor it so the caller controls the actions area.
+
+**Where:** Create `components/PageHeader.tsx`.
+
+**How:** Before refactoring, write the hardcoded version:
+
+```tsx
+// Before — hardcoded, not reusable
+export function PageHeader({ title }: { title: string }) {
+  return (
+    <div className="flex items-center justify-between border-b pb-4">
+      <h1 className="text-xl font-bold">{title}</h1>
+      <button type="button" className="rounded bg-blue-600 px-4 py-2 text-white">Edit</button>
+    </div>
+  );
+}
+```
+
+Then refactor to accept an `actions` slot:
+
+```tsx
+// After — caller controls the actions
+interface PageHeaderProps {
+  title: string;
+  actions?: React.ReactNode;
+}
+
+export function PageHeader({ title, actions }: PageHeaderProps) {
+  return (
+    <div className="flex items-center justify-between border-b pb-4">
+      <h1 className="text-xl font-bold">{title}</h1>
+      {actions && <div className="flex gap-2">{actions}</div>}
+    </div>
+  );
+}
+```
+
+**Why:** The hardcoded version can only ever show one Edit button. The refactored version can show any combination of buttons, a dropdown, a search input, or nothing at all — without changing `PageHeader`. The component renders identically for the default Edit case; the caller just passes `actions={<Button label="Edit" />}`.
+
+**Check:** Render the refactored `PageHeader` with `actions={<Button label="Edit" />}`. The page renders identically to the hardcoded version. Then render it with two buttons in the actions slot — the layout should accommodate both without any changes to `PageHeader`.
+
+## If stuck
+
+- **"Cannot read properties of null (reading 'activeTab')":** A `Tab` or `TabPanel` was rendered outside a `Tabs` component. The `useTabsContext` helper should throw a descriptive error — check the console message.
+- **Modal content is behind the overlay:** The overlay `z-index` may be competing with another element. Ensure the modal container uses `fixed` positioning and the backdrop uses `z-40` or higher.
+- **Tab context does not update on click:** Verify the `Tab` component is using `useTabsContext` and calling `setActiveTab` in its `onClick`. Check that `Tabs` wraps all sub-components in the `TabsContext.Provider`.
+- **footer prop not rendering:** Check that the condition is `{footer && ...}` and not `{!!footer && ...}`. Both work, but make sure the variable name matches the destructured prop name exactly.
+
+## Common mistakes
+
+- Passing a function as a slot prop instead of JSX. Slot props should be `ReactNode` (already-rendered JSX), not render props (functions that return JSX). Use the children pattern or render props consciously, not accidentally.
+- Creating a new context value object on every render inside the Provider: `value={{ activeTab, setActiveTab }}`. This triggers a re-render of every context consumer on every parent render. Memoize the value with `useMemo` in performance-sensitive cases.
+- Using `React.Children.map` to clone children and inject props. This is fragile and breaks with context-based compound components. Prefer context over child cloning.
+- Making the footer slot required. Footer content is always optional — use `footer?:` not `footer:` in the interface.
+- Forgetting `role="tablist"`, `role="tab"`, and `role="tabpanel"` on the Tabs components. These ARIA roles are required for screen readers to understand the tab widget.
+
+<KeyTerms terms={[
+  "Slot prop: A prop typed as ReactNode that accepts arbitrary JSX from the caller, allowing a component to have multiple injection points like title, children, and footer.",
+  "Compound component: A pattern where a family of related components share state through React context, giving callers a declarative API like Tabs, TabList, Tab, and TabPanel.",
+  "React context: A mechanism for passing data through the component tree without explicit prop drilling, used in compound components to share state between a parent and its descendants.",
+  "Open composition: A design where a component accepts arbitrary children via the children prop rather than controlling all of its content through configuration props.",
+  "createContext: A React function that creates a context object. The Provider component it returns makes a value available to all descendant components that call useContext.",
+  "useContext: A React hook that reads the current value from a context object, used by compound component children to access shared state from the parent.",
+  "Prop drilling: The pattern of passing a prop through multiple intermediate components that do not use it, only to reach a deeply nested component that does. Context solves this.",
+  "ReactNode: A TypeScript type that accepts any valid React child including JSX elements, strings, numbers, arrays, null, and undefined. Used to type slot props.",
+  "Render prop: A function passed as a prop that returns JSX, giving the caller control over what is rendered. Different from a slot prop, which accepts already-rendered JSX.",
+  "Named slot: A composition pattern where a component exposes multiple injection points as separate props, for example footer and header, in addition to the default children slot."
+]} />
+
+<QuickSummary points={[
+  "Slot props typed as ReactNode let callers inject any JSX into specific zones of a component without changing the component itself.",
+  "Compound components share state through React context, giving callers a declarative API where related components work together without explicit state wiring.",
+  "Composition beats configuration because a slot-based component grows with any requirement, while a prop-based component requires a new prop for every new use case.",
+  "The useContext helper pattern — a small function that calls useContext and throws if the value is null — catches compound component misuse with a clear error message.",
+  "Always include ARIA roles on interactive compound components: role='tablist', role='tab', and role='tabpanel' are required for accessible tab widgets.",
+  "Slot props should be ReactNode (already-rendered JSX), not render props (functions returning JSX), unless you intentionally want the caller to pass rendering logic."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Refactor a hardcoded `PageHeader` component — one that currently has a single hardcoded "Edit" button — to accept an `actions` prop typed as `React.ReactNode`. The page that uses `PageHeader` should render identically after the refactor. Then demonstrate the new flexibility by passing a `ButtonGroup` with three buttons into the `actions` slot on a second usage of the component.
+
+**Definition of done:**
+
+- The refactored `PageHeader` renders identically to the hardcoded version when `actions={<Button label="Edit" />}` is passed.
+- A second instance of `PageHeader` on the same page renders a three-button group in the actions slot without any changes to the `PageHeader` component.
+- The `PageHeader` component file contains zero hardcoded buttons or action-specific logic.
+- All slot props are typed as `React.ReactNode` in the interface — not as `string` or any specific component type.

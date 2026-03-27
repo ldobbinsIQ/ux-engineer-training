@@ -1,0 +1,300 @@
+---
+title: "Components and Props"
+slug: "01-components-and-props"
+moduleSlug: "06-react-fundamentals"
+order: 1
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Build a Card component accepting title, description, and optional children"
+  - "Build a Button with variant prop (primary/secondary/ghost)"
+  - "Compose ProductCard using Card and Button"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+component+props+composition+tutorial"
+      label: "React Components and Props"
+  docs:
+    - url: "https://react.dev/learn/passing-props-to-a-component"
+      label: "React: Passing Props"
+---
+
+## Goal
+
+Build typed, reusable components that accept props and compose together — the core skill that separates copy-pasted markup from a real component library.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Every design system component you will ever build — Button, Card, Modal, Badge — is a React function that accepts props. Understanding how to define, type, and pass props is the prerequisite for every other React skill. Hiring managers read component files first when reviewing a take-home project, so well-typed props with sensible defaults signal professional-grade work.
+
+Composition — assembling larger components from smaller ones — is how you avoid duplicating logic and markup. A ProductCard that uses your Card and Button components is easier to update than three separate copies of the same layout.
+
+## What you will produce
+
+Three component files — `Card.tsx`, `Button.tsx`, and `ProductCard.tsx` — where `ProductCard` composes the other two. All props are typed with TypeScript interfaces and the Button renders all three variants correctly.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all file changes
+- **Your Next.js project** — the `components/` directory at the project root
+- **Browser** — to verify the composed output
+
+## Concept overview
+
+### Components are typed functions that return JSX
+
+A React component is a JavaScript function whose name starts with a capital letter and returns JSX. That is the entire model. Every `div`, `button`, and `h2` in your UI is either a native HTML element or a custom component function.
+
+### Props are function arguments
+
+Props are the values passed to a component from its parent, exactly like arguments to a function. The parent controls what data goes in; the component controls how that data is rendered. Changing a prop in the parent automatically re-renders the child.
+
+### The children prop
+
+React reserves the prop name `children` for anything placed between the opening and closing tags of a component. This lets a component act as a container without knowing in advance what it will hold. Typing children as `React.ReactNode` accepts text, elements, and other components.
+
+### TypeScript interfaces for props
+
+Define a TypeScript interface for every component's props. This gives Cursor autocomplete, catches mistakes at compile time, and documents intent. Use optional properties (`name?: Type`) for props with defaults and required properties (`name: Type`) for props the component cannot function without.
+
+### Default prop values
+
+You can assign defaults directly in the function signature using destructuring: `{ variant = 'primary' }`. This keeps the interface clean — callers only pass the props they need to override.
+
+<Diagram
+  title="Props Down, Events Up"
+  src="/diagrams/d7-props-down-events-up.svg"
+  caption="Data flows down from parent to child via props; user events flow up via callback functions"
+  alt="Diagram showing data flowing down through props and events flowing up through callbacks"
+/>
+
+<VideoEmbed
+  title="React Components and Props"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=react+component+props+composition+tutorial"
+  suggestedTerms="react components props typescript interface composition tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Create components/Card.tsx
+
+**What:** Create the Card component file.
+
+**Where:** In Cursor, create a new file at `components/Card.tsx` in the root of your Next.js project. If a `components/` folder does not exist, create it.
+
+**How:** Add the following starting structure:
+
+```tsx
+import React from 'react';
+
+interface CardProps {
+  title: string;
+  description: string;
+  children?: React.ReactNode;
+}
+
+export function Card({ title, description, children }: CardProps) {
+  return (
+    <div className="card">
+      <h2>{title}</h2>
+      <p>{description}</p>
+      {children}
+    </div>
+  );
+}
+```
+
+**Why:** The interface documents the contract: `title` and `description` are required strings; `children` is optional. Any caller that omits `title` will get a TypeScript error before the code even runs.
+
+**Check:** TypeScript shows no errors in Cursor. Hovering over `CardProps` shows the interface in the tooltip.
+
+---
+
+### Step 2 — Add basic styles to Card
+
+**What:** Add a className or inline style so the Card is visually recognizable in the browser.
+
+**Where:** In `components/Card.tsx`, on the root `div`.
+
+**How:** Either add a Tailwind class string like `className="rounded-lg border p-4 shadow-sm"` or add a CSS module import. If your project uses Tailwind, use utility classes. If not, add a `<style>` block in a global CSS file.
+
+**Why:** You need a visual target to confirm composition is working. Without any styling, all three components look identical in the browser and you cannot tell them apart at a glance.
+
+**Check:** Rendering `<Card title="Test" description="A test card" />` in a page shows a visually distinct bordered box.
+
+---
+
+### Step 3 — Create components/Button.tsx with a variant prop
+
+**What:** Build a Button component that changes appearance based on a `variant` prop.
+
+**Where:** Create `components/Button.tsx`.
+
+**How:** Define a union type for the variant and use it to select a class string:
+
+```tsx
+import React from 'react';
+
+type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+
+interface ButtonProps {
+  label: string;
+  variant?: ButtonVariant;
+  onClick?: () => void;
+}
+
+const variantClasses: Record<ButtonVariant, string> = {
+  primary: 'bg-blue-600 text-white hover:bg-blue-700',
+  secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
+  ghost: 'bg-transparent text-blue-600 hover:bg-blue-50',
+};
+
+export function Button({ label, variant = 'primary', onClick }: ButtonProps) {
+  return (
+    <button
+      type="button"
+      className={`rounded px-4 py-2 font-medium ${variantClasses[variant]}`}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+}
+```
+
+**Why:** The union type `'primary' | 'secondary' | 'ghost'` means TypeScript will error if a caller passes `variant="danger"` before you have defined that case. The `Record` lookup table keeps the rendering logic simple and easy to extend.
+
+**Check:** In a test page, render all three variants side by side. Each button should have a visually distinct appearance.
+
+---
+
+### Step 4 — Compose ProductCard using Card and Button
+
+**What:** Build `ProductCard.tsx` by combining Card and Button without duplicating their markup.
+
+**Where:** Create `components/ProductCard.tsx`.
+
+**How:** Import both components and compose them:
+
+```tsx
+import React from 'react';
+import { Card } from './Card';
+import { Button } from './Button';
+
+interface ProductCardProps {
+  name: string;
+  tagline: string;
+  price: string;
+  onAddToCart: () => void;
+}
+
+export function ProductCard({ name, tagline, price, onAddToCart }: ProductCardProps) {
+  return (
+    <Card title={name} description={tagline}>
+      <p className="mt-2 text-lg font-bold">{price}</p>
+      <Button label="Add to cart" variant="primary" onClick={onAddToCart} />
+    </Card>
+  );
+}
+```
+
+**Why:** `ProductCard` does not copy Card's markup — it delegates the layout to Card and passes content via props and children. When you update Card's border radius later, ProductCard picks up the change automatically.
+
+**Check:** Rendering `<ProductCard name="Widget" tagline="The best widget" price="$9.99" onAddToCart={() => {}} />` shows a card with the price and a primary button inside it.
+
+---
+
+### Step 5 — Render all three components in a test page
+
+**What:** Place Card, Button (all variants), and ProductCard on the same page so you can verify the full composition.
+
+**Where:** Open `app/page.tsx` (or any existing page file in your project).
+
+**How:** Import all three components and render them in a column or grid:
+
+```tsx
+import { Card } from '@/components/Card';
+import { Button } from '@/components/Button';
+import { ProductCard } from '@/components/ProductCard';
+
+export default function Home() {
+  return (
+    <main className="flex flex-col gap-6 p-8">
+      <Card title="Plain Card" description="This card has no children." />
+      <Card title="Card with Children" description="This card has a button inside.">
+        <Button label="Click me" variant="secondary" />
+      </Card>
+      <div className="flex gap-4">
+        <Button label="Primary" variant="primary" />
+        <Button label="Secondary" variant="secondary" />
+        <Button label="Ghost" variant="ghost" />
+      </div>
+      <ProductCard
+        name="Widget Pro"
+        tagline="The best widget for professionals"
+        price="$29.99"
+        onAddToCart={() => alert('Added!')}
+      />
+    </main>
+  );
+}
+```
+
+**Why:** Seeing all components on one page lets you catch visual inconsistencies before writing any more code. It also confirms that TypeScript is not blocking compilation.
+
+**Check:** The browser shows a plain Card, a Card with a button inside it, three Button variants in a row, and a ProductCard at the bottom — all without TypeScript errors in Cursor.
+
+## If stuck
+
+- **"Cannot find module './Card'"** — check that the file is named exactly `Card.tsx` with a capital C. File names are case-sensitive on Linux-based deployment targets even if Windows allows the wrong case.
+- **TypeScript error on children** — make sure the type is `React.ReactNode`, not `React.ReactElement`. `ReactNode` accepts strings, numbers, null, and arrays; `ReactElement` does not.
+- **All three Button variants look the same** — confirm Tailwind is processing the `components/` directory. Check `tailwind.config.ts` and ensure the content array includes `'./components/**/*.{ts,tsx}'`.
+- **ProductCard styles are not applying** — verify the import path is correct. Use `@/components/Card` if your project has the `@` path alias configured in `tsconfig.json`.
+
+## Common mistakes
+
+- Typing children as `string` instead of `React.ReactNode`. A child can be any JSX, not just text.
+- Forgetting `type="button"` on the button element. Without it, a button inside a form defaults to `type="submit"` and will submit the form on click.
+- Putting logic (conditionals, loops) outside the component function. All rendering logic must be inside the function body.
+- Using `any` for a prop type instead of a union. `variant: any` gives up type safety and removes autocomplete.
+- Passing an event handler as a string: `onClick="handleClick"`. Event handlers in JSX must be function references, not strings.
+
+<KeyTerms terms={[
+  "Component: A TypeScript function whose name starts with a capital letter and returns JSX, representing a reusable piece of UI.",
+  "Props: The values passed from a parent component to a child component, equivalent to function arguments. They are read-only inside the child.",
+  "Interface: A TypeScript construct that defines the shape of an object. Used to type a component's props so callers get autocomplete and type checking.",
+  "Children prop: The reserved React prop that holds anything placed between a component's opening and closing tags, typed as React.ReactNode.",
+  "Composition: The pattern of building larger components by combining smaller ones rather than duplicating their markup.",
+  "Union type: A TypeScript type that allows a value to be one of a fixed set of options, for example 'primary' | 'secondary' | 'ghost'.",
+  "Default prop value: A fallback value assigned in the function signature destructuring so callers do not need to pass that prop unless they want to override it.",
+  "JSX: A syntax extension for JavaScript that lets you write HTML-like markup inside TypeScript files, compiled to React.createElement calls.",
+  "ReactNode: A TypeScript type that accepts any valid React child: elements, strings, numbers, arrays, null, or undefined.",
+  "Record type: A TypeScript utility type that creates an object type with specific keys and a uniform value type, useful for lookup tables like variant class maps."
+]} />
+
+<QuickSummary points={[
+  "A React component is a TypeScript function that starts with a capital letter and returns JSX — nothing more.",
+  "Props are typed with a TypeScript interface so callers get autocomplete and the compiler catches missing or wrong-typed props before runtime.",
+  "The children prop accepts React.ReactNode and holds anything placed between a component's opening and closing tags.",
+  "Composition means assembling larger components from smaller ones so that updating Card automatically updates every component that uses it.",
+  "Default prop values are set in the function signature destructuring, keeping the interface clean for callers who only need to override specific values.",
+  "Union types on variant props prevent invalid values at compile time and power lookup tables that map variants to CSS class strings."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Build an `AvatarCard` component that composes three parts: an `Avatar` component that renders a circular image from a `src` and `alt` prop, the existing `Card` component for the content area, and the existing `Button` component for a follow action. The `AvatarCard` should accept `name`, `bio`, `avatarSrc`, and `onFollow` as props.
+
+**Definition of done:**
+
+- All three Button variants (primary, secondary, ghost) display with visually distinct styles in the browser.
+- `AvatarCard` renders correctly using `Avatar`, `Card`, and `Button` without duplicating any of their markup.
+- All component props are typed with TypeScript interfaces — no `any` types present.
+- Cursor shows zero TypeScript errors across all component files.

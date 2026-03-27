@@ -1,0 +1,402 @@
+---
+title: "Component Variants and Interactive States"
+slug: "02-component-variants-states"
+moduleSlug: "09-design-systems"
+order: 2
+hiringSignal: true
+hiringSignalCategory: "Design Systems"
+estimatedHours: 1.5
+tasks:
+  - "Build a Button component with variant, size, and state props using cva"
+  - "Style all interactive states: default, hover, focus, active, disabled"
+  - "Add a loading state with a spinner that replaces the label"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+component+variants+design+system+cva"
+      label: "Component Variants with CVA"
+  docs:
+    - url: "https://cva.style/docs"
+      label: "Class Variance Authority Docs"
+---
+
+## Goal
+
+Build a Button component that manages visual variants, sizes, and interactive states through a clean prop API, with every state styled correctly and a loading state that is accessible to screen readers.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+The Button is the canonical design system component. Every company with a design system has one, and how well it is built reflects the engineering quality of the entire system. A Button with five variants, three sizes, and six interactive states that are all visually distinct and accessible is a portfolio piece that communicates senior-level design system skills.
+
+Class Variance Authority (cva) is the dominant pattern for managing component variants in the React ecosystem. Understanding how to define variants, compound variants, and default variants with cva is expected knowledge at companies like Vercel, Linear, and any team using shadcn/ui.
+
+## What you will produce
+
+A Button component with `variant` (primary, secondary, destructive, ghost), `size` (sm, md, lg), and `isLoading` props, where every interactive state — default, hover, focus-visible, active, disabled — is visually distinct, and the loading state is announced to screen readers via a visually-hidden text label.
+
+## Tools + Where you will work
+
+- **Cursor** — for all component and style files
+- **Chrome or Edge** — for visual state testing
+- **Your Next.js project** — `components/Button.tsx` and related styles
+
+## Concept overview
+
+### Why variants need a system
+
+Without a structured approach, variant management becomes an if-else chain or a sprawling className string concatenation that is error-prone and hard to maintain:
+
+```tsx
+// Fragile — hard to read, easy to introduce bugs
+const className = `btn ${variant === 'primary' ? 'btn-primary' : ''} ${
+  size === 'lg' ? 'btn-lg' : size === 'sm' ? 'btn-sm' : 'btn-md'
+} ${disabled ? 'btn-disabled' : ''}`;
+```
+
+Class Variance Authority provides a declarative API for defining variants and their classes, including compound variants (classes that only apply when two variants match simultaneously) and default variants (what applies when no variant is specified).
+
+### class-variance-authority (cva)
+
+`cva` takes a configuration object that defines all variants and returns a function. Calling that function with props produces the correct class string.
+
+```ts
+import { cva, type VariantProps } from 'class-variance-authority';
+
+const button = cva(
+  // Base classes applied to every instance
+  'inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-2',
+  {
+    variants: {
+      variant: {
+        primary:     'bg-[--color-primary] text-white hover:bg-[--color-primary-hover]',
+        secondary:   'bg-[--color-surface-raised] text-[--color-text-default] border border-[--color-border]',
+        destructive: 'bg-[--color-error] text-white',
+        ghost:       'bg-transparent text-[--color-text-default] hover:bg-[--color-surface-overlay]',
+      },
+      size: {
+        sm: 'text-sm px-3 py-1.5 rounded-[--radius-sm]',
+        md: 'text-sm px-4 py-2 rounded-[--radius-md]',
+        lg: 'text-base px-6 py-3 rounded-[--radius-md]',
+      },
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'md',
+    },
+  }
+);
+
+type ButtonVariants = VariantProps<typeof button>;
+```
+
+The `VariantProps` type utility automatically generates the TypeScript type for the variant props, keeping your component props in sync with your cva definition.
+
+### All interactive states
+
+A well-built button makes each state visually distinct:
+
+| State | CSS selector | Visual treatment |
+|---|---|---|
+| Default | (no selector) | Base appearance |
+| Hover | `:hover` | Slight darkening or lightening of background |
+| Focus | `:focus-visible` | Visible focus ring (2px outline + offset) |
+| Active | `:active` | Pressed appearance — slight darkening, scale down |
+| Disabled | `:disabled` or `[aria-disabled]` | Reduced opacity, not-allowed cursor |
+| Loading | JS state + `aria-disabled` | Spinner replaces or precedes label |
+
+Never remove the `:focus-visible` ring from a button. If the design specifies no visible focus ring, push back — it is an accessibility violation.
+
+### The disabled vs aria-disabled distinction
+
+`disabled` attribute removes the element from the tab order entirely, which means keyboard users cannot Tab to it to discover it exists. For cases where you want to communicate "this action is not available right now but you should know it exists," use `aria-disabled="true"` instead and handle the click event by doing nothing.
+
+For a standard "this cannot be submitted until the form is valid" disabled state, the native `disabled` attribute is appropriate.
+
+### Loading state pattern
+
+A loading state should:
+1. Show a visual spinner to sighted users.
+2. Announce "Loading" to screen reader users via a visually-hidden text node.
+3. Prevent the button from being clicked again while loading (use `aria-disabled="true"` rather than `disabled` so the button stays in the tab order).
+4. Preserve the button's dimensions so the layout does not shift.
+
+```tsx
+<button
+  aria-disabled={isLoading}
+  onClick={isLoading ? undefined : onClick}
+>
+  {isLoading ? (
+    <>
+      <Spinner aria-hidden="true" />
+      <span className="sr-only">Loading</span>
+    </>
+  ) : (
+    children
+  )}
+</button>
+```
+
+<VideoEmbed
+  title="Component Variants with CVA"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=react+component+variants+design+system+cva"
+  suggestedTerms="component variants class variance authority cva React design system button states"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Install cva and set up the Button file
+
+**What:** Add class-variance-authority to your project and create the Button component file.
+
+**Where:** Your Next.js project root (for the install) and `components/Button.tsx` (for the component).
+
+**How:** Install the package:
+
+```bash
+npm install class-variance-authority
+```
+
+Create `components/Button.tsx` with the cva import and an empty component:
+
+```tsx
+import { cva, type VariantProps } from 'class-variance-authority';
+import type { ButtonHTMLAttributes } from 'react';
+
+const buttonVariants = cva(
+  // Base styles — defined next
+  '',
+  {
+    variants: {
+      variant: {},
+      size: {},
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'md',
+    },
+  }
+);
+
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants> & {
+    isLoading?: boolean;
+  };
+
+export function Button({ variant, size, isLoading, className, children, ...props }: ButtonProps) {
+  return (
+    <button
+      className={buttonVariants({ variant, size, className })}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+**Why:** Setting up the structure before filling in the values lets you verify the TypeScript types are correct before adding variant complexity.
+
+**Check:** The file compiles without TypeScript errors. You can render `<Button>Click me</Button>` in a page without errors.
+
+---
+
+### Step 2 — Define all variants in the cva config
+
+**What:** Fill in the variant class strings for every combination of variant and size.
+
+**Where:** Inside the `cva()` call in `components/Button.tsx`.
+
+**How:** Use CSS custom property references (via square-bracket Tailwind notation if using Tailwind, or plain CSS classes if using CSS modules) for all color and spacing values. Add the base classes that apply to every button instance:
+
+```ts
+const buttonVariants = cva(
+  [
+    'inline-flex items-center justify-center gap-2',
+    'font-medium transition-colors duration-150 cursor-pointer',
+    'focus-visible:outline-none focus-visible:ring-2',
+    'focus-visible:ring-[--color-border-focus] focus-visible:ring-offset-2',
+    'disabled:pointer-events-none disabled:opacity-50',
+  ].join(' '),
+  {
+    variants: {
+      variant: {
+        primary:     'bg-[--color-primary] text-white hover:bg-[--color-primary-hover] active:brightness-90',
+        secondary:   'bg-transparent text-[--color-text-default] border border-[--color-border] hover:bg-[--color-surface-raised] active:bg-[--color-surface-overlay]',
+        destructive: 'bg-[--color-error] text-white hover:opacity-90 active:brightness-90',
+        ghost:       'bg-transparent text-[--color-text-default] hover:bg-[--color-surface-overlay] active:bg-[--color-surface-raised]',
+      },
+      size: {
+        sm: 'text-xs px-3 py-1.5 rounded-[--radius-sm]',
+        md: 'text-sm px-4 py-2   rounded-[--radius-md]',
+        lg: 'text-base px-6 py-3 rounded-[--radius-md]',
+      },
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'md',
+    },
+  }
+);
+```
+
+**Why:** Centralizing all variant class logic in cva means there is one place to look when any variant needs updating. The resulting component JSX stays clean — no ternary chains.
+
+**Check:** Render all four variants on a test page. They are visually distinct. The default (no props) renders as primary/md.
+
+---
+
+### Step 3 — Style all interactive states and verify them
+
+**What:** Confirm that hover, focus-visible, active, and disabled states are all visually distinct.
+
+**Where:** A test page in your project that renders all Button variants side by side.
+
+**How:** Create a gallery page at `app/button-gallery/page.tsx` that renders:
+- All four variants in their default state
+- All four in a `:disabled` state (add the `disabled` HTML attribute)
+- All four at all three sizes
+
+To manually test hover and active states, use Chrome DevTools' state forcing: right-click an element, choose Inspect, then in the Styles panel click the `:hov` button and check `:hover` or `:active` to force the state.
+
+To test focus, Tab to the button with the keyboard.
+
+**Why:** Every interactive state must be visually distinct. A button where hover and default look the same, or where the disabled state is not obviously different, is a usability problem. Verifying by forcing states in DevTools is faster than manually triggering each one through interaction.
+
+**Check:** All four states (default, hover, focus-visible, active) look distinct. Disabled buttons have reduced opacity and show a not-allowed cursor.
+
+---
+
+### Step 4 — Build the Spinner component
+
+**What:** Create a small CSS spinner component that can be used inside the loading state.
+
+**Where:** Create `components/Spinner.tsx`.
+
+**How:** Build a simple CSS-animated spinner using a border technique:
+
+```tsx
+export function Spinner({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={[
+        'block w-4 h-4 rounded-full border-2',
+        'border-current border-t-transparent',
+        'animate-spin',
+        className,
+      ].join(' ')}
+    />
+  );
+}
+```
+
+`aria-hidden="true"` prevents the spinner from being announced to screen readers — the visually-hidden "Loading" text (added in the next step) handles the announcement instead.
+
+**Why:** The spinner is a purely decorative animation for sighted users. Screen readers should not try to describe it. Hiding it and providing an explicit text label is cleaner.
+
+**Check:** The Spinner renders and animates. It is visually the same color as the surrounding button text because it uses `border-current`.
+
+---
+
+### Step 5 — Add the loading state to the Button
+
+**What:** Implement the `isLoading` prop that shows a spinner and prevents double-submission.
+
+**Where:** Inside the `Button` component in `components/Button.tsx`.
+
+**How:** When `isLoading` is true: show the spinner, render visually-hidden "Loading" text, and set `aria-disabled="true"` to prevent interaction while keeping the button in the tab order.
+
+```tsx
+export function Button({
+  variant,
+  size,
+  isLoading = false,
+  disabled,
+  className,
+  children,
+  onClick,
+  ...props
+}: ButtonProps) {
+  const isDisabled = disabled || isLoading;
+
+  return (
+    <button
+      className={buttonVariants({ variant, size, className })}
+      aria-disabled={isDisabled || undefined}
+      disabled={disabled}
+      onClick={isLoading ? undefined : onClick}
+      {...props}
+    >
+      {isLoading ? (
+        <>
+          <Spinner />
+          <span className="sr-only">Loading</span>
+        </>
+      ) : (
+        children
+      )}
+    </button>
+  );
+}
+```
+
+**Why:** Using `aria-disabled` rather than `disabled` on the loading state keeps the button in the tab order. A keyboard user tabbing through a form can reach the loading button and hear "Loading" announced by the screen reader, which confirms their submission is in progress. If `disabled` were used, the button would disappear from the tab order entirely.
+
+**Check:** Set `isLoading={true}` in your gallery page. The spinner appears. The button click handler does not fire. A screen reader announces "Loading" when the button is focused.
+
+## If stuck
+
+- **cva types are not working:** Ensure you have imported `VariantProps` from `class-variance-authority` and applied it to the props type with `VariantProps<typeof buttonVariants>`. The function name passed to `VariantProps` must match your `cva()` variable name exactly.
+- **CSS custom properties are not applying inside Tailwind square brackets:** In Tailwind v3, `bg-[--color-primary]` syntax requires Tailwind v3.2+. Check your Tailwind version. Alternatively, define the colors in `tailwind.config.ts` using `var(--color-primary)` as the value.
+- **Spinner does not animate:** Ensure `animate-spin` is in your Tailwind safelist or that the CSS animation is defined in your global stylesheet. Tailwind purges unused classes in production.
+- **isLoading button still fires on click:** Check that the `onClick` prop is set to `undefined` (not a no-op function) when `isLoading` is true. Passing an empty function still calls the function.
+- **Screen reader does not announce "Loading":** Confirm the `sr-only` class is defined in your global CSS and visually hides the element without using `display: none` (which also removes it from the accessibility tree).
+
+## Common mistakes
+
+- Defining variant classes with hardcoded hex values instead of CSS custom property references. This bypasses the token system and makes theming impossible.
+- Forgetting `defaultVariants` in the cva config. Without defaults, passing no variant prop produces an empty string for that variant slot.
+- Using `disabled` for the loading state instead of `aria-disabled`. The native `disabled` attribute removes the element from the tab order, hiding the loading state from keyboard users.
+- Not testing all states in both light and dark modes. Focus rings and hover states that work in light mode often become invisible in dark mode if they reference the wrong tokens.
+- Building a loading spinner that changes the button dimensions. The button should maintain its size during loading to prevent layout shift.
+- Making the disabled state `opacity: 1` to "look better." The visual affordance of a disabled control is reduced contrast — users need to perceive the difference between available and unavailable actions.
+
+<KeyTerms terms={[
+  "class-variance-authority (cva): A library for managing CSS class variants in component APIs, providing a declarative way to define variant configurations and their resulting class strings.",
+  "VariantProps: A TypeScript utility type from cva that automatically generates a type from a cva configuration object, keeping component prop types in sync with variant definitions.",
+  "Compound variant: A variant configuration that applies additional classes only when two or more variant values match simultaneously, used for styling combinations that need unique treatment.",
+  "Interactive state: A visual representation of how an element looks in response to user interaction — default, hover, focus, active, and disabled are the five primary states for interactive elements.",
+  ":focus-visible: A CSS pseudo-class that applies focus ring styles only when keyboard navigation is active, allowing focus rings to be hidden for mouse users without removing them for keyboard users.",
+  ":active: A CSS pseudo-class that applies while an element is being pressed or activated, used to provide a pressed visual effect on buttons.",
+  "aria-disabled: An ARIA attribute that marks an element as disabled without removing it from the keyboard tab order, useful for communicating unavailability without hiding the element from keyboard users.",
+  "Loading state: A UI state indicating an asynchronous operation is in progress, typically shown with a spinner animation and communicated to screen readers with visually-hidden text.",
+  "sr-only: A CSS pattern that visually hides an element while keeping it in the accessibility tree, used to provide text labels for screen readers that should not be visible to sighted users.",
+  "Default variant: A cva configuration option that specifies which variant value applies when the corresponding prop is not passed to the component."
+]} />
+
+<QuickSummary points={[
+  "cva centralizes all variant class logic in one configuration object, eliminating ternary chains and keeping component JSX clean.",
+  "Every interactive state — default, hover, focus-visible, active, disabled — must be visually distinct. States that look the same break usability.",
+  "Never remove :focus-visible styles from a button. If a design asks for no focus ring, it is an accessibility violation to be pushed back on.",
+  "Use aria-disabled instead of disabled for the loading state so the button stays in the tab order and keyboard users can hear the loading announcement.",
+  "The loading spinner is aria-hidden; a visually-hidden text label is what announces the loading state to screen readers.",
+  "All color and spacing values in component styles should reference CSS custom property tokens — never hardcoded hex or pixel values."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Add an icon-only variant to your Button component. The icon-only variant shows only an icon (no visible text label), displays a tooltip on hover, and has a visually-hidden label that screen readers announce. Add it to your button gallery page with a working example.
+
+**Definition of done:**
+
+- All four variants (primary, secondary, destructive, ghost) are visually distinct at all three sizes.
+- All five interactive states (default, hover, focus-visible, active, disabled) are visually distinct for every variant.
+- The loading state shows a spinner, prevents re-submission, and announces "Loading" to screen readers.
+- The icon-only variant has a visually-hidden label and a visible tooltip on hover.
+- No hardcoded hex, RGB, or pixel values appear in the component styles — all values reference CSS custom property tokens.

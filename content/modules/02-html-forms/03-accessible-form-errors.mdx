@@ -1,0 +1,360 @@
+---
+title: "Accessible Form Error Messaging"
+slug: "03-accessible-form-errors"
+moduleSlug: "02-html-forms"
+order: 3
+hiringSignal: false
+estimatedHours: 1.5
+tasks:
+  - "Show inline error messages below inputs on submit"
+  - "Connect errors to inputs using aria-describedby"
+  - "Add role='alert' to a summary error message at the top of the form"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=accessible+form+validation+errors+aria"
+      label: "Accessible Form Validation with ARIA"
+  docs:
+    - url: "https://www.w3.org/WAI/WCAG21/Techniques/aria/ARIA21"
+      label: "W3C: Using ARIA to Identify Errors"
+---
+
+## Goal
+
+Add accessible inline error messages to a form so that validation failures are announced by screen readers automatically, connected to the relevant inputs via ARIA attributes, and visible to keyboard-only users — without relying on browser-native validation popups.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+Error messaging is where most teams fall down on accessibility. Showing red text below an input is not enough — screen reader users will not hear it unless it is programmatically connected to the field. Role="alert" makes errors announce themselves the moment they appear, without requiring the user to navigate to them.
+
+This pattern is a direct WCAG 2.1 requirement (Success Criterion 3.3.1: Error Identification). Demonstrating that you can implement it correctly is a strong hiring signal for UX Engineer roles at companies that take accessibility seriously.
+
+## What you will produce
+
+A React form with:
+- Inline error messages that appear on submit, connected to their inputs via `aria-describedby`
+- `aria-invalid="true"` set on fields that have errors
+- A summary error block at the top of the form using `role="alert"`
+- Focus moved to the first invalid field after a failed submission
+
+## Tools + Where you will work
+
+- **Cursor** — editing the form component from lesson 02
+- **Browser** — keyboard-only testing
+- **NVDA (Windows) or VoiceOver (macOS)** — optional but recommended for final verification
+
+## Concept overview
+
+### Why native validation is not enough
+
+Browser-native validation (`required`, `pattern`, `minLength`) blocks submission and shows tooltip-style messages, but those tooltips are not reliably announced by all screen reader and browser combinations. They also give you no control over the message copy or visual design. For production UI, you need custom validation that you control.
+
+### aria-invalid
+
+Set `aria-invalid="true"` on an input when it contains an error. Set it back to `"false"` (or remove the attribute) when the error is resolved. Screen readers announce "invalid entry" when they describe the field, alerting the user that something is wrong before they even read the error text.
+
+```tsx
+<input
+  id="email"
+  type="email"
+  aria-invalid={hasError ? "true" : "false"}
+  aria-describedby={hasError ? "email-error" : "email-hint"}
+/>
+```
+
+### aria-describedby for error text
+
+Connect an error message to its input by giving the error element an `id` and pointing to that `id` from the input's `aria-describedby`. When the error appears in the DOM, the screen reader reads it as part of the field description on the next focus visit. If you need both a hint and an error, space-separate both IDs:
+
+```tsx
+aria-describedby="email-hint email-error"
+```
+
+### role="alert" for summary errors
+
+A live region with `role="alert"` announces its content to screen readers the moment the content changes, regardless of where keyboard focus is. Use this for a summary error message at the top of the form. The announcement happens automatically — the user does not need to Tab to the element.
+
+```tsx
+{errors.length > 0 && (
+  <div role="alert">
+    <p>Please fix {errors.length} error(s) before continuing.</p>
+  </div>
+)}
+```
+
+<Callout variant="what">role="alert" is an assertive live region. It interrupts whatever the screen reader is currently reading. Use it only for important error messages, not for every status change.</Callout>
+
+### Focus management on error
+
+After a failed submit attempt, move focus programmatically to the first field with an error. This orients the keyboard user immediately at the problem without requiring them to Tab back through the whole form.
+
+```tsx
+const firstErrorRef = useRef<HTMLInputElement>(null);
+
+// After validation fails:
+firstErrorRef.current?.focus();
+```
+
+### Error message copy
+
+Good error messages tell the user two things: what went wrong and how to fix it. Avoid messages like "Invalid input" or "Error". Prefer:
+
+- "Email address is required." (what) + "Enter your email in the format name@example.com." (how)
+- "Password is too short." (what) + "Use at least 8 characters." (how)
+
+<VideoEmbed
+  title="Accessible Form Validation with ARIA"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=accessible+form+validation+errors+aria"
+  suggestedTerms="accessible form validation aria-invalid aria-describedby role alert screen reader"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Open the form from lesson 02 in Cursor
+
+**What:** Open `RegistrationForm.tsx` (or the form you built in the previous lesson).
+
+**Where:** In Cursor, use `Ctrl+P` and type the filename.
+
+**How:** If you do not have the file from lesson 02, create a form with three fields: email, password, and full name. Each field should have a label/input pair with `htmlFor`/`id`.
+
+**Why:** This lesson builds directly on the previous one. The form structure (labels, ids, aria-describedby) is the foundation that error messaging connects to.
+
+**Check:** The form renders in the browser with all three fields visible and label clicks focusing the correct inputs.
+
+---
+
+### Step 2 — Add validation state with useState
+
+**What:** Create an errors state object to track which fields have errors.
+
+**Where:** At the top of the `RegistrationForm` component function.
+
+**How:**
+
+```tsx
+import { useState, useRef } from "react";
+
+type FormErrors = {
+  fullName?: string;
+  email?: string;
+  password?: string;
+};
+
+export default function RegistrationForm() {
+  const [errors, setErrors] = useState<FormErrors>({});
+  // ...
+}
+```
+
+**Why:** Storing errors in state means React re-renders the form when errors change, showing or hiding error messages reactively.
+
+**Check:** The component compiles without TypeScript errors. The `errors` variable is an empty object initially.
+
+---
+
+### Step 3 — Write the validate function
+
+**What:** Create a function that checks each field and returns an errors object.
+
+**Where:** Inside the component, above the JSX return.
+
+**How:**
+
+```tsx
+function validate(data: FormData): FormErrors {
+  const errs: FormErrors = {};
+  const fullName = String(data.get("fullName") ?? "").trim();
+  const email = String(data.get("email") ?? "").trim();
+  const password = String(data.get("password") ?? "").trim();
+
+  if (!fullName) errs.fullName = "Full name is required.";
+  if (!email) {
+    errs.email = "Email address is required.";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errs.email = "Enter a valid email address, like name@example.com.";
+  }
+  if (!password) {
+    errs.password = "Password is required.";
+  } else if (password.length < 8) {
+    errs.password = "Password must be at least 8 characters.";
+  }
+
+  return errs;
+}
+```
+
+**Why:** Separating validation logic from the submit handler makes it testable and reusable. Each error message follows the pattern: what is wrong and how to fix it.
+
+**Check:** Mentally trace through the function with empty inputs — it should return an object with all three error keys populated.
+
+---
+
+### Step 4 — Update onSubmit to run validation and manage focus
+
+**What:** Update the submit handler to validate, set errors, and move focus to the first error field.
+
+**Where:** The `handleSubmit` function and a ref for the first error input.
+
+**How:**
+
+```tsx
+const firstErrorRef = useRef<HTMLInputElement>(null);
+
+function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  const data = new FormData(e.currentTarget);
+  const errs = validate(data);
+
+  if (Object.keys(errs).length > 0) {
+    setErrors(errs);
+    // Focus the first field with an error after state update
+    setTimeout(() => firstErrorRef.current?.focus(), 0);
+    return;
+  }
+
+  setErrors({});
+  console.log("Form submitted successfully");
+}
+```
+
+**Why:** `setTimeout(..., 0)` defers the focus call until after React has re-rendered with the new error state and the ref is attached to the now-visible invalid field. Without this, the ref may not yet point to the error element.
+
+**Check:** Submit the empty form. The `errors` state should now be populated (add a `console.log(errs)` temporarily to confirm).
+
+---
+
+### Step 5 — Add inline error messages and aria attributes to inputs
+
+**What:** Render error text below each input and update the input's ARIA attributes when an error exists.
+
+**Where:** The JSX for each field.
+
+**How:** Update each field block to include conditional error text and updated `aria-invalid` and `aria-describedby`:
+
+```tsx
+<div>
+  <label htmlFor="email">Email address</label>
+  <input
+    id="email"
+    name="email"
+    type="email"
+    aria-invalid={errors.email ? "true" : "false"}
+    aria-describedby={errors.email ? "email-error" : "email-hint"}
+    ref={errors.email && !errors.fullName ? firstErrorRef : undefined}
+  />
+  <p id="email-hint">We will send your confirmation here.</p>
+  {errors.email && (
+    <p id="email-error" role="none">
+      {errors.email}
+    </p>
+  )}
+</div>
+```
+
+Apply the same pattern to every field. Assign `firstErrorRef` to whichever field has the first error (check in order: fullName, email, password).
+
+**Why:** `aria-invalid="true"` tells the screen reader the field is in an error state before it even reads the error text. `aria-describedby` points to the error message so the reader announces it when focus enters the field.
+
+**Check:** Submit the form with errors. Red error text appears below each invalid field. Inspect an input in DevTools Elements panel and confirm `aria-invalid="true"` is present.
+
+---
+
+### Step 6 — Add a role="alert" summary at the top of the form
+
+**What:** Add a live region summary that announces the total number of errors.
+
+**Where:** As the first child inside the `form` element, before any fields.
+
+**How:**
+
+```tsx
+{Object.keys(errors).length > 0 && (
+  <div role="alert">
+    <p>
+      {Object.keys(errors).length} error{Object.keys(errors).length > 1 ? "s" : ""} found. Please correct the fields marked below.
+    </p>
+  </div>
+)}
+```
+
+**Why:** This element is empty on initial render. When errors appear and the element's content changes, `role="alert"` causes screen readers to announce the new content immediately — even though focus has moved to the first error input.
+
+**Check:** Submit the empty form. In a screen reader, you should hear both the summary announcement and then the error on the focused field.
+
+---
+
+### Step 7 — Test with keyboard only
+
+**What:** Complete a full keyboard-only test of the error flow.
+
+**Where:** Your browser, with the mouse set aside.
+
+**How:** Press `Tab` to reach the submit button without filling in any fields. Press `Enter` to submit. Observe where focus moves (it should jump to the first invalid field). Tab through the remaining fields and listen for `aria-invalid` announcements (screen reader will say "invalid entry"). Fix each field and resubmit.
+
+**Why:** Keyboard testing is the most reliable manual check for focus management and ARIA correctness. What looks right visually may still fail for screen reader users.
+
+**Check:** After a failed submit, focus is on the first error field. After filling all fields correctly and resubmitting, errors disappear and the success log appears in the console.
+
+## If stuck
+
+- **role="alert" is not announcing:** Make sure the element starts empty or absent, and that content is injected after the first render. If the alert is present from the start with static text, some screen readers will not re-announce it when it changes.
+- **Focus is not moving to the first error field:** Check that `firstErrorRef` is attached to the correct input element. Use `console.log(firstErrorRef.current)` inside `setTimeout` to confirm what it points to before `.focus()` is called.
+- **aria-invalid is not appearing in DevTools:** Confirm you are setting it as a string ("true" / "false"), not a boolean (`true` / `false`). JSX boolean `true` renders as the attribute being present with no value, which may not behave consistently across screen readers.
+- **Both hint and error need to be referenced:** Set `aria-describedby="field-hint field-error"` (space-separated) so the screen reader reads both when focus enters the field.
+
+## Common mistakes
+
+- Setting `aria-invalid="false"` as a string when there is no error — this is technically correct but harmless. Omitting the attribute entirely on valid fields is also acceptable.
+- Using `role="alert"` on every status message in the app. Alert is assertive and interrupts reading. Reserve it for errors and urgent messages.
+- Showing error text visually but not connecting it with `aria-describedby`. The error is invisible to screen readers without the connection.
+- Moving focus to the summary error block instead of the first invalid field. Screen reader users need to be positioned at the field they must fix, not at a message they will then have to navigate away from.
+- Writing error messages like "Required" or "Invalid". Always tell the user what is wrong and what to do instead.
+
+<KeyTerms terms={[
+  "aria-invalid: An ARIA attribute set to 'true' on an input that contains a validation error, signaling to screen readers that the current value is not acceptable.",
+  "aria-describedby: An ARIA attribute whose value is the id of an element that provides additional description for the input, such as hint text or an error message.",
+  "role='alert': An ARIA role that turns an element into an assertive live region, causing screen readers to announce its content immediately when it appears or changes.",
+  "live region: A part of the DOM that is monitored by the browser and screen readers so that content changes are announced without requiring the user to move focus there.",
+  "focus management: The practice of programmatically moving keyboard focus to a specific element after a user action, used to orient users after a failed form submission.",
+  "inline error: An error message displayed directly below the invalid input field, as opposed to a general error shown at the top of a form.",
+  "summary error: A message at the top of a form that summarizes how many fields have errors, helping users understand the scope of issues before navigating to fix them.",
+  "FormData: A built-in browser API used to read form field values from a submitted form using the name attributes of its inputs.",
+  "validation: The process of checking whether user input meets specified rules before allowing the form to be submitted.",
+  "assertive live region: A live region that interrupts the current screen reader reading to announce new content, used for urgent notifications like form errors."
+]} />
+
+<QuickSummary points={[
+  "Set aria-invalid='true' on an input when it has an error so screen readers announce 'invalid entry' when focus enters the field.",
+  "Connect error messages to their inputs with aria-describedby pointing to the error element's id so the reader announces the message on focus.",
+  "Add role='alert' to a summary error container so screen readers announce the error count immediately when it appears, without requiring navigation.",
+  "After a failed submit, move focus programmatically to the first invalid field using a ref and .focus() so keyboard users are positioned at the problem.",
+  "Write error messages that tell the user what went wrong and how to fix it, not just that an error occurred.",
+  "Test error flows with keyboard only: Tab to submit, observe where focus lands, and confirm errors are readable without a mouse."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Take the registration form from lesson 02 (name, email, password, confirm password) and add accessible error handling:
+
+1. Validate on submit: all fields required, email must be a valid format, password must be at least 8 characters, confirm password must match password.
+2. Show inline error messages below each invalid field.
+3. Connect each error to its input with `aria-describedby` and set `aria-invalid="true"`.
+4. Add a `role="alert"` summary at the top of the form showing how many errors exist.
+5. Move focus to the first invalid field after a failed submit.
+6. Clear all errors when the form is submitted successfully.
+
+**Definition of done:**
+
+- Submitting an empty form shows four error messages (one per field) and a summary alert.
+- Each error message is connected to its input via `aria-describedby` — confirm in DevTools Elements panel.
+- Focus moves to the first invalid field automatically on failed submit.
+- When a field is corrected and the form resubmitted, only remaining invalid fields show errors.
+- A successful submit clears all errors and logs a success message to the console.
+- Testing with a screen reader (or browser accessibility audit tool), errors are announced without the user needing to navigate to them.

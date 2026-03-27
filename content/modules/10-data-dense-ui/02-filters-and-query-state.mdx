@@ -1,0 +1,345 @@
+---
+title: "Filters and Query State"
+slug: "02-filters-and-query-state"
+moduleSlug: "10-data-dense-ui"
+order: 2
+hiringSignal: true
+hiringSignalCategory: "Data-Dense UI"
+estimatedHours: 1.5
+tasks:
+  - "Build a filter bar with a search input and a status dropdown"
+  - "Sync filter values to URL query parameters using Next.js useSearchParams"
+  - "Clear all filters with a single reset button"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+filter+url+search+params+nextjs"
+      label: "React Filters with URL State"
+  docs:
+    - url: "https://nextjs.org/docs/app/api-reference/functions/use-search-params"
+      label: "Next.js useSearchParams"
+---
+
+## Goal
+
+Sync filter controls to URL query parameters so that filtered views are shareable, bookmarkable, and back-button compatible — the pattern that separates amateur dashboards from production-quality ones.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+Local React state for filters is the obvious first approach — it works, but it breaks as soon as a user tries to share a link or use the browser back button. URL-based filter state means a user can copy the URL from their filtered dashboard view and send it to a colleague who will see exactly the same results. Back navigation returns to the previous filter state instead of resetting everything.
+
+This is a pattern senior engineers expect to see in take-home projects. Implementing it correctly demonstrates that you understand the relationship between UI state and URL state, and that you design for real user workflows rather than just for the happy path.
+
+## What you will produce
+
+A `FilterBar` component with a debounced search input and a status dropdown, wired to URL query parameters via `useSearchParams` and `useRouter`. A reset button clears all query params at once. The filtered data updates reactively as the URL changes.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all component and page files
+- **Your Next.js project** — the `components/` directory for `FilterBar.tsx`, a page file for wiring it to data
+- **Browser** — to verify URL updates in the address bar and that sharing the URL preserves filter state
+
+## Concept overview
+
+### Why the URL is the right place for filter state
+
+The URL is the universal state container for navigational UI. Query parameters were designed exactly for this use case: expressing a specific view of a resource. When filter state lives in the URL:
+
+- Sharing a link shares the exact filter configuration.
+- Bookmarking saves the filtered view.
+- The browser back button returns to the previous filter state.
+- Server components can read the same params without any client-side hydration cost.
+
+When filter state lives in React state only, none of these work.
+
+### useSearchParams and useRouter in Next.js
+
+`useSearchParams` is a client-side hook that returns the current URL search params as a read-only `URLSearchParams` object. To write to the URL, you create a new `URLSearchParams` instance, modify it, and call `router.push` or `router.replace` with the new query string.
+
+Use `router.replace` instead of `router.push` for filter changes so that each keystroke in the search input does not create a new browser history entry. Use `router.push` only when the navigation should be intentional (for example, clicking a result to navigate to a detail page).
+
+### Controlled filter components
+
+Both the search input and the status dropdown must be controlled components — their value is always derived from the URL, not from local state. This ensures the UI always reflects the URL, even when the user navigates back.
+
+### Debounce on search input
+
+Updating the URL on every keystroke is expensive and creates too many history entries. Debounce the search input with a delay of 300–500ms so the URL only updates after the user pauses typing. Use a `useEffect` with a `setTimeout` and a cleanup function, or a utility like `useDebouncedCallback`.
+
+### Filter state shape
+
+Keep filter state flat and serializable. A search string and a status value are both primitive strings, which map directly to URL query parameters.
+
+```ts
+interface FilterState {
+  search: string;
+  status: string; // '' means "all"
+}
+```
+
+<VideoEmbed
+  title="React Filters with URL State"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=react+filter+url+search+params+nextjs"
+  suggestedTerms="react filters url query params nextjs useSearchParams tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Add a search input and read its value from the URL
+
+**What:** Create a `FilterBar` component with a search input that reads its initial value from the `search` query parameter.
+
+**Where:** Create `components/FilterBar.tsx` in Cursor. This must be a Client Component because it uses hooks.
+
+**How:** Add the `'use client'` directive and read the search param:
+
+```tsx
+'use client';
+
+import { useSearchParams, useRouter } from 'next/navigation';
+
+export function FilterBar() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const search = searchParams.get('search') ?? '';
+
+  return (
+    <div>
+      <label htmlFor="search-input">Search</label>
+      <input
+        id="search-input"
+        type="search"
+        defaultValue={search}
+        placeholder="Search..."
+      />
+    </div>
+  );
+}
+```
+
+**Why:** Reading from `searchParams` rather than local state means the input reflects the URL on every render, including on page load and browser back navigation. `defaultValue` (not `value`) is used here temporarily — you will replace it with a controlled pattern once debounce is added.
+
+**Check:** Add `?search=hello` to the URL manually and confirm the input pre-fills with "hello" when the page loads.
+
+---
+
+### Step 2 — Sync the search input to the URL with debounce
+
+**What:** When the user types in the search input, update the `search` query parameter in the URL after a 300ms debounce.
+
+**Where:** Inside `FilterBar.tsx`, add a debounce effect.
+
+**How:** Use a `useRef` to track the debounce timer and update the URL on input change:
+
+```tsx
+import { useRef } from 'react';
+
+// Inside FilterBar:
+const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+  if (debounceRef.current) clearTimeout(debounceRef.current);
+  debounceRef.current = setTimeout(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (e.target.value) {
+      params.set('search', e.target.value);
+    } else {
+      params.delete('search');
+    }
+    params.delete('page'); // reset pagination when filter changes
+    router.replace(`?${params.toString()}`);
+  }, 300);
+}
+```
+
+Update the input to use `onChange`:
+
+```tsx
+<input
+  id="search-input"
+  type="search"
+  defaultValue={search}
+  onChange={handleSearchChange}
+  placeholder="Search..."
+/>
+```
+
+**Why:** `router.replace` instead of `router.push` means each search does not create a history entry. Deleting the `page` param on filter change resets pagination to the first page. Deleting the param when the value is empty keeps the URL clean.
+
+**Check:** Type in the search input and watch the URL update in the address bar 300ms after you stop typing. Confirm the URL does not include `search=` when the input is cleared.
+
+---
+
+### Step 3 — Add a status dropdown synced to the URL
+
+**What:** Add a `status` dropdown that also writes to the URL query params and reads its value from them.
+
+**Where:** Inside `FilterBar.tsx`, add a `select` element below the search input.
+
+**How:** Add the status options and a change handler:
+
+```tsx
+const STATUS_OPTIONS = [
+  { value: '', label: 'All statuses' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'pending', label: 'Pending' },
+];
+
+const status = searchParams.get('status') ?? '';
+
+function handleStatusChange(e: React.ChangeEvent<HTMLSelectElement>) {
+  const params = new URLSearchParams(searchParams.toString());
+  if (e.target.value) {
+    params.set('status', e.target.value);
+  } else {
+    params.delete('status');
+  }
+  params.delete('page');
+  router.replace(`?${params.toString()}`);
+}
+```
+
+```tsx
+<label htmlFor="status-select">Status</label>
+<select
+  id="status-select"
+  value={status}
+  onChange={handleStatusChange}
+>
+  {STATUS_OPTIONS.map((opt) => (
+    <option key={opt.value} value={opt.value}>
+      {opt.label}
+    </option>
+  ))}
+</select>
+```
+
+**Why:** The `select` is a controlled component — its `value` is always derived from the URL. This means navigating back sets the dropdown back to its previous value automatically. Each label has an associated `htmlFor`/`id` pair for accessibility.
+
+**Check:** Select a status and confirm the URL updates. Navigate back in the browser and confirm the dropdown returns to its previous value.
+
+---
+
+### Step 4 — Add a reset button that clears all filter params
+
+**What:** Render a "Clear filters" button that removes all filter query parameters from the URL at once.
+
+**Where:** Inside `FilterBar.tsx`, add a button that appears only when at least one filter is active.
+
+**How:** Derive whether any filter is active and add the reset handler:
+
+```tsx
+const hasActiveFilters = search !== '' || status !== '';
+
+function handleReset() {
+  router.replace('?');
+}
+```
+
+```tsx
+{hasActiveFilters && (
+  <button type="button" onClick={handleReset}>
+    Clear filters
+  </button>
+)}
+```
+
+**Why:** Showing the reset button only when filters are active prevents confusion. Navigating to `?` clears all query params at once without manually tracking which params exist.
+
+**Check:** Apply both a search and a status filter. Confirm the reset button appears. Click it and confirm both the URL clears and the input/dropdown reset to their empty states.
+
+---
+
+### Step 5 — Wire the filter state to your data and test with the browser back button
+
+**What:** In the page that uses `FilterBar`, read the search params in a server component (or pass them as props to the client component) and filter the data array accordingly.
+
+**Where:** In your page file (for example `app/dashboard/page.tsx`).
+
+**How:** If using the App Router, the page receives `searchParams` as a prop:
+
+```tsx
+interface PageProps {
+  searchParams: { search?: string; status?: string };
+}
+
+export default function DashboardPage({ searchParams }: PageProps) {
+  const { search = '', status = '' } = searchParams;
+
+  const filteredRows = ALL_ROWS.filter((row) => {
+    const matchesSearch =
+      search === '' ||
+      row.name.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = status === '' || row.status === status;
+    return matchesSearch && matchesStatus;
+  });
+
+  return (
+    <>
+      <FilterBar />
+      <DataTable rows={filteredRows} columns={COLUMNS} />
+    </>
+  );
+}
+```
+
+**Why:** Reading filter params in the server component means the filtering can happen server-side in a real application with a database query. The client `FilterBar` only manages the URL; the server handles the data.
+
+**Check:** Apply a search filter, copy the full URL, open a new browser tab, paste the URL, and confirm the same filtered results appear. Then use the browser back button and confirm the previous filter state is restored.
+
+## If stuck
+
+- **useSearchParams throws an error** — it must be used inside a Client Component (`'use client'` at the top of the file) and inside a `Suspense` boundary. If your page does not wrap the client component in `Suspense`, add `<Suspense fallback={null}>` around `<FilterBar />`.
+- **Dropdown does not reset on browser back** — confirm the `select` is using `value` (controlled), not `defaultValue`. `defaultValue` only sets the initial value and does not react to URL changes.
+- **Search input loses focus after each keystroke** — this happens when the input has `value` (fully controlled) without debounce, causing a full re-render that moves focus. Using `defaultValue` with the debounce pattern avoids this.
+- **URL shows `search=` with an empty string** — ensure your change handler deletes the param when the value is empty rather than setting it to an empty string.
+
+## Common mistakes
+
+- Using `router.push` instead of `router.replace` for filter changes. Push adds an entry to browser history for every filter change, making the back button useless.
+- Storing filter state in both React state and the URL simultaneously. Choose one source of truth — the URL — and derive everything from it.
+- Filtering data in a `useEffect` triggered by `searchParams`. Derive filtered data synchronously from params; no effect needed.
+- Forgetting to reset the `page` param when filters change, which leaves users on a page that may no longer exist in the filtered results.
+- Not providing a `label` for the search input and select. Screen reader users cannot identify unlabeled form controls.
+
+<KeyTerms terms={[
+  "useSearchParams: A Next.js client-side hook that returns the current URL search parameters as a read-only URLSearchParams object.",
+  "useRouter: A Next.js hook that provides the router object, used to call router.push or router.replace to update the URL.",
+  "router.replace: Navigates to a new URL without adding an entry to the browser history stack, used for filter changes so the back button is not polluted.",
+  "router.push: Navigates to a new URL and adds a new entry to the browser history stack, used for intentional navigation like clicking a row to view details.",
+  "URLSearchParams: A Web API class for reading and writing URL query parameters as key-value pairs.",
+  "Controlled component: A form element whose value is always driven by external state (in this case, the URL) rather than internal DOM state.",
+  "Debounce: A technique that delays executing a function until after a user has stopped triggering it for a specified period, used here to avoid updating the URL on every keystroke.",
+  "Query parameter: A key-value pair appended to a URL after a question mark, used to encode state like filters, sort order, and pagination.",
+  "Source of truth: The single authoritative location where a piece of state is stored. For filter state, the URL is the source of truth.",
+  "Suspense boundary: A React component that shows a fallback while a child component that uses async data or client-only hooks is loading."
+]} />
+
+<QuickSummary points={[
+  "Store filter state in URL query parameters, not in React state, so filtered views are shareable, bookmarkable, and back-button compatible.",
+  "Use router.replace (not router.push) for filter changes to avoid polluting browser history.",
+  "Read filter values from useSearchParams and derive filtered data synchronously — no useEffect needed.",
+  "Debounce the search input with a 300ms delay so the URL only updates after the user pauses typing.",
+  "Make dropdowns fully controlled (using the value prop) so they reset correctly on browser back navigation.",
+  "Delete the page param whenever a filter changes so users are always returned to page 1 of the new results.",
+  "The reset button should clear all filter params at once by navigating to '?' and should only appear when at least one filter is active."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Add a date range filter (start date and end date inputs) that also syncs to the URL as `dateFrom` and `dateTo` query parameters. Both inputs should be cleared by the existing reset button.
+
+**Definition of done:**
+
+- Copying the current URL (with search, status, and date range applied) and opening it in a new browser tab shows the same filtered results with all filter controls populated.
+- The browser back button returns to the previous filter state correctly.
+- The reset button clears all four filter params (search, status, dateFrom, dateTo) in a single navigation.
+- No filter value is stored in React state — all state lives in the URL.

@@ -1,0 +1,377 @@
+---
+title: "TypeScript Basics for UI Components"
+slug: "01-ts-basics-for-ui"
+moduleSlug: "05-typescript-ui"
+order: 1
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Define an interface for a component's props"
+  - "Use optional props with ? and add default values"
+  - "Type an event handler: React.ChangeEvent and React.FormEvent"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=typescript+basics+react+components+props"
+      label: "TypeScript Basics for React Components"
+  docs:
+    - url: "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html"
+      label: "TypeScript Everyday Types"
+---
+
+## Goal
+
+Add TypeScript types to React component props using interfaces, mark optional props with `?`, set default values through destructuring, and correctly type event handlers using `React.ChangeEvent` and `React.FormEvent`.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner–Intermediate
+TypeScript syntax is small; the real learning is developing the habit of reaching for types before writing component logic, and understanding why TypeScript errors are useful rather than annoying.
+
+## Why this matters for UX Engineers
+
+TypeScript is now the default in almost every professional React codebase. A UX Engineer who can write correctly typed components is significantly more employable than one who cannot — it is consistently one of the top requirements in job postings for frontend roles.
+
+More practically: TypeScript catches prop mistakes before the code runs. If you rename a prop and forget to update all the places it is used, TypeScript will list every broken usage for you. If you pass a number to a prop that expects a string, TypeScript tells you immediately in Cursor rather than letting the bug reach users.
+
+This lesson covers the types you will use in almost every component you write: prop interfaces, optional props, default values, and event handler types. These are not advanced TypeScript — they are the baseline.
+
+## What you will produce
+
+A typed `TextField` React component with:
+
+- A required `label` prop (string)
+- A required `value` prop (string)
+- A required `onChange` handler typed as `React.ChangeEvent<HTMLInputElement>`
+- Optional `placeholder` and `disabled` props with default values
+- A typed `onSubmit` handler on the wrapping form typed as `React.FormEvent<HTMLFormElement>`
+- TypeScript errors in Cursor when invalid prop values are passed
+
+## Tools + Where you will work
+
+- **Editor:** Cursor (TypeScript errors appear as red underlines inline)
+- **TypeScript compiler:** Run `npx tsc --noEmit` in the terminal to check for errors without building
+- **Framework:** React with TypeScript (Vite + React + TypeScript template, or any existing TypeScript React project)
+
+## Concept overview
+
+### interface vs type alias
+
+TypeScript offers two ways to describe the shape of an object: `interface` and `type`. For component props, both work. The community convention in React codebases is to use `interface` for props objects because it is more explicit about describing an object shape. Use `type` for unions, intersections, and complex computed types.
+
+```ts
+// Preferred for props:
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+}
+
+// Also valid, common for unions:
+type Status = "idle" | "loading" | "success" | "error";
+```
+
+### Required vs optional props
+
+By default, every property in an interface is required. Add `?` after the property name to make it optional:
+
+```ts
+interface TextFieldProps {
+  label: string;       // required — TypeScript errors if omitted
+  placeholder?: string; // optional — no error if omitted
+}
+```
+
+### Default values in destructuring
+
+Set default values directly in the destructuring pattern of the function signature:
+
+```tsx
+function TextField({ label, placeholder = "Enter a value", disabled = false }: TextFieldProps) {
+  // placeholder is "Enter a value" if not provided
+  // disabled is false if not provided
+}
+```
+
+This is idiomatic React + TypeScript. Do not use `defaultProps` — it is deprecated for function components.
+
+### Common React types
+
+These are the types you will use most often:
+
+| Type | When to use |
+|------|-------------|
+| `React.ReactNode` | Any renderable content: string, JSX, array, null |
+| `React.FC<Props>` | Function component type — optional, prefer explicit return types |
+| `React.ChangeEvent<HTMLInputElement>` | The event in an input's onChange handler |
+| `React.FormEvent<HTMLFormElement>` | The event in a form's onSubmit handler |
+| `React.MouseEvent<HTMLButtonElement>` | The event in a button's onClick handler |
+| `React.CSSProperties` | An inline style object |
+
+### Why TypeScript catches prop mistakes before runtime
+
+Without TypeScript, passing `disabled="yes"` instead of `disabled={true}` silently fails — HTML attributes accept strings, but React props may not. TypeScript makes the distinction explicit and flags the mistake in your editor before you save the file.
+
+<VideoEmbed title="TypeScript Basics for React Components" fallbackSearchUrl="https://www.youtube.com/results?search_query=typescript+basics+react+components+props" suggestedTerms="typescript react component props interface event handler types" watchFirst={true} duration="~15 min" />
+
+## Step-by-step
+
+### Step 1 — Create the TextField component file
+
+**What:** Create a new file `TextField.tsx` in your components directory.
+
+**Where:** `src/components/TextField.tsx`.
+
+**How:** In Cursor, open the Explorer panel, right-click `src/components/`, and select New File. Name it `TextField.tsx`. Confirm the file extension is `.tsx` (not `.ts`) — the `.tsx` extension is required for files containing JSX.
+
+**Why:** TypeScript checks component files differently from plain JavaScript. The `.tsx` extension tells the compiler and Cursor that this file contains both TypeScript and JSX syntax.
+
+**Check:** The file appears in your project tree. Cursor's status bar shows "TypeScript" (not "JavaScript") for the active file.
+
+---
+
+### Step 2 — Define the props interface
+
+**What:** Define a `TextFieldProps` interface that describes all the props the component will accept.
+
+**Where:** At the module level in `TextField.tsx`, before the component function.
+
+**How:**
+
+```ts
+interface TextFieldProps {
+  label: string;
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
+```
+
+**Why:** The interface is the contract for the component. Any caller that passes incorrect types will see a TypeScript error in their editor immediately — before running any code. Making `placeholder` and `disabled` optional with `?` means callers do not need to provide them if the defaults are acceptable.
+
+**Check:** In Cursor, hover over `TextFieldProps` — the tooltip should show all five properties with their types. No errors should appear on the interface definition itself.
+
+---
+
+### Step 3 — Write the component with default values
+
+**What:** Write the `TextField` function component using destructuring with default values for optional props.
+
+**Where:** Below the `TextFieldProps` interface in `TextField.tsx`.
+
+**How:**
+
+```tsx
+export function TextField({
+  label,
+  value,
+  onChange,
+  placeholder = "",
+  disabled = false,
+}: TextFieldProps) {
+  return (
+    <div>
+      <label htmlFor="text-field">{label}</label>
+      <input
+        id="text-field"
+        type="text"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+```
+
+**Why:** Providing defaults in the destructuring pattern means TypeScript knows these props are optional at the call site but are always defined inside the component. You never need to check if `placeholder` is undefined inside the component body.
+
+**Check:** In Cursor, hover over `placeholder` inside the component body. The tooltip should show `string` (not `string | undefined`), confirming the default value has narrowed the type.
+
+---
+
+### Step 4 — Add a typed onSubmit handler on a form
+
+**What:** Wrap the input in a form element and add a typed `onSubmit` handler.
+
+**Where:** In `TextField.tsx`, update the returned JSX.
+
+**How:** First, add `onSubmit` to the props interface:
+
+```ts
+interface TextFieldProps {
+  label: string;
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onSubmit?: (event: React.FormEvent<HTMLFormElement>) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
+```
+
+Then update the component and its JSX:
+
+```tsx
+export function TextField({
+  label,
+  value,
+  onChange,
+  onSubmit,
+  placeholder = "",
+  disabled = false,
+}: TextFieldProps) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSubmit?.(event);
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label htmlFor="text-field">{label}</label>
+      <input
+        id="text-field"
+        type="text"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+**Why:** `React.FormEvent<HTMLFormElement>` gives you access to the form element's properties via `event.currentTarget`. Calling `event.preventDefault()` prevents the browser from reloading the page on form submission, which is almost always required in React apps. The `onSubmit?.()` optional chaining syntax safely skips the call if `onSubmit` was not provided.
+
+**Check:** Hover over `event` in the `handleSubmit` function. The tooltip should show `React.FormEvent<HTMLFormElement>`. Hover over `event.currentTarget` — it should show `HTMLFormElement`.
+
+---
+
+### Step 5 — Use the component and observe TypeScript errors
+
+**What:** Import and use `TextField` in your `App.tsx`, intentionally passing wrong prop types to see TypeScript errors.
+
+**Where:** `src/App.tsx`.
+
+**How:**
+
+```tsx
+import { useState } from "react";
+import { TextField } from "./components/TextField";
+
+export default function App() {
+  const [value, setValue] = useState("");
+
+  return (
+    <TextField
+      label="Your name"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+    />
+  );
+}
+```
+
+Now intentionally add a wrong prop to see the error:
+
+```tsx
+// Try this — TypeScript should underline it:
+<TextField
+  label={42}  // Error: Type 'number' is not assignable to type 'string'
+  value={value}
+  onChange={(e) => setValue(e.target.value)}
+/>
+```
+
+**Why:** Seeing TypeScript errors in context (not just in documentation) builds the intuition for what the type system is protecting you from. A number where a string is expected is a trivial example, but the same mechanism catches complex mistakes like passing an object where a string is expected, or calling a handler that does not exist.
+
+**Check:** Cursor shows a red underline on `label={42}`. Hovering over it shows the error message. Reverting to `label="Your name"` makes the error disappear.
+
+---
+
+### Step 6 — Run the TypeScript compiler to verify
+
+**What:** Run the TypeScript compiler in check-only mode to confirm there are no type errors in the entire project.
+
+**Where:** In Cursor's integrated terminal (Ctrl+` or View → Terminal).
+
+**How:**
+
+```bash
+npx tsc --noEmit
+```
+
+**Why:** Cursor shows errors as red underlines in open files, but you may not have all files open. Running `tsc --noEmit` checks the entire project and outputs every error to the terminal. The `--noEmit` flag means it checks types without writing any output files.
+
+**Check:** The command completes with no output (no output means no errors). If errors appear, they include the file path, line number, and error message — open the file in Cursor and fix each one.
+
+## If stuck
+
+**Cursor is not showing TypeScript errors inline**
+Confirm the file extension is `.tsx`, not `.jsx`. Open the Cursor command palette (Ctrl+Shift+P), type "TypeScript: Restart TS Server", and run it. If errors still do not appear, check that your project has a `tsconfig.json` file at the root.
+
+**The error says "Cannot find module 'react'"**
+Your project may not have React's TypeScript type definitions installed. Run `npm install --save-dev @types/react @types/react-dom` in the terminal and recheck.
+
+**"Parameter 'event' implicitly has an 'any' type"**
+You have `noImplicitAny: true` in your `tsconfig.json` (common in strict mode). Add the explicit type: `(event: React.ChangeEvent<HTMLInputElement>) => void`.
+
+**"Property 'onSubmit' does not exist on type 'TextFieldProps'"**
+You added `onSubmit` to the JSX but forgot to add it to the interface. TypeScript checks call sites against the interface, not against what you destructure.
+
+## Common mistakes
+
+- **Using `defaultProps` for default values.** `defaultProps` is deprecated for function components in React. Use default values in the destructuring pattern instead.
+- **Typing `onChange` as `() => void` instead of `(event: React.ChangeEvent<HTMLInputElement>) => void`.** The plain void signature means the caller cannot access `event.target.value` inside the handler without TypeScript complaining.
+- **Using `React.FC` to type the component.** `React.FC` implicitly adds `children` to every component's props and has other subtle behaviors. Prefer explicit prop interfaces and leave the return type implicit or annotate it as `React.ReactElement | null`.
+- **Forgetting `event.preventDefault()` in form submit handlers.** Without it, the browser reloads the page on every form submission — breaking the React state and clearing all inputs.
+- **Making every prop optional.** Optional props add uncertainty throughout the component body. Only use `?` when the prop genuinely has a meaningful default or can be absent.
+- **Mixing `interface` and `type` inconsistently across the codebase.** Pick one convention for props and stick to it. Most React teams use `interface` for props objects.
+
+<KeyTerms terms={[
+  { term: "interface", definition: "A TypeScript keyword for describing the shape of an object. The standard way to define React component props. All properties are required by default unless marked with ?." },
+  { term: "type alias", definition: "A TypeScript keyword for giving a name to any type expression, including unions, intersections, primitives, and object shapes. Preferred over interface for union types like discriminated unions or string literal unions." },
+  { term: "Optional prop", definition: "A prop marked with ? in a TypeScript interface, indicating the caller does not have to provide it. Inside the component, its type is the declared type union undefined unless a default value is supplied." },
+  { term: "Default value", definition: "A fallback value assigned to an optional prop in the component's destructuring pattern. When the caller omits the prop, the default is used. TypeScript narrows the type to exclude undefined inside the component body." },
+  { term: "React.ChangeEvent", definition: "A TypeScript generic type for the event object passed to an input element's onChange handler. Parameterized with the HTML element type, for example React.ChangeEvent of HTMLInputElement, which gives access to event.target.value." },
+  { term: "React.FormEvent", definition: "A TypeScript generic type for the event object passed to a form element's onSubmit handler. Parameterized with the HTML element type, for example React.FormEvent of HTMLFormElement. Always call event.preventDefault() to stop the browser from reloading the page." },
+  { term: "React.ReactNode", definition: "A TypeScript type representing any value that React can render: a string, number, JSX element, array of elements, null, or undefined. The correct type for a children prop that accepts arbitrary renderable content." },
+  { term: "tsc --noEmit", definition: "A TypeScript compiler command that checks all files in the project for type errors without generating any output JavaScript files. Use this to verify type correctness across the entire codebase before committing." },
+  { term: "Type narrowing", definition: "The process by which TypeScript refines a broader type to a more specific one based on a conditional check. For example, a prop typed as string or undefined becomes string inside an if block that checks it is not undefined." },
+  { term: "Implicit any", definition: "A TypeScript error that occurs when a variable's type cannot be inferred and no explicit annotation is provided. Enabled by the noImplicitAny compiler option. Prevented by always providing type annotations for function parameters." }
+]} />
+
+<QuickSummary points={[
+  "Use interface to define the shape of component props — every property is required by default, and ? marks a prop as optional.",
+  "Set default values for optional props in the destructuring pattern of the function signature, not with defaultProps (which is deprecated for function components).",
+  "Type onChange handlers as a function accepting React.ChangeEvent of HTMLInputElement and returning void — this gives callers access to event.target.value.",
+  "Type onSubmit handlers as a function accepting React.FormEvent of HTMLFormElement and always call event.preventDefault() to prevent page reloads.",
+  "Run npx tsc --noEmit to check the entire project for type errors, not just the open files visible in Cursor.",
+  "TypeScript errors on props at the call site are a feature — they tell you immediately when you pass wrong types, before the code runs."
+]} />
+
+## Practice task + Definition of done
+
+**Practice task:** Add TypeScript types to a `Button` component with four props: `variant` (one of "primary", "secondary", or "danger"), `size` (one of "sm", "md", or "lg" with a default of "md"), `disabled` (optional boolean with a default of false), and `onClick` (a function taking a mouse event and returning void).
+
+Work through these checkpoints:
+
+1. Create `src/components/Button.tsx` with a `ButtonProps` interface.
+2. Use a string literal union type for `variant`: the value must be exactly "primary", "secondary", or "danger".
+3. Use a string literal union type for `size` with a default of "md" in the destructuring pattern.
+4. Add `disabled` as optional with a default of `false`.
+5. Type `onClick` as `(event: React.MouseEvent<HTMLButtonElement>) => void`.
+6. Use `Button` in `App.tsx`. Pass `variant="invalid"` and confirm Cursor shows a type error. Correct it and confirm the error disappears.
+7. Run `npx tsc --noEmit` and confirm zero errors.
+
+**Definition of done:**
+
+- Passing `variant="invalid"` shows a TypeScript error in Cursor.
+- Passing `size="xl"` shows a TypeScript error in Cursor.
+- Omitting `size` and `disabled` produces no TypeScript errors (they have defaults).
+- The `onClick` handler receives a correctly typed mouse event — `event.currentTarget` resolves to `HTMLButtonElement` in Cursor's autocomplete.
+- `npx tsc --noEmit` exits with zero errors.
+- No use of `any` anywhere in the component file.

@@ -1,0 +1,493 @@
+---
+title: "Typing Forms and API Responses"
+slug: "03-typing-forms-and-api"
+moduleSlug: "05-typescript-ui"
+order: 3
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Type a form's state object with an interface"
+  - "Type the response from a fetch call using a generic return type"
+  - "Add a type guard to validate the API response shape at runtime"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=typescript+fetch+api+response+type+react"
+      label: "TypeScript: Typing Fetch Responses"
+  docs:
+    - url: "https://www.typescriptlang.org/docs/handbook/2/generics.html"
+      label: "TypeScript Generics"
+---
+
+## Goal
+
+Type a form's state object with an interface, write a generic `fetchJson` utility function that types API responses, and add a type guard to validate that the response matches the expected shape at runtime.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+This lesson connects three TypeScript concepts — interfaces, generics, and type guards — in a realistic context. The individual concepts are approachable; understanding how they fit together is the skill.
+
+## Why this matters for UX Engineers
+
+Forms and API calls are the two most common data operations in any UI. TypeScript can catch a wide range of mistakes in both — but only if you type them correctly.
+
+The most dangerous pattern in TypeScript React code is the `as` cast: `const data = await response.json() as User`. This tells TypeScript "trust me, this is a User" — but TypeScript does not actually verify it. If the API returns a different shape (field renamed, field missing, type changed), the code continues without errors and the bug surfaces at runtime, often in a way that is hard to trace.
+
+Type guards bridge this gap. They are functions that perform an actual runtime check and tell TypeScript "I have verified this value matches the expected shape." Combined with a generic fetch utility, they give you both compile-time type safety (correct field names in autocomplete) and runtime safety (errors when the API returns unexpected shapes).
+
+This pattern is used in production codebases that take API contracts seriously. Understanding it is a strong hiring signal for roles that work heavily with external APIs.
+
+## What you will produce
+
+- A `ContactForm` React component with a typed form state interface
+- A generic `fetchJson` utility function that types the response without an `as` cast
+- A type guard function that validates a `User` object's shape at runtime
+- A component that fetches a user from a public API and displays autocompleted field names in Cursor
+
+## Tools + Where you will work
+
+- **Editor:** Cursor (autocomplete on fetched data is the key verification step)
+- **TypeScript compiler:** `npx tsc --noEmit`
+- **Test API:** `https://jsonplaceholder.typicode.com/users/1`
+- **Framework:** React with TypeScript
+
+## Concept overview
+
+### Typing form state
+
+Form state is a plain object where each key is a field name and each value is the field's current value. Use an interface:
+
+```ts
+interface ContactFormState {
+  name: string;
+  email: string;
+  message: string;
+}
+```
+
+Initialize with empty strings and type the `useState` with the interface:
+
+```ts
+const [form, setForm] = useState<ContactFormState>({
+  name: "",
+  email: "",
+  message: "",
+});
+```
+
+For updates, use a helper that merges a partial update:
+
+```ts
+function updateField(field: keyof ContactFormState, value: string) {
+  setForm((prev) => ({ ...prev, [field]: value }));
+}
+```
+
+The `keyof ContactFormState` type constrains `field` to `"name"`, `"email"`, or `"message"` — passing any other string is a TypeScript error.
+
+### Typing fetch responses with a generic
+
+`response.json()` returns `Promise<any>` — TypeScript has no idea what shape the response data will be. The standard workaround is to write a generic fetch utility:
+
+```ts
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error ${response.status}`);
+  }
+  return response.json() as T;
+}
+```
+
+Used as `fetchJson<User>(url)`, this returns `Promise<User>`. Cursor will autocomplete field names on the result. However, the `as T` inside the function is still a trust-based cast — the runtime data is not validated. That is where type guards come in.
+
+### Type guards
+
+A type guard is a function that returns a boolean and includes a special return type annotation (`value is Type`) that tells TypeScript: "if this function returns true, the value is the specified type."
+
+```ts
+function isUser(value: unknown): value is User {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as Record<string, unknown>).id === "number" &&
+    typeof (value as Record<string, unknown>).name === "string"
+  );
+}
+```
+
+When you use this guard with an `if` statement, TypeScript narrows the type inside the `if` block:
+
+```ts
+const raw: unknown = await response.json();
+if (isUser(raw)) {
+  // raw is typed as User here — safe to access raw.name, raw.id
+}
+```
+
+### Why `as` casting is dangerous
+
+```ts
+// Dangerous: TypeScript trusts you, does no checking
+const data = await response.json() as User;
+console.log(data.name.toUpperCase()); // Crashes at runtime if name is missing
+
+// Safe: TypeScript narrows based on the runtime check
+const raw: unknown = await response.json();
+if (isUser(raw)) {
+  console.log(raw.name.toUpperCase()); // Safe — guard verified name is a string
+}
+```
+
+### Zod (conceptual)
+
+For production applications with complex API contracts, consider Zod — a schema validation library that generates TypeScript types from schema definitions. Instead of writing type guards manually, you define a schema:
+
+```ts
+const UserSchema = z.object({ id: z.number(), name: z.string() });
+type User = z.infer<typeof UserSchema>;
+const user = UserSchema.parse(await response.json()); // throws if invalid
+```
+
+This lesson uses hand-written type guards so you understand the underlying mechanism. Zod is the production-grade tool for the same job.
+
+<VideoEmbed title="TypeScript: Typing Fetch Responses" fallbackSearchUrl="https://www.youtube.com/results?search_query=typescript+fetch+api+response+type+react" suggestedTerms="typescript fetch api response type guard generic react" watchFirst={true} duration="~15 min" />
+
+## Step-by-step
+
+### Step 1 — Define the form state interface and build ContactForm
+
+**What:** Create `ContactForm.tsx` with a typed form state interface and a controlled form.
+
+**Where:** `src/components/ContactForm.tsx`.
+
+**How:**
+
+```tsx
+import { useState } from "react";
+
+interface ContactFormState {
+  name: string;
+  email: string;
+  message: string;
+}
+
+export function ContactForm() {
+  const [form, setForm] = useState<ContactFormState>({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  function updateField(field: keyof ContactFormState, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    console.log("Submitted:", form);
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="name">Name</label>
+        <input
+          id="name"
+          type="text"
+          value={form.name}
+          onChange={(e) => updateField("name", e.target.value)}
+        />
+      </div>
+      <div>
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          value={form.email}
+          onChange={(e) => updateField("email", e.target.value)}
+        />
+      </div>
+      <div>
+        <label htmlFor="message">Message</label>
+        <textarea
+          id="message"
+          value={form.message}
+          onChange={(e) => updateField("message", e.target.value)}
+        />
+      </div>
+      <button type="submit">Send</button>
+    </form>
+  );
+}
+```
+
+**Why:** Using `keyof ContactFormState` for the `field` parameter means TypeScript will error if you pass a field name that does not exist in the interface. Rename a field in the interface and TypeScript will immediately flag every call to `updateField` with the old name.
+
+**Check:** In Cursor, try calling `updateField("phone", "555-1234")`. TypeScript should show an error because `"phone"` is not a key of `ContactFormState`. Correct it back to a valid field name.
+
+---
+
+### Step 2 — Define the User type and create the fetchJson utility
+
+**What:** Define a `User` type matching the JSONPlaceholder user response, and create a generic `fetchJson` utility function.
+
+**Where:** Create `src/lib/fetchJson.ts` for the utility. Add the `User` type in a new file `src/types/user.ts` or directly in the component file for this lesson.
+
+**How:**
+
+First, create `src/types/user.ts`:
+
+```ts
+export type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+  website: string;
+};
+```
+
+Then create `src/lib/fetchJson.ts`:
+
+```ts
+export async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error: ${response.status}`);
+  }
+  return response.json() as T;
+}
+```
+
+**Why:** Centralizing the fetch utility means every caller gets the `response.ok` check for free. The generic type parameter T allows the function to return a correctly typed result without requiring an `as` cast at every call site. The `as T` inside the function is the one trust boundary — replaced later with a type guard.
+
+**Check:** Hover over `fetchJson` in Cursor. The tooltip should show a generic function signature. No TypeScript errors.
+
+---
+
+### Step 3 — Use fetchJson in a component and verify autocomplete
+
+**What:** Create a `UserProfile` component that uses `fetchJson<User>` and verifies that Cursor autocompletes field names on the result.
+
+**Where:** `src/components/UserProfile.tsx`.
+
+**How:**
+
+```tsx
+import { useState, useEffect } from "react";
+import { fetchJson } from "../lib/fetchJson";
+import type { User } from "../types/user";
+
+export function UserProfile() {
+  const [user, setUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchJson<User>("https://jsonplaceholder.typicode.com/users/1")
+      .then((data) => setUser(data))
+      .catch((err) => {
+        if (err instanceof Error && err.name !== "AbortError") {
+          setError(err.message);
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  if (error) return <p role="alert">Error: {error}</p>;
+  if (!user) return <p>Loading...</p>;
+
+  return (
+    <dl>
+      <dt>Name</dt>
+      <dd>{user.name}</dd>
+      <dt>Email</dt>
+      <dd>{user.email}</dd>
+      <dt>Website</dt>
+      <dd>{user.website}</dd>
+    </dl>
+  );
+}
+```
+
+**Why:** The goal of this step is to see TypeScript autocomplete working on the fetched data. Because `fetchJson<User>` returns `Promise<User>`, the resolved value `data` is typed as `User` and Cursor suggests field names when you type `user.`.
+
+**Check:** In the JSX, type `user.` (after the null check). Cursor should suggest `name`, `email`, `username`, `phone`, `website`, and `id` — all fields from the `User` type. Try `user.nonexistent` — TypeScript should underline it with an error.
+
+---
+
+### Step 4 — Write a type guard for the User type
+
+**What:** Add an `isUser` type guard function that validates the shape of an unknown value at runtime.
+
+**Where:** In `src/types/user.ts`, below the `User` type definition.
+
+**How:**
+
+```ts
+export function isUser(value: unknown): value is User {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "number" &&
+    typeof v.name === "string" &&
+    typeof v.username === "string" &&
+    typeof v.email === "string" &&
+    typeof v.phone === "string" &&
+    typeof v.website === "string"
+  );
+}
+```
+
+**Why:** This function checks every field of the `User` type at runtime. The return type annotation `value is User` tells TypeScript that if this function returns `true`, the value can be treated as `User`. This is the runtime validation that the `as T` cast cannot provide.
+
+**Check:** In Cursor, hover over the return type `value is User`. The tooltip should confirm this is a type predicate. No TypeScript errors on the function.
+
+---
+
+### Step 5 — Update fetchJson to use the type guard
+
+**What:** Add an optional type guard parameter to `fetchJson` that validates the response before returning it.
+
+**Where:** In `src/lib/fetchJson.ts`.
+
+**How:**
+
+```ts
+export async function fetchJson<T>(
+  url: string,
+  guard?: (value: unknown) => value is T
+): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error: ${response.status}`);
+  }
+  const data: unknown = await response.json();
+  if (guard) {
+    if (!guard(data)) {
+      throw new Error("API response did not match expected shape.");
+    }
+    return data;
+  }
+  return data as T;
+}
+```
+
+**Why:** When a guard is provided, the function validates the response before returning it. If validation fails, it throws an error — which will be caught by the caller's error handling and shown to the user. When no guard is provided (for quick development or trusted internal APIs), it falls back to the `as T` cast.
+
+**Check:** No TypeScript errors on the updated `fetchJson`. Hover over the `data` variable after the `if (guard)` block — TypeScript should show the type as `T` (narrowed by the guard).
+
+---
+
+### Step 6 — Use the guard in UserProfile and test with a malformed response
+
+**What:** Update the `UserProfile` fetch call to pass `isUser` as the guard argument, then test what happens when the guard fails.
+
+**Where:** In `UserProfile.tsx`.
+
+**How:** Update the `fetchJson` call:
+
+```tsx
+import { isUser } from "../types/user";
+
+// In the useEffect:
+fetchJson<User>(
+  "https://jsonplaceholder.typicode.com/users/1",
+  isUser
+)
+  .then((data) => setUser(data))
+  .catch((err) => {
+    if (err instanceof Error && err.name !== "AbortError") {
+      setError(err.message);
+    }
+  });
+```
+
+To test the guard failure, temporarily change the URL to fetch a non-user endpoint:
+
+```ts
+fetchJson<User>(
+  "https://jsonplaceholder.typicode.com/posts/1", // returns a Post, not a User
+  isUser
+)
+```
+
+**Why:** The posts endpoint returns `{ userId, id, title, body }` — which fails the `isUser` guard because it has no `name`, `email`, etc. The `fetchJson` function throws "API response did not match expected shape." — which the component catches and displays as an error. Without the guard, this bug would be silent: the component would render with undefined field values.
+
+**Check:** The error state appears in the browser with the guard failure message. Restore the correct URL. The user profile renders correctly.
+
+## If stuck
+
+**TypeScript error: "A 'return' statement with no value" in the type guard**
+Each condition in the guard must return either `true` or `false`. Make sure every code path in `isUser` returns a boolean, not `undefined`.
+
+**Cursor is not showing autocomplete on `user.` fields**
+Confirm the `useState<User | null>` is typed correctly and you are inside a null check before accessing fields. Also try restarting the TypeScript server: Ctrl+Shift+P → "TypeScript: Restart TS Server".
+
+**The guard always returns false**
+Check that you are casting to `Record<string, unknown>` before checking individual field types. Checking `typeof value.name` directly will fail because `value` is typed as `unknown` and TypeScript will not allow property access on `unknown`.
+
+**"Cannot use import statement" error for the type import**
+Use `import type { User }` instead of `import { User }` to import type-only exports. This avoids issues with projects that have `verbatimModuleSyntax` enabled.
+
+**The abort signal is not connected to the fetch**
+In the `UserProfile` component above, the `AbortController` is created but its signal is not passed to `fetchJson`. Update `fetchJson` to accept an optional `signal` parameter and pass it to `fetch()`. Alternatively, accept this limitation for this lesson since the primary focus is on typing.
+
+## Common mistakes
+
+- **Using `as Type` at every call site instead of a generic utility.** Scattering `as` casts throughout the codebase means every call is a separate trust boundary. A single generic `fetchJson` function with a guard centralizes the risk.
+- **Writing a type guard that only checks a few fields.** If your `User` type has 10 fields and the guard only checks 3, it will return `true` for objects missing the other 7. Check every field that your component depends on.
+- **Typing the guard parameter as `(value: any) => boolean` instead of a type predicate.** Using `any` loses the narrowing — TypeScript will not treat the value as the target type inside the `if (guard)` block.
+- **Forgetting that `response.json()` returns `any`, not `unknown`.** In strict TypeScript, `any` is permissive — you can access any property without errors, which hides bugs. Cast to `unknown` first (`const data: unknown = await response.json()`) to force yourself to validate before using.
+- **Using Zod without understanding what it is doing.** Zod is excellent, but if you reach for it before understanding type guards, you will not know how to debug schema failures or extend schemas correctly. Understand the manual approach first.
+
+<KeyTerms terms={[
+  { term: "Generic function", definition: "A TypeScript function with a type parameter (written as a letter like T in angle brackets after the function name) that allows the function to work with different types while remaining type-safe. The caller specifies the type when calling the function, for example fetchJson of type User." },
+  { term: "Type guard", definition: "A function whose return type is a type predicate of the form 'value is Type'. When the function returns true, TypeScript narrows the value's type to the specified type inside the following block. Enables runtime validation with compile-time type narrowing." },
+  { term: "Type predicate", definition: "A return type annotation in the form 'value is Type' used in type guard functions. Tells TypeScript that if the function returns true, the parameter can be treated as the specified type in the calling scope." },
+  { term: "keyof", definition: "A TypeScript operator that produces a union of string literal types representing the keys of an object type. Using keyof ContactFormState as a parameter type restricts the parameter to only the valid field names of the interface." },
+  { term: "unknown type", definition: "A TypeScript type that represents a value whose type is not yet known. Unlike any, TypeScript requires you to narrow the type (via typeof checks, instanceof, or type guards) before accessing properties. The safe alternative to any for values from external sources like API responses." },
+  { term: "as cast", definition: "A TypeScript assertion that tells the compiler to treat a value as a specific type without performing any runtime check. Written as 'value as Type'. Overrides type inference and should be used sparingly — the compiler trusts the assertion without verifying it." },
+  { term: "Record type", definition: "A TypeScript utility type written as Record of string and unknown that represents an object with string keys and values of any type. Used inside type guards to safely access properties of an unknown value by index before checking their types." },
+  { term: "Schema validation", definition: "The practice of checking at runtime that a data structure matches an expected shape before using it. Manual type guards, Zod, and similar libraries all perform schema validation. Prevents runtime crashes when API responses do not match TypeScript type definitions." },
+  { term: "Zod", definition: "A TypeScript schema validation library that generates TypeScript types from schema definitions. Allows defining validation logic and TypeScript types together, so both are always in sync. An alternative to hand-written type guards for production applications with complex API contracts." },
+  { term: "import type", definition: "A TypeScript import syntax that imports only the type information for a symbol, not the runtime value. Used when importing interfaces and type aliases to make it explicit that the import has no runtime effect and to satisfy some compiler configurations." }
+]} />
+
+<QuickSummary points={[
+  "Type form state with a dedicated interface and use keyof to constrain field update helpers — TypeScript then flags invalid field names at the call site.",
+  "A generic fetchJson utility function centralizes the response.ok check and returns a typed result, giving Cursor autocomplete on fetched data without scattering as casts across the codebase.",
+  "Type guards are functions with a type predicate return annotation (value is Type) that perform actual runtime checks — they bridge the gap between TypeScript's compile-time types and the unknown shape of data from external APIs.",
+  "Cast response.json() to unknown first, then pass through a type guard — this forces runtime validation and prevents TypeScript from silently accepting malformed data.",
+  "The as cast is a trust boundary, not a validation: it tells TypeScript to assume a type without checking. Using it on API responses means API contract changes become silent runtime bugs.",
+  "Zod and similar libraries automate the type guard pattern for complex schemas — but understanding the manual approach first is essential for debugging and extending schemas."
+]} />
+
+## Practice task + Definition of done
+
+**Practice task:** Build a typed `fetchJson` utility function and use it to fetch and type a response from the JSONPlaceholder posts API (`https://jsonplaceholder.typicode.com/posts/1`).
+
+Work through these checkpoints:
+
+1. Define a `Post` type matching the posts API response: `{ id: number; userId: number; title: string; body: string }`.
+2. Write an `isPost` type guard that validates all four fields.
+3. Update your `fetchJson` utility (or create a separate copy) to accept an optional guard parameter.
+4. Create a `PostDetail` component that calls `fetchJson<Post>(url, isPost)` and displays the post title and body.
+5. In Cursor, type `post.` after the null check — confirm all four field names appear in autocomplete.
+6. Temporarily fetch a non-post endpoint (e.g., the users endpoint) and confirm the guard failure error appears in the browser.
+7. Run `npx tsc --noEmit` and confirm zero errors.
+
+**Definition of done:**
+
+- Cursor shows autocomplete for all `Post` fields when accessing the fetched data — no manual type annotation required at the call site.
+- Fetching a non-Post endpoint triggers the guard failure error and shows the error state in the browser.
+- The `isPost` type guard checks all four fields and is annotated with the `value is Post` type predicate.
+- The `fetchJson` function uses `unknown` (not `any`) as the intermediate type before validation.
+- `npx tsc --noEmit` exits with zero errors.
+- No use of `as Type` at any call site outside the `fetchJson` utility itself.

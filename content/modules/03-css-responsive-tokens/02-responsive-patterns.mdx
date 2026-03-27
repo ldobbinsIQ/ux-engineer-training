@@ -1,0 +1,340 @@
+---
+title: "Responsive Patterns: Breakpoints and Fluid Type"
+slug: "02-responsive-patterns"
+moduleSlug: "03-css-responsive-tokens"
+order: 2
+hiringSignal: false
+estimatedHours: 1.5
+tasks:
+  - "Add Tailwind breakpoint classes to a card grid"
+  - "Implement fluid typography using clamp()"
+  - "Test at 375px, 768px, and 1280px in DevTools"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=responsive+design+breakpoints+fluid+typography+css"
+      label: "Responsive Design: Breakpoints + Fluid Type"
+  docs:
+    - url: "https://developer.mozilla.org/en-US/docs/Web/CSS/clamp"
+      label: "MDN CSS clamp()"
+---
+
+## Goal
+
+Make a page section respond to different screen sizes using Tailwind breakpoint utilities and fluid typography with `clamp()` — then verify the layout at three standard viewport widths in DevTools.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Beginner–Intermediate
+
+## Why this matters for UX Engineers
+
+Designers hand off responsive specs in Figma with mobile, tablet, and desktop frames. Your job is to translate those specs into CSS that transitions smoothly between those states. Knowing Tailwind's breakpoint system and how `clamp()` works lets you implement responsive layouts without writing separate stylesheets for each viewport.
+
+Broken responsive layouts are a visible, immediate sign of incomplete work. Getting these patterns right is table stakes for any UX Engineer working in a product team.
+
+## What you will produce
+
+A page section that:
+- Uses Tailwind breakpoint prefixes (`sm:`, `md:`, `lg:`) to switch from single-column to multi-column layout
+- Has a heading size that scales fluidly using `clamp()` without any media queries
+- Passes a visual check at 375px, 768px, and 1280px with no horizontal scroll
+
+## Tools + Where you will work
+
+- **Cursor** — editing component and CSS files
+- **Browser DevTools** — device toolbar for responsive testing
+- **Your Next.js project** — the card grid or page section from lesson 01
+
+## Concept overview
+
+### Mobile-first breakpoints
+
+The mobile-first approach means you write base styles for the smallest viewport, then layer on changes for larger viewports using breakpoint prefixes. In Tailwind, unprefixed classes apply at all sizes; prefixed classes apply at that breakpoint and above.
+
+Tailwind's default breakpoints:
+
+| Prefix | Min-width | Equivalent to |
+|---|---|---|
+| (none) | 0px | All sizes |
+| `sm:` | 640px | Large phones, small tablets |
+| `md:` | 768px | Tablets |
+| `lg:` | 1024px | Laptops |
+| `xl:` | 1280px | Desktops |
+| `2xl:` | 1536px | Large monitors |
+
+Each prefix is a `min-width` media query. `md:grid-cols-2` means "apply 2 columns at 768px and above."
+
+### Mobile-first in practice
+
+Write for mobile without a prefix, then add larger viewport overrides:
+
+```tsx
+// Mobile: 1 column. Tablet: 2 columns. Desktop: 3 columns.
+<ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+```
+
+This is more maintainable than desktop-first because you are progressively enhancing, not progressively degrading.
+
+### Fluid typography with clamp()
+
+`clamp(min, preferred, max)` returns the preferred value when it falls between min and max, otherwise it clamps to the boundary. For font sizes, the preferred value is usually a viewport-relative unit (`vw`) so the size scales with the window.
+
+```css
+font-size: clamp(1.25rem, 3vw, 2.25rem);
+```
+
+This reads as: "The font size is 3% of the viewport width, but never smaller than 1.25rem (20px) and never larger than 2.25rem (36px)." No media queries needed.
+
+A useful formula for the preferred value is:
+
+```
+preferred = (max - min) / (max-viewport - min-viewport) * 100vw + offset
+```
+
+For everyday use, tools like the Utopia fluid type calculator generate these values for you.
+
+### Container queries (emerging pattern)
+
+Container queries (`@container`) let a component respond to the size of its parent container rather than the viewport. This is useful for components that are used in both narrow sidebars and wide main areas. Browser support is now solid (Chrome 105+, Safari 16+, Firefox 110+), but Tailwind's built-in container query support requires the `@tailwindcss/container-queries` plugin.
+
+```css
+.card-container {
+  container-type: inline-size;
+}
+
+@container (min-width: 480px) {
+  .card {
+    flex-direction: row;
+  }
+}
+```
+
+### Testing in DevTools
+
+DevTools Device Toolbar (`Ctrl+Shift+M` / `Cmd+Shift+M`) simulates different viewport widths. Use the dropdown to select preset devices or enter a custom width. Always test at:
+
+- **375px** — iPhone SE / most common small phone
+- **768px** — iPad portrait / tablet breakpoint
+- **1280px** — standard laptop
+
+<Callout variant="what">Horizontal scroll at any of the three test viewports almost always means an element has a fixed width larger than the viewport, or a min-width constraint that is not responsive. Check for hardcoded px widths on containers.</Callout>
+
+<VideoEmbed
+  title="Responsive Design: Breakpoints + Fluid Type"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=responsive+design+breakpoints+fluid+typography+css"
+  suggestedTerms="responsive design tailwind breakpoints fluid typography clamp css"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Open DevTools and enable the device toolbar
+
+**What:** Enable responsive mode in DevTools.
+
+**Where:** Your browser with the Next.js dev server running.
+
+**How:** Open DevTools (`F12`). Click the device toolbar icon (two overlapping rectangles in the top-left of DevTools) or press `Ctrl+Shift+M`. Set the width to 375px using the dimension input at the top of the viewport.
+
+**Why:** You need to see the mobile layout before making any changes, so you know your starting state.
+
+**Check:** The page renders at 375px width. Note which elements overflow or cause horizontal scroll — these are your targets.
+
+---
+
+### Step 2 — Add Tailwind breakpoint classes to the card grid
+
+**What:** Make the card grid respond to viewport width using Tailwind prefix classes.
+
+**Where:** The card grid element in your component (from lesson 01, or a new section).
+
+**How:** Replace any fixed column count with a responsive progression:
+
+```tsx
+<ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 list-none p-0">
+```
+
+If you used a CSS file in lesson 01, add media queries:
+
+```css
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+```
+
+**Why:** The unprefixed `grid-cols-1` is the mobile base. `sm:grid-cols-2` and `lg:grid-cols-3` override it progressively as the viewport grows.
+
+**Check:** In DevTools at 375px — one column. At 768px — two columns. At 1280px — three columns.
+
+---
+
+### Step 3 — Make the hero section single-column on mobile, two-column on desktop
+
+**What:** Apply breakpoint classes to a two-column hero layout so it stacks on mobile.
+
+**Where:** A hero or feature section on your page.
+
+**How:**
+
+```tsx
+<section className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center py-16 px-6">
+  <div>
+    <h1>Ship better products faster</h1>
+    <p>The platform that grows with your team.</p>
+    <a href="/signup" className="btn">Get started</a>
+  </div>
+  <div>
+    {/* image or illustration */}
+  </div>
+</section>
+```
+
+**Why:** At 375px, stacking content vertically (text then image) is almost always the right call. Two-column side-by-side layouts become legible only above ~768px.
+
+**Check:** At 375px the text and image stack vertically. At 1280px they sit side by side.
+
+---
+
+### Step 4 — Add a fluid heading using clamp()
+
+**What:** Apply `clamp()` to the page's main heading so its font size scales with viewport width.
+
+**Where:** In your CSS file, or as a Tailwind arbitrary value on the heading element.
+
+**How (CSS):**
+
+```css
+.hero-heading {
+  font-size: clamp(1.75rem, 5vw, 3.5rem);
+  line-height: 1.15;
+}
+```
+
+**How (Tailwind arbitrary value):**
+
+```tsx
+<h1 className="text-[clamp(1.75rem,5vw,3.5rem)] leading-tight">
+  Ship better products faster
+</h1>
+```
+
+**Why:** At 375px (5vw = ~18.75px), the clamp floor of 1.75rem (28px) kicks in. At 1280px (5vw = 64px), the clamp ceiling of 3.5rem (56px) kicks in. Between those two breakpoints, the size scales smoothly with zero media queries.
+
+**Check:** In DevTools, drag the viewport width slider slowly from 375px to 1280px. The heading size should increase continuously, not jump at specific breakpoints.
+
+---
+
+### Step 5 — Add fluid body text and subheadings
+
+**What:** Apply `clamp()` to secondary text sizes.
+
+**Where:** In your CSS file or as utility classes.
+
+**How:**
+
+```css
+body {
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+}
+
+.section-heading {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+}
+```
+
+**Why:** Body text that is too small on mobile (below 16px) causes zooming, which breaks responsive layouts. Clamping body text between 1rem and 1.125rem keeps it readable without getting oversized on large monitors.
+
+**Check:** At 375px, body text is at least 16px. At 1280px, body text is no larger than 18px.
+
+---
+
+### Step 6 — Test at all three viewports
+
+**What:** Systematically verify the layout at 375px, 768px, and 1280px.
+
+**Where:** DevTools device toolbar.
+
+**How:** For each width, check:
+1. Set the DevTools viewport to the target width
+2. Scroll the full page — confirm no horizontal scroll bar appears
+3. Check the card grid column count is correct
+4. Check that the heading font size is readable and not too large or too small
+5. Confirm the hero section stacks or sits side-by-side as intended
+
+**Why:** Testing at specific widths catches regressions that smooth dragging misses. Horizontal scroll at any width is a layout bug that ships to users.
+
+**Check:** At all three widths — no horizontal scroll, correct column counts, readable heading sizes.
+
+## If stuck
+
+- **Horizontal scroll appears at 375px:** Open DevTools Elements panel and look for any element with a computed width wider than 375px. Common culprits: a fixed-width image, a table with no `overflow-x: auto`, or a flex container with `flex-wrap: nowrap` and too many items.
+- **Tailwind breakpoint classes not applying:** Confirm your Tailwind config includes the `content` paths for the file you are editing. If Tailwind cannot see the file, it will not generate the classes.
+- **clamp() not working:** Confirm the preferred value (middle argument) includes a viewport unit (`vw`). A pure `rem` or `px` value in the middle will not scale — it needs a dimension tied to the viewport.
+- **Text is too large at tablet width:** Reduce the `vw` coefficient in the preferred value of `clamp()`. Changing `5vw` to `3vw` makes the scaling shallower.
+
+## Common mistakes
+
+- Writing desktop-first styles and trying to override them with `max-width` media queries (or Tailwind's lack of max-width utilities). Stick to mobile-first min-width throughout.
+- Using `em` for breakpoints in custom CSS. If user font size preferences change, `em`-based breakpoints shift unexpectedly. Use `px` or `rem` for breakpoints.
+- Setting font sizes with only `vw` and no clamp boundaries. A pure `vw` font size will be unreadably small on mobile and excessively large on wide monitors.
+- Adding explicit breakpoint overrides when `auto-fill` + `minmax` already handles the reflow. You do not need `sm:grid-cols-2 lg:grid-cols-3` if you are already using `minmax` — choose one approach.
+- Not testing horizontal scroll at each viewport. This is the most commonly missed responsive bug.
+
+<KeyTerms terms={[
+  "Breakpoint: A viewport width at which a layout changes, defined by a min-width or max-width media query.",
+  "Mobile-first: A CSS approach where base styles target the smallest viewport and breakpoint prefixes progressively add styles for larger viewports.",
+  "Tailwind breakpoint prefix: A shorthand like sm:, md:, or lg: that applies a utility class only at that viewport width and above.",
+  "clamp(): A CSS function that accepts a minimum, preferred, and maximum value and returns the preferred value unless it falls outside the min/max range.",
+  "Fluid typography: A technique where font sizes scale smoothly with viewport width using viewport units, typically combined with clamp() to set safe min and max bounds.",
+  "vw (viewport width unit): A CSS unit equal to 1% of the viewport width, used in fluid sizing calculations.",
+  "Device toolbar: A DevTools feature that simulates different viewport widths and device types for responsive testing.",
+  "Container query: A CSS feature that lets a component respond to the size of its parent container rather than the viewport, enabling more modular responsive components.",
+  "Horizontal scroll: A layout failure where content extends beyond the viewport width, causing a scrollbar to appear and indicating a responsive bug.",
+  "min-width media query: A media query that applies styles when the viewport is at least a specified width, the foundation of mobile-first responsive design."
+]} />
+
+<QuickSummary points={[
+  "Tailwind breakpoint prefixes (sm:, md:, lg:) are min-width modifiers — unprefixed classes apply to all viewports, prefixed classes override at that width and above.",
+  "Write mobile styles first with no prefix, then layer desktop overrides with prefixes — this is mobile-first and produces less code than desktop-first.",
+  "clamp(min, preferred, max) creates fluid font sizes that scale continuously with viewport width without needing any media queries.",
+  "Always test at 375px, 768px, and 1280px — horizontal scroll at any of these widths is a bug that will ship to users.",
+  "Container queries let components respond to their parent container width rather than the viewport, making components more reusable across different layout contexts.",
+  "Avoid using only vw for font sizes without clamp() — text will be unreadably small on mobile and oversized on large screens."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Take a page section (or build one) that contains:
+- A heading
+- A paragraph of body text
+- A grid of at least four cards
+
+Make the section fully responsive:
+
+1. Use Tailwind breakpoint classes so the card grid shows 1 column at mobile, 2 at tablet, and 3 at desktop.
+2. Use `clamp()` on the heading so it scales from `1.75rem` at minimum to `3rem` at maximum with a `4vw` preferred value.
+3. Make any two-column layout stack vertically at mobile and go side-by-side at the `lg:` breakpoint.
+
+**Definition of done:**
+
+- At 375px: cards are in 1 column, heading is at or near 1.75rem, no horizontal scroll.
+- At 768px: cards are in 2 columns, heading has scaled up, no horizontal scroll.
+- At 1280px: cards are in 3 columns, heading is at or near 3rem, no horizontal scroll.
+- Dragging the viewport slider from 375px to 1280px shows the heading size increasing continuously (not jumping at discrete steps).
+- No breakpoint-specific styles are needed for the heading — `clamp()` handles all sizes.

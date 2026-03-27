@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 260" font-family="system-ui, -apple-system, sans-serif">
+  <rect width="800" height="260" fill="#fafafa" rx="12"/>
+
+  <!-- Title -->
+  <text x="400" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="#111">React State Update Cycle</text>
+
+  <!-- Step 1: User Interaction -->
+  <rect x="20" y="60" width="160" height="60" rx="10" fill="#3b82f6" opacity="0.15" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="100" y="84" text-anchor="middle" font-size="11" font-weight="700" fill="#1d4ed8">1. User Event</text>
+  <text x="100" y="100" text-anchor="middle" font-size="10" fill="#1d4ed8">Click, type, submit</text>
+  <text x="100" y="113" text-anchor="middle" font-size="10" fill="#1d4ed8">triggers handler</text>
+
+  <line x1="180" y1="90" x2="210" y2="90" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Step 2: setState -->
+  <rect x="212" y="60" width="160" height="60" rx="10" fill="#8b5cf6" opacity="0.15" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="292" y="84" text-anchor="middle" font-size="11" font-weight="700" fill="#6d28d9">2. setState()</text>
+  <text x="292" y="100" text-anchor="middle" font-size="10" fill="#6d28d9">React queues</text>
+  <text x="292" y="113" text-anchor="middle" font-size="10" fill="#6d28d9">a re-render</text>
+
+  <line x1="372" y1="90" x2="402" y2="90" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Step 3: Re-render -->
+  <rect x="404" y="60" width="160" height="60" rx="10" fill="#10b981" opacity="0.15" stroke="#10b981" stroke-width="1.5"/>
+  <text x="484" y="84" text-anchor="middle" font-size="11" font-weight="700" fill="#065f46">3. Component</text>
+  <text x="484" y="100" text-anchor="middle" font-size="10" fill="#065f46">re-renders with</text>
+  <text x="484" y="113" text-anchor="middle" font-size="10" fill="#065f46">new state value</text>
+
+  <line x1="564" y1="90" x2="594" y2="90" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Step 4: DOM diff -->
+  <rect x="596" y="60" width="180" height="60" rx="10" fill="#f59e0b" opacity="0.15" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="686" y="84" text-anchor="middle" font-size="11" font-weight="700" fill="#b45309">4. Virtual DOM</text>
+  <text x="686" y="100" text-anchor="middle" font-size="10" fill="#b45309">Diff → minimal real</text>
+  <text x="686" y="113" text-anchor="middle" font-size="10" fill="#b45309">DOM updates</text>
+
+  <!-- Example -->
+  <rect x="20" y="150" width="360" height="80" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="40" y="170" font-size="11" font-weight="600" fill="#475569">Before:</text>
+  <text x="40" y="186" font-size="10" fill="#64748b" font-family="monospace">const [count, setCount] = useState(0)</text>
+  <text x="40" y="202" font-size="10" fill="#64748b" font-family="monospace">// count = 0  →  UI shows "0"</text>
+  <text x="40" y="218" font-size="10" fill="#64748b" font-family="monospace">setCount(1)  →  UI shows "1"</text>
+
+  <rect x="420" y="150" width="360" height="80" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="440" y="170" font-size="11" font-weight="600" fill="#ef4444">Common mistake:</text>
+  <text x="440" y="186" font-size="10" fill="#64748b" font-family="monospace">count = count + 1  // ✗ mutating state</text>
+  <text x="440" y="202" font-size="10" fill="#64748b" font-family="monospace">// React won't know to re-render!</text>
+  <text x="440" y="218" font-size="10" fill="#10b981" font-family="monospace">setCount(c => c + 1)  // ✓ correct</text>
+
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+</svg>

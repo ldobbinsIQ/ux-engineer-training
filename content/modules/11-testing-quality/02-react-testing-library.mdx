@@ -1,0 +1,310 @@
+---
+title: "React Testing Library Queries"
+slug: "02-react-testing-library"
+moduleSlug: "11-testing-quality"
+order: 2
+hiringSignal: false
+estimatedHours: 1.5
+tasks:
+  - "Render a component in a test using RTL render"
+  - "Query elements with getByRole instead of getByTestId"
+  - "Fire a user event and assert the DOM changed"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+testing+library+basics+tutorial"
+      label: "React Testing Library Basics"
+  docs:
+    - url: "https://testing-library.com/docs/queries/about/"
+      label: "RTL Queries Reference"
+---
+
+## Goal
+
+Write component tests that query the DOM the way a user would — by role and label — rather than by implementation details like CSS class names or test IDs.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+React Testing Library's philosophy is that tests should resemble how users interact with the UI. When you query by `getByRole('button', { name: 'Submit' })` instead of `getByTestId('submit-btn')`, you are simultaneously testing that the button exists, that it is accessible (has a role), and that its label is correct. This makes RTL tests a forcing function for accessibility — if your query does not work, your component probably has an accessibility problem.
+
+For UX Engineers specifically, this alignment between testing and accessibility is a powerful argument for writing tests at all. Tests written with RTL queries are tests that also verify your accessibility implementation.
+
+## What you will produce
+
+A test file for a toggle button component that renders the component, queries the button by its accessible role and name, fires a click event, and asserts that the `aria-pressed` attribute updates correctly.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for test files and component files
+- **Your Next.js project** — the `components/` directory for the component under test, test files alongside
+- **Terminal in Cursor** — to run `npx vitest run`
+
+## Concept overview
+
+### RTL philosophy: test what users see, not implementation
+
+React Testing Library was built around a single principle: tests should not break when you refactor implementation details. If you rename a CSS class or rename a state variable, your tests should still pass because users cannot see those things. Tests break only when the visible, interactive behavior of the component changes.
+
+The practical consequence: never query by CSS class names, never query by component names, and avoid `getByTestId` except as a last resort. Query by what users perceive: roles, labels, visible text.
+
+### Query priority
+
+RTL recommends this query priority, from most to least preferred:
+
+1. **getByRole** — queries by ARIA role (button, checkbox, heading, textbox, etc.) with optional `name` to match the accessible label. This is the most accessible query.
+2. **getByLabelText** — queries a form input by the text of its associated label. Use this for inputs.
+3. **getByPlaceholderText** — queries an input by its placeholder. Use only when no label is present.
+4. **getByText** — queries by visible text content.
+5. **getByDisplayValue** — queries an input by its current value.
+6. **getByTestId** — queries by `data-testid` attribute. Use only when no other query is possible.
+
+### userEvent vs fireEvent
+
+`fireEvent` dispatches a single DOM event directly. `userEvent` (from `@testing-library/user-event`) simulates how a real user interacts: clicking, typing, tabbing, and all the intermediate events that go with it. For example, `userEvent.type` fires keydown, keypress, input, and keyup events — exactly what a real keyboard does. Use `userEvent` for realism; `fireEvent` only when you need to dispatch a single low-level event.
+
+### Async queries
+
+When a component updates asynchronously (after a fetch, a timer, or an animation), use async queries:
+
+- `findBy*` — returns a promise that resolves when the element appears (with a default timeout of 1000ms).
+- `waitFor` — waits for an assertion to stop throwing, useful for asserting that something disappeared.
+
+For synchronous state updates triggered by user events, `getBy*` queries work without `async/await`.
+
+### Accessible queries as a forcing function
+
+If `getByRole('button', { name: 'Save' })` does not find your button, one of three things is wrong: the element is not a `button` (use a real `button` element, not a `div`), it does not have an accessible name (add visible text, an `aria-label`, or an `aria-labelledby`), or it has a different visible name than you expected. All three of these are accessibility problems, not test problems. RTL makes you fix them.
+
+<VideoEmbed
+  title="React Testing Library Basics"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=react+testing+library+basics+tutorial"
+  suggestedTerms="react testing library getByRole user events assertions tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Install React Testing Library
+
+**What:** Add RTL and the user-event package as development dependencies.
+
+**Where:** In the Cursor terminal, from your project root.
+
+**How:** Run:
+
+```bash
+npm install --save-dev @testing-library/react @testing-library/user-event @testing-library/jest-dom
+```
+
+**Why:** `@testing-library/react` provides the `render` function and queries. `@testing-library/user-event` provides the realistic user interaction simulation. `@testing-library/jest-dom` adds custom matchers like `toBeInTheDocument`, `toHaveAttribute`, and `toBeVisible` that make assertions more readable.
+
+**Check:** All three packages appear in `devDependencies` in `package.json`.
+
+---
+
+### Step 2 — Create a setup file for jest-dom matchers
+
+**What:** Create a test setup file that imports the `@testing-library/jest-dom` matchers so they are available in all test files.
+
+**Where:** Create `vitest.setup.ts` in the project root, then reference it from `vitest.config.ts`.
+
+**How:** Create the setup file:
+
+```ts
+// vitest.setup.ts
+import '@testing-library/jest-dom';
+```
+
+Update `vitest.config.ts` to reference it:
+
+```ts
+test: {
+  environment: 'jsdom',
+  globals: true,
+  setupFiles: ['./vitest.setup.ts'],
+},
+```
+
+**Why:** Without this setup, `toBeInTheDocument()` and other jest-dom matchers are not recognized by TypeScript or Vitest. The setup file runs once before all tests, extending the `expect` object with the additional matchers.
+
+**Check:** After this change, `expect(element).toBeInTheDocument()` should not show a TypeScript error in Cursor.
+
+---
+
+### Step 3 — Write your first render test
+
+**What:** Create a `ToggleButton` component and a test that renders it and verifies it exists in the DOM.
+
+**Where:** Create `components/ToggleButton.tsx` and `components/ToggleButton.test.tsx`.
+
+**How:** Create the component:
+
+```tsx
+// components/ToggleButton.tsx
+'use client';
+
+import { useState } from 'react';
+
+interface ToggleButtonProps {
+  label: string;
+}
+
+export function ToggleButton({ label }: ToggleButtonProps) {
+  const [pressed, setPressed] = useState(false);
+
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={() => setPressed((p) => !p)}
+    >
+      {label}
+    </button>
+  );
+}
+```
+
+Write the first test:
+
+```tsx
+// components/ToggleButton.test.tsx
+import { render, screen } from '@testing-library/react';
+import { ToggleButton } from './ToggleButton';
+
+describe('ToggleButton', () => {
+  it('renders the button with the correct label', () => {
+    render(<ToggleButton label="Enable notifications" />);
+    const button = screen.getByRole('button', { name: 'Enable notifications' });
+    expect(button).toBeInTheDocument();
+  });
+});
+```
+
+**Why:** `screen.getByRole('button', { name: 'Enable notifications' })` queries for a `button` role element whose accessible name is "Enable notifications". If the element is not a `button`, does not have that text, or is not in the document, the query throws and the test fails — which is the correct outcome.
+
+**Check:** Run `npx vitest run`. The test passes with green output.
+
+---
+
+### Step 4 — Replace a getByTestId with getByRole
+
+**What:** Demonstrate the difference between `getByTestId` and `getByRole` by intentionally writing a test with `getByTestId` and then refactoring it to use `getByRole`.
+
+**Where:** In `ToggleButton.test.tsx`, add a second test using `getByTestId`, then refactor it.
+
+**How:** First version using `getByTestId`:
+
+```tsx
+// Do this first, then refactor away from it:
+it('renders the button (getByTestId version — avoid this)', () => {
+  render(<ToggleButton label="Enable notifications" />);
+  // This requires adding data-testid="toggle-btn" to the component, coupling tests to implementation.
+  // const button = screen.getByTestId('toggle-btn');
+});
+```
+
+Refactored version using `getByRole`:
+
+```tsx
+it('renders as a button element with an accessible name', () => {
+  render(<ToggleButton label="Dark mode" />);
+  expect(screen.getByRole('button', { name: 'Dark mode' })).toBeInTheDocument();
+});
+```
+
+**Why:** `getByTestId` requires you to add `data-testid` attributes to your component, which are invisible to users and screen readers. They couple your tests to markup details that have no user-facing meaning. `getByRole` tests the same thing but also verifies semantic correctness.
+
+**Check:** The refactored test passes. No `data-testid` attribute was added to the component.
+
+---
+
+### Step 5 — Fire a user event and assert the DOM changed
+
+**What:** Write a test that clicks the toggle button and asserts the `aria-pressed` attribute changes from `false` to `true`.
+
+**Where:** In `ToggleButton.test.tsx`, add a new test.
+
+**How:** Import `userEvent` and write the interaction test:
+
+```tsx
+import userEvent from '@testing-library/user-event';
+
+it('toggles aria-pressed from false to true when clicked', async () => {
+  const user = userEvent.setup();
+  render(<ToggleButton label="Enable notifications" />);
+
+  const button = screen.getByRole('button', { name: 'Enable notifications' });
+  expect(button).toHaveAttribute('aria-pressed', 'false');
+
+  await user.click(button);
+  expect(button).toHaveAttribute('aria-pressed', 'true');
+});
+
+it('toggles aria-pressed back to false when clicked a second time', async () => {
+  const user = userEvent.setup();
+  render(<ToggleButton label="Enable notifications" />);
+
+  const button = screen.getByRole('button', { name: 'Enable notifications' });
+  await user.click(button);
+  await user.click(button);
+  expect(button).toHaveAttribute('aria-pressed', 'false');
+});
+```
+
+**Why:** `userEvent.setup()` creates a userEvent instance with proper state management across multiple events. The test asserts both before and after states to verify the change was caused by the click, not present from the start. `toHaveAttribute` checks both the attribute name and its value.
+
+**Check:** Run `npx vitest run`. All tests pass. Notice that the test also implicitly verifies the `aria-pressed` attribute exists and has the correct boolean value — a direct accessibility check.
+
+## If stuck
+
+- **"Cannot find module '@testing-library/react'"** — run `npm install` to ensure packages are installed after adding them to `package.json`.
+- **"toBeInTheDocument is not a function"** — confirm `vitest.setup.ts` imports `@testing-library/jest-dom` and that the setup file path is correctly listed in `vitest.config.ts` under `setupFiles`.
+- **getByRole does not find the element** — use `screen.debug()` inside the test to print the rendered DOM and see what is actually there. The element may have a different role or name than expected.
+- **Test passes but should fail** — check that you are asserting the updated state, not the initial state. If you forget `await user.click(button)`, the assertion runs before the state update.
+- **"act() warning" in output** — this usually means the component is updating state after the test completes. Wrap the interaction in `await user.click()` (not `fireEvent.click()`) and ensure all state updates complete before assertions.
+
+## Common mistakes
+
+- Using `getByTestId` as the default query strategy instead of a last resort. Reserve `data-testid` for elements that truly have no accessible role or label.
+- Using `fireEvent.click` instead of `await user.click(userEvent.setup())`. `fireEvent` dispatches a single click event; real users produce many events during a click (mousedown, mouseup, click, focus).
+- Forgetting `await` before `user.click()`. Without `await`, the assertion runs before the event is processed and state is updated.
+- Asserting implementation details like CSS class names. If your test uses `toHaveClass('btn--active')`, it will break when you rename the class but the behavior stays the same.
+- Not importing `userEvent` from `@testing-library/user-event`. If you import it from the wrong place, the setup method may not be available.
+
+<KeyTerms terms={[
+  "React Testing Library (RTL): A testing library that provides utilities for rendering React components and querying the DOM by accessible roles and labels.",
+  "render: An RTL function that mounts a React component into a jsdom document and returns query utilities for that component's output.",
+  "screen: An RTL object that provides query functions (getByRole, getByText, etc.) scoped to the entire rendered document.",
+  "getByRole: An RTL query that finds an element by its ARIA role and optional accessible name. The preferred query method because it tests accessibility at the same time.",
+  "getByTestId: An RTL query that finds elements by a data-testid attribute. A last resort because it couples tests to markup details invisible to users.",
+  "userEvent: A @testing-library/user-event utility that simulates realistic user interactions including all intermediate events (keydown, keypress, input, keyup for typing).",
+  "fireEvent: An RTL utility that dispatches a single DOM event directly, without simulating the full sequence of events a real user would trigger.",
+  "toBeInTheDocument: A jest-dom matcher that asserts an element is present in the DOM.",
+  "toHaveAttribute: A jest-dom matcher that asserts an element has a specific HTML attribute and optionally checks its value.",
+  "Accessible name: The text or label that describes an interactive element to screen readers. For a button, it is the visible text content or aria-label."
+]} />
+
+<QuickSummary points={[
+  "RTL tests should resemble how users interact with the UI — query by role and label, not by CSS class names or data-testid attributes.",
+  "Query priority: getByRole first, then getByLabelText, getByText, and only getByTestId as a last resort.",
+  "getByRole('button', { name: 'Save' }) simultaneously tests that the element is a button, is accessible, and has the correct label.",
+  "Use userEvent (with await) instead of fireEvent for realistic interactions that simulate the full sequence of browser events a user produces.",
+  "Set up @testing-library/jest-dom in a vitest.setup.ts file to unlock readable matchers like toBeInTheDocument and toHaveAttribute.",
+  "If getByRole cannot find your element, you likely have an accessibility problem — fix the component, not the test."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Write a test for a toggle button that verifies the `aria-pressed` attribute changes from `false` to `true` on the first click, and from `true` back to `false` on the second click.
+
+**Definition of done:**
+
+- The test queries the button by its role and accessible name — no `data-testid` attributes.
+- The test uses `userEvent` (not `fireEvent`) for the click interactions.
+- Both the initial state (`aria-pressed="false"`) and post-click state (`aria-pressed="true"`) are explicitly asserted.
+- All tests pass when running `npx vitest run`.

@@ -1,0 +1,368 @@
+---
+title: "Tables: Sorting and Pagination"
+slug: "01-tables-sorting-pagination"
+moduleSlug: "10-data-dense-ui"
+order: 1
+hiringSignal: true
+hiringSignalCategory: "Data-Dense UI"
+estimatedHours: 2
+tasks:
+  - "Build a table with sortable column headers"
+  - "Add client-side ascending/descending sort by column"
+  - "Add pagination controls (previous/next, page indicator)"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=react+table+sorting+pagination+typescript"
+      label: "React Table Sorting and Pagination"
+  docs:
+    - url: "https://web.dev/performance"
+      label: "web.dev Performance"
+---
+
+## Goal
+
+Build a fully functional data table with accessible sort controls and pagination — the most common data-dense UI pattern you will encounter in enterprise product work.
+
+## Time + Difficulty
+
+**Estimated time:** 2 hours
+**Difficulty:** Intermediate
+
+## Why this matters for UX Engineers
+
+Sortable, paginated tables appear in almost every enterprise dashboard, admin panel, and analytics product. Hiring managers reviewing take-home projects look specifically at whether table headers use the correct `aria-sort` attribute, whether sort state is typed and stable, and whether pagination math is correct. Getting these details right signals that you think in terms of both user experience and technical correctness — the combination that defines a strong UX Engineer.
+
+A table done wrong (unsemantic markup, inaccessible sort, broken pagination when you change sort column) takes the same time to write as a table done right. This lesson teaches you the patterns that make the difference.
+
+## What you will produce
+
+A `DataTable` component that renders tabular data with sortable column headers and pagination controls. Sort state is tracked per column with direction (ascending/descending). Pagination slices the sorted data into pages of a configurable size, and changing the sort column resets to page 1.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for all component and page files
+- **Your Next.js project** — the `components/` directory for the table component, a page file for rendering it
+- **Browser** — to verify sort direction, aria-sort values, and pagination behavior
+
+## Concept overview
+
+### HTML table semantics
+
+Use native HTML table elements: `table`, `thead`, `tbody`, `tr`, `th`, and `td`. The `th` element inside `thead` must include `scope="col"` to tell screen readers that the header applies to a column. Never build a table out of `div` elements — you lose semantic meaning, accessible navigation, and the ability to use `aria-sort`.
+
+### Accessible sort with aria-sort
+
+The `aria-sort` attribute on a `th` element communicates sort state to screen readers. Valid values are `"ascending"`, `"descending"`, and `"none"`. Only the currently sorted column gets `"ascending"` or `"descending"` — all other columns should get `"none"`. When the user activates a sort header, update the attribute immediately so screen readers announce the change.
+
+### Sort state shape
+
+Track two pieces of state: the key of the column being sorted (`sortKey`) and the direction (`"asc"` or `"desc"`). When the user clicks a column that is already sorted, toggle the direction. When the user clicks a different column, reset the direction to `"asc"`.
+
+```tsx
+type SortDirection = 'asc' | 'desc';
+
+interface SortState {
+  key: string;
+  direction: SortDirection;
+}
+```
+
+### Stable sort algorithm
+
+JavaScript's `Array.sort` is not guaranteed to be stable in all environments, though modern engines are. For predictability, sort a copy of the data array — never mutate the original. Compare strings with `localeCompare` and numbers with subtraction so the sort handles both types correctly.
+
+### URL-based vs local sort state
+
+For simple tables, React state is sufficient. For dashboards where users share links or use the browser back button to return to a filtered view, store sort state in URL query parameters instead. This lesson uses local React state. The next lesson covers URL-based filter state, which applies the same principle.
+
+### Pagination math
+
+Three values drive pagination: the total number of rows after filtering (`totalRows`), the number of rows per page (`pageSize`), and the current page index (`currentPage`, zero-based). Derive everything else:
+
+- `totalPages = Math.ceil(totalRows / pageSize)`
+- The slice of data to render: `sortedData.slice(currentPage * pageSize, (currentPage + 1) * pageSize)`
+- Disable the Previous button when `currentPage === 0`
+- Disable the Next button when `currentPage === totalPages - 1`
+
+### Accessible pagination
+
+Wrap pagination controls in a `nav` element with `aria-label="Pagination"`. The page indicator (for example "Page 2 of 5") should be readable by screen readers. If you render page number buttons, add `aria-current="page"` to the active page button.
+
+<VideoEmbed
+  title="React Table Sorting and Pagination"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=react+table+sorting+pagination+typescript"
+  suggestedTerms="react table sorting pagination typescript accessible aria-sort tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Build the table structure with correct HTML semantics
+
+**What:** Create a `DataTable.tsx` component that renders a typed array of row data as a proper HTML table.
+
+**Where:** In Cursor, create `components/DataTable.tsx`.
+
+**How:** Start with the HTML skeleton and typed props:
+
+```tsx
+import React from 'react';
+
+export interface Column<T> {
+  key: keyof T;
+  label: string;
+  numeric?: boolean;
+}
+
+interface DataTableProps<T extends Record<string, unknown>> {
+  columns: Column<T>[];
+  rows: T[];
+  pageSize?: number;
+}
+
+export function DataTable<T extends Record<string, unknown>>({
+  columns,
+  rows,
+  pageSize = 10,
+}: DataTableProps<T>) {
+  return (
+    <table>
+      <thead>
+        <tr>
+          {columns.map((col) => (
+            <th key={String(col.key)} scope="col">
+              {col.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, rowIndex) => (
+          <tr key={rowIndex}>
+            {columns.map((col) => (
+              <td key={String(col.key)}>{String(row[col.key] ?? '')}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+```
+
+**Why:** The generic `T` means this component works with any data shape. `scope="col"` on `th` is required for screen reader table navigation. Rendering a copy of the rows (not mutating the prop) keeps the component predictable.
+
+**Check:** Render `<DataTable columns={[...]} rows={[...]} />` on a test page and confirm the table appears in the browser without TypeScript errors.
+
+---
+
+### Step 2 — Add sort state and sort headers
+
+**What:** Track which column is sorted and in which direction. Make column headers clickable buttons that update the sort state.
+
+**Where:** Inside `DataTable.tsx`, add `useState` for sort state.
+
+**How:** Add the sort state and a click handler:
+
+```tsx
+import React, { useState } from 'react';
+
+type SortDirection = 'asc' | 'desc';
+
+interface SortState {
+  key: string;
+  direction: SortDirection;
+}
+
+// Inside the component:
+const [sort, setSort] = useState<SortState | null>(null);
+
+function handleSortClick(key: string) {
+  setSort((prev) => {
+    if (prev?.key === key) {
+      return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+    }
+    return { key, direction: 'asc' };
+  });
+}
+```
+
+Then update the `th` to include `aria-sort` and a button:
+
+```tsx
+<th
+  key={String(col.key)}
+  scope="col"
+  aria-sort={
+    sort?.key === String(col.key)
+      ? sort.direction === 'asc'
+        ? 'ascending'
+        : 'descending'
+      : 'none'
+  }
+>
+  <button type="button" onClick={() => handleSortClick(String(col.key))}>
+    {col.label}
+    {sort?.key === String(col.key) ? (sort.direction === 'asc' ? ' ↑' : ' ↓') : ''}
+  </button>
+</th>
+```
+
+**Why:** Placing a `button` inside the `th` is the correct pattern — it makes the header focusable and keyboard-activatable without replacing the semantic table header element. `aria-sort` must be on the `th`, not the `button`.
+
+**Check:** Click a column header and confirm the sort indicator (↑ or ↓) appears. Click the same header again and confirm it toggles direction. Check the DOM inspector to verify `aria-sort` changes correctly.
+
+---
+
+### Step 3 — Implement the sort function
+
+**What:** Sort a copy of the rows array based on the current sort state before rendering.
+
+**Where:** Inside `DataTable.tsx`, derive `sortedRows` from the `rows` prop and `sort` state.
+
+**How:** Add this derivation before the return statement:
+
+```tsx
+const sortedRows = React.useMemo(() => {
+  if (!sort) return rows;
+  return [...rows].sort((a, b) => {
+    const aVal = a[sort.key];
+    const bVal = b[sort.key];
+    let comparison = 0;
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      comparison = aVal - bVal;
+    } else {
+      comparison = String(aVal ?? '').localeCompare(String(bVal ?? ''));
+    }
+    return sort.direction === 'asc' ? comparison : -comparison;
+  });
+}, [rows, sort]);
+```
+
+Then replace `rows` with `sortedRows` in the `tbody` map.
+
+**Why:** `useMemo` prevents re-sorting on every render when unrelated state changes. Spreading into a new array (`[...rows]`) before sorting ensures the original prop is never mutated. Handling both number and string types makes the sort work correctly for all column types.
+
+**Check:** Add a dataset with both string and numeric columns. Sort the numeric column and confirm numbers sort in numeric order (not lexicographic — "10" should not come before "2").
+
+---
+
+### Step 4 — Add pagination state and controls
+
+**What:** Track the current page, slice the sorted rows, and render previous/next controls.
+
+**Where:** Inside `DataTable.tsx`, add `currentPage` state and a pagination `nav`.
+
+**How:** Add state and derived values:
+
+```tsx
+const [currentPage, setCurrentPage] = useState(0);
+const totalPages = Math.ceil(sortedRows.length / pageSize);
+const pagedRows = sortedRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+```
+
+Replace `sortedRows` with `pagedRows` in the `tbody` map. Add the pagination controls below the table:
+
+```tsx
+<nav aria-label="Pagination">
+  <button
+    type="button"
+    onClick={() => setCurrentPage((p) => p - 1)}
+    disabled={currentPage === 0}
+  >
+    Previous
+  </button>
+  <span>
+    Page {currentPage + 1} of {totalPages}
+  </span>
+  <button
+    type="button"
+    onClick={() => setCurrentPage((p) => p + 1)}
+    disabled={currentPage >= totalPages - 1}
+  >
+    Next
+  </button>
+</nav>
+```
+
+**Why:** The `nav` element with `aria-label="Pagination"` creates a landmark region so keyboard users can jump directly to pagination controls. Disabling the boundary buttons prevents going below page 0 or above the last page.
+
+**Check:** With a dataset of 25 rows and `pageSize={10}`, confirm: page 1 shows rows 1–10, page 2 shows rows 11–20, page 3 shows rows 21–25. Previous is disabled on page 1; Next is disabled on page 3.
+
+---
+
+### Step 5 — Reset page to 0 when sort changes
+
+**What:** When the user clicks a column header to change the sort, reset `currentPage` to 0 so they always see the beginning of the newly sorted data.
+
+**Where:** Inside the `handleSortClick` function in `DataTable.tsx`.
+
+**How:** Add a `setCurrentPage(0)` call inside the handler:
+
+```tsx
+function handleSortClick(key: string) {
+  setCurrentPage(0);
+  setSort((prev) => {
+    if (prev?.key === key) {
+      return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+    }
+    return { key, direction: 'asc' };
+  });
+}
+```
+
+**Why:** Without this reset, a user on page 3 who changes the sort column stays on page 3 of the new sort order, which may show unexpected rows or an empty page if the new sort has fewer results on page 3.
+
+**Check:** Navigate to page 2, click a different column header, and confirm the table jumps back to page 1 with the new sort applied.
+
+## If stuck
+
+- **Sort not working for numbers** — check that your data contains actual `number` values, not number strings. `"10"` and `10` are different. If the data comes from JSON, ensure you are parsing numbers explicitly.
+- **aria-sort not updating in DOM inspector** — confirm the sort state is updating by adding a `console.log(sort)` inside the component. If the state updates but the attribute does not, check that you are reading `sort` state (not a stale closure) in the `aria-sort` expression.
+- **Pagination shows wrong rows** — double-check the slice math. `slice(start, end)` is exclusive of `end`. With `pageSize=10` and `currentPage=1`, the slice should be `slice(10, 20)`.
+- **Previous/Next buttons submit a form** — add `type="button"` to both buttons. Without it, buttons inside a form default to `type="submit"`.
+- **TypeScript error on `col.key` as object key** — use `String(col.key)` when passing to string contexts, or constrain the generic more tightly with `T extends Record<string, string | number>`.
+
+## Common mistakes
+
+- Mutating the `rows` prop directly instead of sorting a copy. Always spread into a new array before sorting.
+- Putting `aria-sort` on the `button` inside the `th` instead of on the `th` itself. Screen readers read `aria-sort` from the `th`, not from its children.
+- Forgetting to reset `currentPage` when sort changes, leaving users on a page that may be empty or misleading.
+- Sorting strings with `>` and `<` operators instead of `localeCompare`. The comparison operators do not handle accented characters, mixed case, or locale-specific collation correctly.
+- Using `rowIndex` as the React `key` on table rows when rows can be reordered. If you have a stable unique ID on each row, use that instead.
+
+<KeyTerms terms={[
+  "thead / tbody: HTML table section elements that group header rows and data rows respectively, required for correct screen reader table navigation.",
+  "scope='col': An attribute on th elements that declares the header applies to its entire column, enabling screen readers to announce the column header when navigating cells.",
+  "aria-sort: An ARIA attribute placed on a th element to communicate sort direction to screen readers. Valid values are 'ascending', 'descending', and 'none'.",
+  "Stable sort: A sort algorithm that preserves the original order of items that compare as equal, preventing rows from jumping around unexpectedly.",
+  "useMemo: A React hook that caches a computed value and only recalculates it when specified dependencies change, used here to avoid re-sorting on every render.",
+  "localeCompare: A JavaScript string method for comparing strings in a locale-aware way, handling accents and case correctly.",
+  "Pagination: The pattern of dividing a large dataset into pages and displaying one page at a time, reducing the amount of DOM rendered at once.",
+  "aria-current='page': An ARIA attribute placed on the active page button in a pagination control to tell screen readers which page is currently shown.",
+  "Slice: The Array.prototype.slice method that returns a shallow copy of a portion of an array without modifying the original.",
+  "SortState: A data structure that tracks which column is sorted and whether the direction is ascending or descending."
+]} />
+
+<QuickSummary points={[
+  "Use native HTML table elements (table, thead, tbody, th with scope='col') — never build tables from divs.",
+  "Place aria-sort on the th element, not on the button inside it. Only the active sort column gets 'ascending' or 'descending'; all others get 'none'.",
+  "Track sort state as an object with a key (column identifier) and a direction ('asc' or 'desc'). Toggle direction when the same column is clicked again.",
+  "Always sort a copy of the data array with the spread operator — never mutate the original prop.",
+  "Use localeCompare for strings and subtraction for numbers so the sort handles both types correctly.",
+  "Derive totalPages with Math.ceil(totalRows / pageSize) and slice the sorted array for the current page.",
+  "Wrap pagination controls in a nav element with aria-label='Pagination'. Reset currentPage to 0 whenever the sort column changes."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Add a "Reset sort" button that appears only when a sort is active and clears the sort state back to `null` when clicked.
+
+**Definition of done:**
+
+- The reset button appears only when a column is currently sorted, and disappears when sort is cleared.
+- After clicking reset, the table renders rows in their original (unsorted) order.
+- Sort works correctly for both string columns (alphabetical) and number columns (numeric order, not lexicographic).
+- Changing the sort column while on any page other than page 1 resets the view to page 1.
+- `aria-sort` reflects the correct value in the DOM for the active column and `"none"` for all inactive columns.

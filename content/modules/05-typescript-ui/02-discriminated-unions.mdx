@@ -1,0 +1,378 @@
+---
+title: "Discriminated Unions for UI States"
+slug: "02-discriminated-unions"
+moduleSlug: "05-typescript-ui"
+order: 2
+hiringSignal: true
+hiringSignalCategory: "React + TypeScript"
+estimatedHours: 1.5
+tasks:
+  - "Define a discriminated union for a fetch state: idle/loading/success/error"
+  - "Use a switch statement to narrow the type in a component"
+  - "Verify that TypeScript catches missing data access on the wrong state branch"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=typescript+discriminated+unions+react+state"
+      label: "TypeScript Discriminated Unions for State"
+  docs:
+    - url: "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+      label: "TypeScript Narrowing"
+---
+
+## Goal
+
+Model async UI states using a TypeScript discriminated union, render each state branch using a `switch` statement, and use the `never` type to make TypeScript enforce exhaustive handling of all union members.
+
+## Time + Difficulty
+
+**Estimated time:** 1.5 hours
+**Difficulty:** Intermediate
+Discriminated unions click quickly once you see them in action. The harder part is unlearning the boolean-flag approach — understanding why the union is strictly better is as important as learning the syntax.
+
+## Why this matters for UX Engineers
+
+This is a hiring signal topic. Being able to explain discriminated unions — and more importantly, to use them correctly in a live coding environment — puts you in a small percentage of junior candidates. Most bootcamp graduates have not encountered this pattern. Senior engineers who interview candidates specifically look for this pattern because it reveals an understanding of type narrowing, state modeling, and compiler-driven development.
+
+Discriminated unions also solve a real, recurring problem in UI code: boolean flag proliferation. Most beginners reach for multiple boolean flags when dealing with async state:
+
+```ts
+// Problem: flags can be in impossible combinations
+const [isLoading, setIsLoading] = useState(false);
+const [isError, setIsError] = useState(false);
+const [data, setData] = useState(null);
+```
+
+With three booleans, there are eight possible combinations. Most of them are invalid — you cannot be both loading and in an error state. But the code does not prevent invalid combinations. Bugs arise when flags get out of sync.
+
+A discriminated union makes impossible states unrepresentable. The component can be in exactly one of its defined states at any moment, and TypeScript enforces this at compile time.
+
+## What you will produce
+
+A `FetchDemo` React component that:
+
+- Models its state as a `FetchState` discriminated union with four members (idle, loading, success, error)
+- Renders each branch using a `switch` statement with full TypeScript type narrowing
+- Accesses `state.data` only in the `"success"` branch and `state.message` only in the `"error"` branch — TypeScript errors if accessed elsewhere
+- Uses the `never` type in the `switch` default case to enforce exhaustive handling
+- Demonstrates a TypeScript error when a new state variant is added but not handled in the switch
+
+## Tools + Where you will work
+
+- **Editor:** Cursor (inline TypeScript errors are essential for this lesson)
+- **TypeScript compiler:** `npx tsc --noEmit` for full project checks
+- **Framework:** React with TypeScript
+
+## Concept overview
+
+### What a discriminated union is
+
+A discriminated union is a union of object types where each member has a shared property — called the discriminant — with a unique literal value. TypeScript uses the discriminant to narrow the type inside conditional branches.
+
+```ts
+type FetchState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: User[] }
+  | { status: "error"; message: string };
+```
+
+The `status` property is the discriminant. When you write `if (state.status === "success")`, TypeScript knows that inside that block, `state` must be the success variant — so `state.data` is available and type-safe.
+
+Outside that block, TypeScript does not know which variant `state` is, so `state.data` is not accessible.
+
+### Why it is better than boolean flags
+
+| Approach | Problem |
+|----------|---------|
+| `isLoading: boolean` + `isError: boolean` + `data: User[] or null` | 8 possible flag combinations, most invalid. Nothing prevents `isLoading: true` and `isError: true` simultaneously. |
+| Discriminated union | Exactly 4 valid states. Adding a new state requires updating the union definition and every switch that handles it — TypeScript guides you. |
+
+### How switch narrows the type
+
+A `switch` on the discriminant property narrows the type in each `case` block:
+
+```ts
+switch (state.status) {
+  case "idle":
+    // state is { status: "idle" } here
+    return <p>Ready</p>;
+  case "loading":
+    // state is { status: "loading" } here
+    return <p>Loading...</p>;
+  case "success":
+    // state is { status: "success"; data: User[] } here
+    return <ul>{state.data.map(...)}</ul>;
+  case "error":
+    // state is { status: "error"; message: string } here
+    return <p>{state.message}</p>;
+}
+```
+
+### Exhaustive checking with never
+
+The `never` type represents a value that should never exist. You can use it in the `default` case of a switch to make TypeScript tell you when you have forgotten to handle a state:
+
+```ts
+default: {
+  const _exhaustiveCheck: never = state;
+  throw new Error(`Unhandled state: ${JSON.stringify(_exhaustiveCheck)}`);
+}
+```
+
+If you add a new state to the union but forget to add a `case` for it in the switch, TypeScript will error on `const _exhaustiveCheck: never = state` because `state` can no longer be narrowed to `never` — it still has the unhandled variant.
+
+<VideoEmbed title="TypeScript Discriminated Unions for State" fallbackSearchUrl="https://www.youtube.com/results?search_query=typescript+discriminated+unions+react+state" suggestedTerms="typescript discriminated unions react state machine never exhaustive" watchFirst={true} duration="~15 min" />
+
+## Step-by-step
+
+### Step 1 — Define the User type and FetchState union
+
+**What:** Create `FetchDemo.tsx` and define the data type and state union at the module level.
+
+**Where:** `src/components/FetchDemo.tsx`.
+
+**How:**
+
+```ts
+type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+type FetchState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: User[] }
+  | { status: "error"; message: string };
+```
+
+**Why:** Defining the union before writing any component logic forces you to think about all the states the component needs to handle. Adding data types first also gives Cursor enough information to autocomplete field names throughout the file.
+
+**Check:** Hover over `FetchState` in Cursor. The tooltip should show all four variants. No TypeScript errors on the type definitions.
+
+---
+
+### Step 2 — Create the component with initial state
+
+**What:** Write the `FetchDemo` component with a `state` variable initialized to `{ status: "idle" }`.
+
+**Where:** Below the type definitions in `FetchDemo.tsx`.
+
+**How:**
+
+```tsx
+import { useState } from "react";
+
+export function FetchDemo() {
+  const [state, setState] = useState<FetchState>({ status: "idle" });
+
+  // Render logic goes here (next step)
+  return null;
+}
+```
+
+**Why:** Providing the explicit generic `useState<FetchState>` tells TypeScript that `state` must always be one of the four union members. Without it, TypeScript would infer the type as `{ status: string }` — too broad to enable narrowing.
+
+**Check:** Hover over `state` in Cursor. The tooltip should show `FetchState`, not `{ status: string }`.
+
+---
+
+### Step 3 — Render using a switch statement
+
+**What:** Replace `return null` with a `switch` statement on `state.status` that returns different JSX for each case.
+
+**Where:** Inside the `FetchDemo` function, replacing the `return null` placeholder.
+
+**How:**
+
+```tsx
+  switch (state.status) {
+    case "idle":
+      return (
+        <button onClick={() => setState({ status: "loading" })}>
+          Load users
+        </button>
+      );
+
+    case "loading":
+      return <p aria-live="polite">Loading...</p>;
+
+    case "success":
+      return (
+        <ul>
+          {state.data.map((user) => (
+            <li key={user.id}>{user.name} — {user.email}</li>
+          ))}
+        </ul>
+      );
+
+    case "error":
+      return (
+        <div role="alert">
+          <p>{state.message}</p>
+          <button onClick={() => setState({ status: "idle" })}>
+            Try again
+          </button>
+        </div>
+      );
+
+    default: {
+      const _exhaustiveCheck: never = state;
+      throw new Error(`Unhandled state: ${JSON.stringify(_exhaustiveCheck)}`);
+    }
+  }
+```
+
+**Why:** Each `case` block has a fully narrowed type. In the `"success"` case, TypeScript knows `state.data` is `User[]`. In the `"error"` case, TypeScript knows `state.message` is `string`. The `default` case with `never` will cause a compile-time error if any state variant is not handled.
+
+**Check:** In Cursor, inside the `"success"` case, type `state.` and observe the autocomplete — it should show `data` and `status`. Inside the `"error"` case, `state.` should show `message` and `status`, but not `data`.
+
+---
+
+### Step 4 — Verify that TypeScript blocks cross-state data access
+
+**What:** Intentionally try to access `state.data` in the `"error"` case to confirm TypeScript prevents it.
+
+**Where:** Inside the `case "error":` block in the switch statement.
+
+**How:** Temporarily add this line inside the `"error"` case:
+
+```ts
+console.log(state.data); // This should produce a TypeScript error
+```
+
+**Why:** The whole value of discriminated unions is that TypeScript narrows the type to the error variant inside this case. There is no `data` property on that shape, so TypeScript errors.
+
+**Check:** Cursor shows a red underline on `state.data` with a message like `Property 'data' does not exist on type '{ status: "error"; message: string }'`. Delete the line after confirming the error.
+
+---
+
+### Step 5 — Add buttons to transition between states
+
+**What:** Add a set of test buttons that allow you to manually set each state without a real fetch call.
+
+**Where:** Create a wrapper component or add a controls section above the switch render.
+
+**How:** Update the component to include a controls bar:
+
+```tsx
+export function FetchDemo() {
+  const [state, setState] = useState<FetchState>({ status: "idle" });
+
+  const testUsers: User[] = [
+    { id: 1, name: "Ada Lovelace", email: "ada@example.com" },
+    { id: 2, name: "Grace Hopper", email: "grace@example.com" },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+        <button onClick={() => setState({ status: "idle" })}>Idle</button>
+        <button onClick={() => setState({ status: "loading" })}>Loading</button>
+        <button onClick={() => setState({ status: "success", data: testUsers })}>
+          Success
+        </button>
+        <button onClick={() => setState({ status: "success", data: [] })}>
+          Empty
+        </button>
+        <button onClick={() => setState({ status: "error", message: "Network failed." })}>
+          Error
+        </button>
+      </div>
+
+      {/* switch statement from Step 3 goes here */}
+    </div>
+  );
+}
+```
+
+**Why:** Being able to jump between states instantly (without network calls) makes it much easier to test each branch. This is also how you would build a Storybook story for a component — by controlling state externally.
+
+**Check:** Each button transitions the component to the correct state. The "Empty" button shows a success state with no list items — confirm the component handles this gracefully (the `state.data.map` call renders an empty list rather than crashing).
+
+---
+
+### Step 6 — Add a new state and observe the exhaustive check error
+
+**What:** Add a `"rate-limited"` state to the `FetchState` union and confirm TypeScript immediately flags the unhandled switch case.
+
+**Where:** In the `FetchState` type definition in `FetchDemo.tsx`.
+
+**How:** Add a new variant to the union:
+
+```ts
+type FetchState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: User[] }
+  | { status: "error"; message: string }
+  | { status: "rate-limited"; retryAfterSeconds: number };  // new
+```
+
+**Why:** As soon as you add this variant, the `default` case of the switch can no longer narrow `state` to `never` — `state` could still be `{ status: "rate-limited"; retryAfterSeconds: number }`. TypeScript will error on `const _exhaustiveCheck: never = state`, telling you exactly which case you forgot to handle.
+
+**Check:** Cursor immediately shows a TypeScript error on `_exhaustiveCheck` in the `default` case. The error message mentions the unhandled variant. Add a `case "rate-limited":` to the switch to resolve the error.
+
+## If stuck
+
+**TypeScript is not narrowing inside the switch cases**
+Confirm you provided the explicit generic `useState<FetchState>`. Without it, TypeScript may infer a wider type that does not narrow correctly. Also confirm the `status` property uses exact string literals (quoted strings), not a general `string` type.
+
+**The exhaustive check is not producing an error when I add a new state**
+Confirm the `default` case uses `const _exhaustiveCheck: never = state` (not just `return null`). Also confirm `strict` mode is enabled in your `tsconfig.json` — without strict mode, some narrowing checks are less aggressive.
+
+**Argument of type is not assignable to type 'FetchState'**
+You are likely passing a variable of type `string` for `status` instead of a literal. Use a literal string: `setState({ status: "loading" })`, not `const s = "loading"; setState({ status: s })`. (The second form works too, but TypeScript needs to infer the literal type for `s`, which requires `const` — not `let`.)
+
+**The switch statement is flagged as missing a return**
+TypeScript may warn if it cannot verify that all code paths return a value. Add a `return null` or `throw` at the very end of the function (after the switch) as a safety net, or use the exhaustive check to satisfy the compiler.
+
+## Common mistakes
+
+- **Using a string type instead of a literal for the discriminant.** Declaring `status: string` instead of a specific literal like `"loading"` prevents TypeScript from narrowing the type in switch cases.
+- **Accessing `state.data` before narrowing.** Without entering a `case "success":` block first, `state.data` does not exist on the union type and TypeScript errors. This is intentional and is the point.
+- **Skipping the exhaustive check in the default case.** Without `const _exhaustiveCheck: never = state`, adding a new union member silently falls through to the default without any compiler feedback.
+- **Using `if/else` chains instead of switch.** Both work for type narrowing. Switch is preferred for discriminated unions because it scales more cleanly with more cases and makes the exhaustive check pattern easier to apply.
+- **Putting both `data` and `message` on every union member.** Placing optional fields on all variants (`data?: User[]; message?: string`) defeats the purpose — you can still access `data` in the error case, just with an undefined check instead of a compile-time guarantee.
+
+<KeyTerms terms={[
+  { term: "Discriminated union", definition: "A TypeScript union of object types where each member has a shared property (the discriminant) with a unique literal value. TypeScript uses the discriminant to narrow the type inside conditional branches, making each member's unique properties accessible only in the correct branch." },
+  { term: "Discriminant", definition: "The shared property in a discriminated union whose literal value uniquely identifies which union member is active. Conventionally named 'status', 'type', or 'kind'. TypeScript uses equality checks on this property to narrow the union." },
+  { term: "Type narrowing", definition: "The process by which TypeScript refines a union type to a specific member inside a conditional block. Checking state.status === 'success' tells TypeScript that inside that block, state must be the success variant with its data property." },
+  { term: "Exhaustive check", definition: "A pattern using the never type in the default case of a switch statement. If any union member is not handled by a case, TypeScript cannot narrow state to never and produces a compile-time error, forcing the developer to handle the new case." },
+  { term: "never type", definition: "A TypeScript type that represents values that can never exist. Used in exhaustive checks to make the compiler verify that all union members have been handled. Assigning a value to a variable typed as never produces an error unless the value truly cannot exist at that point." },
+  { term: "Boolean flag", definition: "An approach to state modeling that uses multiple boolean variables (isLoading, isError, hasData) instead of a single state union. Prone to invalid combinations and harder to reason about than a discriminated union." },
+  { term: "Impossible state", definition: "A combination of state values that should never exist in a correctly functioning application, such as isLoading and isError both being true simultaneously. Discriminated unions make impossible states unrepresentable by limiting the component to one valid state at a time." },
+  { term: "Union member", definition: "One of the individual object types that make up a discriminated union. Each member has the discriminant property with a unique literal value, plus any additional properties specific to that state." },
+  { term: "Literal type", definition: "A TypeScript type that represents a single specific value rather than a category of values. The string literal type 'loading' matches only the exact string 'loading', not any other string. Required for discriminant properties to enable type narrowing." }
+]} />
+
+<QuickSummary points={[
+  "A discriminated union models state as a set of named variants, each with a shared discriminant property and variant-specific data — preventing impossible combinations that boolean flags allow.",
+  "TypeScript narrows the union type inside each switch case based on the discriminant value, making variant-specific properties (like data or message) accessible only in the correct branch.",
+  "Adding the never type to the default case of a switch creates an exhaustive check — TypeScript errors if any union member is unhandled, which is especially valuable when adding new states.",
+  "Accessing state.data outside the success branch produces a TypeScript error — this compile-time safety is the primary advantage over boolean flags and is not a bug to work around.",
+  "Use string literal types for the discriminant property, not a general string type, to enable TypeScript narrowing.",
+  "This pattern is a strong hiring signal: it demonstrates understanding of type narrowing, state modeling, and compiler-driven development in one compact example."
+]} />
+
+## Practice task + Definition of done
+
+**Practice task:** Add a `"rate-limited"` state to an existing fetch state union that includes a `retryAfterSeconds: number` field, and handle it in the component's switch statement.
+
+Work through these checkpoints:
+
+1. Starting from the completed `FetchDemo` component, add `{ status: "rate-limited"; retryAfterSeconds: number }` to the `FetchState` union.
+2. Observe the TypeScript error on the exhaustive check in the `default` case — do not fix it yet. Read the error message and confirm it references the new variant.
+3. Add a `case "rate-limited":` to the switch that renders a message like "Rate limited. Try again in X seconds." using `state.retryAfterSeconds`.
+4. Add a test button in the controls bar that sets the state to `{ status: "rate-limited", retryAfterSeconds: 30 }`.
+5. Confirm that TypeScript does not allow accessing `state.retryAfterSeconds` inside the `"error"` case.
+
+**Definition of done:**
+
+- The TypeScript error on the exhaustive check appears immediately after adding the new union member and disappears after adding the case.
+- The rate-limited state renders correctly in the browser with the correct `retryAfterSeconds` value.
+- Attempting to access `state.retryAfterSeconds` in the `"error"` case produces a TypeScript error in Cursor.
+- `npx tsc --noEmit` exits with zero errors.
+- The switch handles all five states and the default case with the exhaustive check remains in place.

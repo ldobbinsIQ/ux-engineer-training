@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 280" font-family="system-ui, -apple-system, sans-serif">
+  <rect width="800" height="280" fill="#fafafa" rx="12"/>
+
+  <!-- Title -->
+  <text x="400" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="#111">TypeScript: Catching Errors at Compile Time, Not Runtime</text>
+
+  <!-- Without TS (left) -->
+  <rect x="20" y="50" width="360" height="200" rx="10" fill="#ef4444" opacity="0.06" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="200" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#991b1b">JavaScript (No Types)</text>
+
+  <rect x="40" y="85" width="320" height="60" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="50" y="104" font-size="10" fill="#7f1d1d" font-family="monospace">function greet(user) {</text>
+  <text x="50" y="118" font-size="10" fill="#7f1d1d" font-family="monospace">  return user.name.toUpperCase()</text>
+  <text x="50" y="132" font-size="10" fill="#7f1d1d" font-family="monospace">}</text>
+
+  <rect x="40" y="158" width="320" height="40" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="50" y="174" font-size="10" fill="#7f1d1d" font-family="monospace">greet(null)</text>
+  <text x="50" y="189" font-size="10" fill="#ef4444">// CRASH at runtime: Cannot read</text>
+
+  <rect x="40" y="208" width="320" height="28" rx="6" fill="#fee2e2"/>
+  <text x="200" y="227" text-anchor="middle" font-size="11" font-weight="600" fill="#dc2626">Error discovered when user runs the app</text>
+
+  <!-- With TS (right) -->
+  <rect x="420" y="50" width="360" height="200" rx="10" fill="#10b981" opacity="0.06" stroke="#10b981" stroke-width="1.5"/>
+  <text x="600" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#065f46">TypeScript (With Types)</text>
+
+  <rect x="440" y="85" width="320" height="70" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="450" y="104" font-size="10" fill="#14532d" font-family="monospace">interface User {</text>
+  <text x="450" y="118" font-size="10" fill="#14532d" font-family="monospace">  name: string</text>
+  <text x="450" y="132" font-size="10" fill="#14532d" font-family="monospace">}</text>
+  <text x="450" y="146" font-size="10" fill="#14532d" font-family="monospace">function greet(user: User) { ... }</text>
+
+  <rect x="440" y="165" width="320" height="30" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="450" y="181" font-size="10" fill="#14532d" font-family="monospace">greet(null)</text>
+  <text x="560" y="185" font-size="9" fill="#dc2626">// Red squiggle in editor</text>
+
+  <rect x="440" y="205" width="320" height="28" rx="6" fill="#dcfce7"/>
+  <text x="600" y="224" text-anchor="middle" font-size="11" font-weight="600" fill="#16a34a">Error caught before you even run the app</text>
+
+  <!-- Center comparison -->
+  <text x="400" y="268" text-anchor="middle" font-size="11" fill="#64748b">TypeScript compiles to JavaScript — the browser never sees the type annotations</text>
+</svg>

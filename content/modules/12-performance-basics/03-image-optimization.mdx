@@ -1,0 +1,294 @@
+---
+title: "Image Optimization and Layout Shift Fixes"
+slug: "03-image-optimization"
+moduleSlug: "12-performance-basics"
+order: 3
+hiringSignal: false
+estimatedHours: 1
+tasks:
+  - "Replace an img element with Next.js Image component and set width/height"
+  - "Add the priority prop to the above-the-fold hero image"
+  - "Fix a CLS issue by reserving space for an image before it loads"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=nextjs+image+optimization+core+web+vitals"
+      label: "Next.js Image Optimization"
+  docs:
+    - url: "https://nextjs.org/docs/app/api-reference/components/image"
+      label: "Next.js Image Component"
+---
+
+## Goal
+
+Replace plain `img` elements with the Next.js `Image` component, add the `priority` prop to your hero image, and verify that layout shift is eliminated — concrete fixes for two of the most common Core Web Vital issues.
+
+## Time + Difficulty
+
+**Estimated time:** 1 hour
+**Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+
+Images are the single most common cause of poor LCP and CLS scores. A hero image without a `priority` hint forces the browser to discover and load it late, raising LCP. An image without dimensions forces the browser to reserve no space for it, causing content below it to jump down when it loads — that is CLS.
+
+The Next.js `Image` component fixes both problems with minimal configuration: automatic WebP conversion reduces file size, lazy loading is on by default for below-fold images, and the `width`/`height` props eliminate the layout shift. Adding `priority` to the hero image preloads it before the rest of the page.
+
+These are high-impact, low-effort changes that directly improve what users experience.
+
+## What you will produce
+
+A page where plain `img` elements have been replaced with Next.js `Image` components with correct `width`, `height`, and `priority` props, and a before/after Lighthouse comparison showing improved CLS and LCP scores.
+
+## Tools + Where you will work
+
+- **Cursor** — your editor for replacing `img` elements and adding props
+- **Your Next.js project** — any page that uses images
+- **Chrome DevTools / Lighthouse** — to measure CLS and LCP before and after the changes
+- **Terminal in Cursor** — to run `npm run build && npm start` before each Lighthouse audit
+
+## Concept overview
+
+### Why images cause LCP and CLS
+
+**LCP:** The browser discovers images lazily — it finds the `img` tag in the HTML, then makes a separate network request to download the image. If the `img` tag is deep in the HTML or the image is large, the download does not start early enough, raising LCP. A `preload` link in the document `<head>` or the `priority` prop on the Next.js `Image` component tells the browser to download the image as soon as possible.
+
+**CLS:** Without `width` and `height` on an `img` element, the browser does not know how much vertical space to reserve for it. It renders surrounding content at their natural positions, then shifts everything down when the image arrives. Width and height let the browser calculate the aspect ratio (`height / width`) and reserve a box of the correct height before the download completes.
+
+### Next.js Image component
+
+The `Image` component from `next/image` wraps the native `img` element with several automatic optimizations:
+
+- **Automatic WebP/AVIF conversion** — Next.js converts images to modern formats on the fly, reducing file size by 25–50% compared to JPEG/PNG.
+- **Automatic lazy loading** — images below the fold have `loading="lazy"` applied automatically, deferring their download until the user scrolls near them.
+- **Responsive sizing** — the `sizes` prop tells the browser which image size to download based on the viewport width, avoiding downloading a 2400px image for a 375px mobile screen.
+- **Blur placeholder** — the `placeholder="blur"` prop with `blurDataURL` shows a blurred low-res version while the full image loads.
+
+### The priority prop
+
+Add `priority` to any image that is above the fold on initial load — typically the hero image or the logo. This prop does two things:
+
+1. Disables lazy loading for that image (so it downloads immediately, not when scrolled into view).
+2. Adds a `<link rel="preload">` tag to the document head, telling the browser to fetch the image as a high-priority resource before it encounters the `img` tag in the HTML.
+
+Only add `priority` to the one or two images that are truly above the fold. Adding it to every image defeats the purpose — the browser's loading queue becomes congested and LCP actually gets worse.
+
+### The width and height props
+
+`width` and `height` in the Next.js `Image` component are **required** (for images with a fixed intrinsic size). They serve two purposes:
+
+1. They tell the browser the aspect ratio so it can reserve the correct space before the image loads (eliminating CLS).
+2. They are used to generate appropriately sized image variants.
+
+For images that should fill their container responsively, use `fill` prop instead of `width`/`height` and wrap the image in a `position: relative` container with an explicit height.
+
+### The sizes prop for responsive images
+
+When an image renders at different sizes on different viewport widths, the `sizes` prop tells the browser which breakpoint to use when choosing which image variant to download:
+
+```tsx
+<Image
+  src="/images/hero.jpg"
+  alt="Hero"
+  width={1200}
+  height={600}
+  sizes="(max-width: 768px) 100vw, 50vw"
+/>
+```
+
+This means: on screens up to 768px wide, this image takes up 100% of the viewport width. On wider screens, it takes up 50%. The browser uses this to download the smallest image variant that still looks sharp at the displayed size.
+
+### The aspect-ratio CSS property
+
+As an alternative to explicit `width`/`height`, the CSS `aspect-ratio` property lets you specify the ratio a container should maintain:
+
+```css
+.image-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+}
+```
+
+Combining this with a Next.js `Image` component using the `fill` prop creates a fully responsive image container with no layout shift.
+
+<VideoEmbed
+  title="Next.js Image Optimization"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=nextjs+image+optimization+core+web+vitals"
+  suggestedTerms="nextjs image component optimization priority prop CLS LCP tutorial"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Find the largest above-the-fold image
+
+**What:** Identify which image on your page is the LCP element and is currently a plain `img` element.
+
+**Where:** In Chrome DevTools → Performance Insights panel (as covered in the previous lesson).
+
+**How:** Record a page load, click the LCP insight, and note the element that is highlighted. Open Cursor and find the source of that image in your page or component files.
+
+**Why:** You want to apply `priority` only to the LCP image. Applying it to the wrong image wastes preload budget. Identifying the LCP element precisely ensures you make the right change.
+
+**Check:** You know the file path, the `src` value, and the current markup of the LCP image.
+
+---
+
+### Step 2 — Replace the img element with the Next.js Image component
+
+**What:** Import `Image` from `next/image` and replace the plain `img` element.
+
+**Where:** In Cursor, in the file where the LCP image is rendered.
+
+**How:** Before:
+
+```tsx
+<img
+  src="/images/hero.jpg"
+  alt="A team collaborating around a table"
+  className="hero-image"
+/>
+```
+
+After:
+
+```tsx
+import Image from 'next/image';
+
+<Image
+  src="/images/hero.jpg"
+  alt="A team collaborating around a table"
+  width={1200}
+  height={600}
+  className="hero-image"
+/>
+```
+
+**Why:** The `Image` component enables automatic WebP conversion and lazy loading immediately, even before you add `priority`. The `width` and `height` props eliminate CLS by letting the browser reserve the correct space.
+
+**Check:** Save the file and open `http://localhost:3000` in the browser (using `npm run dev` for a quick preview). The image should render correctly. Check the DOM inspector — the `img` element should have explicit `width` and `height` attributes.
+
+---
+
+### Step 3 — Add the priority prop to the hero image
+
+**What:** Add `priority` to the `Image` component for the LCP image to preload it as a high-priority resource.
+
+**Where:** In Cursor, on the `Image` component from Step 2.
+
+**How:**
+
+```tsx
+<Image
+  src="/images/hero.jpg"
+  alt="A team collaborating around a table"
+  width={1200}
+  height={600}
+  priority
+  className="hero-image"
+/>
+```
+
+**Why:** Without `priority`, the Next.js `Image` component adds `loading="lazy"` to the image, which actually defers its download — the opposite of what you want for the LCP image. `priority` removes lazy loading and adds a preload link so the browser fetches the image as early as possible.
+
+**Check:** View the page source (`Ctrl+U` or `Cmd+U`) and search for `<link rel="preload"`. You should see a preload link for the hero image in the `<head>`.
+
+---
+
+### Step 4 — Verify CLS is eliminated in Lighthouse
+
+**What:** Run a Lighthouse audit on the production build and verify the CLS score is 0 (or significantly reduced from before).
+
+**Where:** In the Cursor terminal and then in Chrome DevTools.
+
+**How:**
+
+1. Build and start the production server:
+
+```bash
+npm run build && npm start
+```
+
+2. Run a Lighthouse audit (Mobile preset, Performance category) as covered in the previous lesson.
+3. Check the CLS metric in the Metrics section.
+4. If CLS is still above 0, return to the previous lesson's technique (red border outlines) to identify remaining layout shift sources.
+
+**Why:** Measuring after the fix confirms it worked. CLS from the hero image should now be 0 because the browser reserves the correct space before the image loads. If CLS is still high, another element is contributing to shifts.
+
+**Check:** The CLS score is 0 or lower than before. Screenshot the new scores alongside your before screenshot from the previous lesson.
+
+---
+
+### Step 5 — Convert remaining images using the fill prop for flexible containers
+
+**What:** For images that need to fill their container responsively (for example, a card image with no fixed intrinsic size), use the `fill` prop with a positioned wrapper.
+
+**Where:** In Cursor, in any component that renders card or grid images.
+
+**How:**
+
+```tsx
+<div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9' }}>
+  <Image
+    src="/images/card-photo.jpg"
+    alt="Card image"
+    fill
+    sizes="(max-width: 768px) 100vw, 33vw"
+    style={{ objectFit: 'cover' }}
+  />
+</div>
+```
+
+**Why:** When you do not know the image's intrinsic dimensions (for example, user-uploaded photos that could be any size), `fill` tells the `Image` component to fill its positioned parent. The parent's `aspectRatio` CSS property reserves the correct vertical space, eliminating CLS. `sizes` ensures the browser downloads the appropriately sized variant for the current viewport.
+
+**Check:** The card images render correctly. In the Production Lighthouse audit, CLS remains at 0 and the images do not cause layout shift on slow networks.
+
+## If stuck
+
+- **"width and height required" TypeScript error** — you must provide either `width` + `height` or `fill` for every `Image` component. If the image fills a container, use `fill` with a positioned parent.
+- **Image appears distorted after adding width/height** — the `width` and `height` props set the aspect ratio, not the rendered CSS size. Add `style={{ width: '100%', height: 'auto' }}` to maintain the aspect ratio while letting the image scale to its container.
+- **priority prop causes a warning for below-fold images** — only add `priority` to images above the fold. If you see a Next.js warning that the priority image is not visible in the viewport, remove `priority` from that image.
+- **CLS is still high after adding dimensions** — use the red outline debugging technique from the previous lesson to find which elements are still shifting. Web fonts, dynamically injected elements, and iframes without dimensions are common remaining sources.
+
+## Common mistakes
+
+- Adding `priority` to every image. This floods the browser's preload queue and can actually slow down the LCP image by competing with it for bandwidth.
+- Using `width` and `height` that do not match the image's intrinsic aspect ratio. If the image is 1200×800 and you write `width={600} height={600}`, the image will be cropped or distorted.
+- Forgetting to rebuild with `npm run build` before running a Lighthouse audit. Changes to source files do not affect the production build until you rebuild.
+- Using the `fill` prop without a `position: relative` parent. Without positioning, the image has no container to fill and renders incorrectly.
+- Omitting the `alt` attribute. The Next.js `Image` component requires `alt` — it throws a TypeScript error if it is missing — but the error message is easy to dismiss. Always write a descriptive alt text, not an empty string, for content images.
+
+<KeyTerms terms={[
+  "Next.js Image component: A wrapper around the native img element that provides automatic WebP conversion, lazy loading, size optimization, and required width/height for CLS prevention.",
+  "priority prop: A Next.js Image prop that disables lazy loading and adds a preload link for the image, used on above-the-fold LCP images to reduce load time.",
+  "fill prop: A Next.js Image prop that makes the image fill its positioned parent container, used when the image dimensions are not fixed or known in advance.",
+  "sizes prop: A Next.js Image prop that tells the browser which image variant to download based on the current viewport width, preventing downloading oversized images on mobile.",
+  "WebP: A modern image format developed by Google that produces smaller file sizes than JPEG and PNG at equivalent visual quality. Next.js converts images to WebP automatically.",
+  "lazy loading: Deferring the download of below-fold images until the user scrolls near them, reducing initial page load time. Next.js Image applies this by default.",
+  "aspect-ratio: A CSS property that specifies the ratio of an element's width to its height, used to reserve vertical space for images before they load and prevent CLS.",
+  "Preload link: An HTML link element with rel='preload' in the document head that instructs the browser to fetch a resource early, before it is discovered in the HTML body.",
+  "objectFit: A CSS property that controls how an image is scaled within its container. objectFit: 'cover' fills the container without distortion; objectFit: 'contain' shows the full image.",
+  "Intrinsic dimensions: The actual pixel dimensions of an image file, as opposed to the CSS dimensions at which it is rendered on screen."
+]} />
+
+<QuickSummary points={[
+  "The Next.js Image component eliminates most image-related CLS automatically by requiring width and height props, which the browser uses to reserve space before the image loads.",
+  "Add priority to the LCP image (the main hero or above-fold image) to preload it — but only to that image, not to every image on the page.",
+  "For images that fill their container responsively, use the fill prop with a position: relative parent and an explicit height or aspect-ratio.",
+  "Use the sizes prop to tell the browser which image variant to download based on viewport width, avoiding oversized downloads on mobile.",
+  "Always rebuild with npm run build before running a Lighthouse audit — source changes are not reflected in the production build until you rebuild.",
+  "Verify the fix worked by checking CLS in a Lighthouse audit — the score should be 0 or significantly reduced after adding width/height and priority."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Convert all images on a page of your Next.js app to use the Next.js `Image` component with correct `width`, `height` (or `fill`), and `alt` props. Add `priority` to the hero image only.
+
+**Definition of done:**
+
+- The Lighthouse CLS score improves (ideally reaches 0) after the changes.
+- The LCP image has the `priority` prop and a preload link visible in the page source (`link rel="preload"`).
+- No plain `img` elements remain on the converted page.
+- All `Image` components have a descriptive, non-empty `alt` attribute.
+- No TypeScript errors in Cursor for any Image component usage.

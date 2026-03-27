@@ -1,0 +1,324 @@
+---
+title: "Figma Variables to Code Tokens (Conceptual)"
+slug: "04-figma-to-tokens"
+moduleSlug: "09-design-systems"
+order: 4
+hiringSignal: true
+hiringSignalCategory: "Design Systems"
+estimatedHours: 1
+tasks:
+  - "Map a Figma variable to a CSS custom property by name"
+  - "Identify which Figma modes map to CSS token overrides (light/dark)"
+  - "Document the naming convention for a token handoff between design and engineering"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=figma+variables+design+tokens+to+css"
+      label: "Figma Variables to CSS Design Tokens"
+  docs:
+    - url: "https://help.figma.com/hc/en-us/articles/15339657135383-Guide-to-variables-in-Figma"
+      label: "Figma Variables Guide"
+---
+
+## Goal
+
+Understand how Figma Variables map conceptually to CSS custom properties, identify how Figma modes map to CSS theme overrides, and establish a shared naming convention that eliminates ambiguity between designers and engineers.
+
+## Time + Difficulty
+
+**Estimated time:** 1 hour
+**Difficulty:** Beginner–Intermediate
+
+## Why this matters for UX Engineers
+
+The UX Engineer is the person most likely to be asked to bridge the gap between the Figma design file and the CSS token system. Designers think in Figma variable names; engineers think in CSS custom property names. When these do not align, both sides waste time in handoff meetings resolving naming conflicts.
+
+Understanding this translation layer is a direct hiring signal at companies with mature design systems. Being able to say "I mapped Figma's Color/Primary/Default variable to --color-primary in CSS, and I documented the naming convention in a shared glossary" demonstrates both technical and cross-functional communication skills.
+
+## What you will produce
+
+A written mapping document that translates a set of Figma variable names to CSS custom property equivalents, notes any naming discrepancies, and proposes a shared naming convention that both designers and engineers can use without ambiguity.
+
+## Tools + Where you will work
+
+- **Cursor** — for writing the mapping document
+- **Figma (viewer access)** — to inspect a design file and identify variable names
+- **Your existing token file** — `globals.css` or `tokens.css` from lesson 01
+
+## Concept overview
+
+### Figma Variables and CSS custom properties: the same concept
+
+Figma Variables (introduced in 2023) and CSS custom properties solve the same problem: they are named containers for values that can change based on context. The conceptual model is identical.
+
+| Concept | In Figma | In CSS |
+|---|---|---|
+| Named value | Variable | Custom property (`--name`) |
+| Container/group | Collection | `:root` or selector scope |
+| Conditional override | Mode | CSS class or media query override |
+| Reference | Alias (one variable referencing another) | `var()` reference |
+| Two-tier system | Primitive + Semantic variables | Primitive + Semantic tokens |
+
+If you understand the two-tier CSS token system from lesson 01, you already understand Figma Variables conceptually. The main difference is the tooling: Figma has a visual UI for managing variables; CSS is text-based.
+
+### The naming bridge
+
+The primary challenge in token handoff is not technical — it is naming. Figma variables use a slash-delimited path format: `Color/Primary/Default`. CSS custom properties use a hyphen-delimited format: `--color-primary-default` or `--color-primary`.
+
+The translation is mechanical once the convention is established:
+
+| Figma variable | CSS custom property |
+|---|---|
+| `Color/Primary/Default` | `--color-primary` |
+| `Color/Primary/Hover` | `--color-primary-hover` |
+| `Color/Surface/Background` | `--color-surface` |
+| `Color/Text/Default` | `--color-text-default` |
+| `Color/Text/Muted` | `--color-text-muted` |
+| `Color/Feedback/Error` | `--color-error` |
+| `Color/Feedback/Success` | `--color-success` |
+| `Space/Component/Padding-X` | `--space-component-padding-x` |
+| `Radius/Small` | `--radius-sm` |
+| `Shadow/Medium` | `--shadow-md` |
+
+The convention to agree on: slashes become hyphens, all lowercase, path segments map in order. The last segment `Default` is typically dropped in CSS because it is redundant when the base token name already implies the default state.
+
+### Figma modes map to CSS class overrides
+
+Figma Variables support **modes**, which are named sets of values for the same variable. The most common use is light/dark theming: a Color collection has a "Light" mode and a "Dark" mode, and switching the mode changes what value each variable resolves to.
+
+This maps directly to CSS theme overrides:
+
+| Figma concept | CSS equivalent |
+|---|---|
+| Collection with one mode | `:root` block |
+| Collection with Light mode | `:root` block (the default) |
+| Collection with Dark mode | `.dark` class override on `html` |
+| Figma component using Light mode | Component in default context |
+| Figma component using Dark mode | Component inside `.dark` parent |
+
+When a designer creates a "Brand" mode that changes the primary color from blue to green, the CSS equivalent is an override block that repoints `--color-primary` to a different primitive.
+
+### Primitive vs semantic: the two-tier structure in Figma
+
+The same primitive/semantic distinction applies in Figma. A well-structured Figma design system has two variable collections:
+
+1. **Primitives collection** — Raw values, no modes. `Color/Blue/500 = #3b82f6`. Naming convention: `Color/{Hue}/{Step}`.
+2. **Semantic collection** — Aliases that reference primitives. Has modes (Light and Dark). `Color/Primary/Default` references `Color/Blue/500` in Light mode and `Color/Blue/300` in Dark mode.
+
+When you see a Figma file where color variables directly contain hex values and also respond to mode changes, the design system is conflating the two tiers. This is a structural issue worth raising: primitive tokens should not change per mode.
+
+### Common naming mismatches and how to resolve them
+
+Naming conflicts are inevitable when design and engineering evolve their token systems independently. Here are the most common:
+
+| Mismatch type | Example | Resolution |
+|---|---|---|
+| Designer uses "brand" prefix, engineer uses "primary" | `Brand/Main` vs `--color-primary` | Agree on "primary" and update Figma to match |
+| Different abstraction levels | `Color/Blue` vs `--color-primary` | Clarify: is Blue a primitive or a semantic? If semantic, it should be `--color-primary` |
+| Different separator conventions | `colorPrimary` vs `--color-primary` | CSS wins for CSS tokens; camelCase may be used in JS token exports |
+| Abbreviated vs full names | `btn-bg` vs `--color-button-background` | Prefer full names; abbreviations require shared mental models |
+| Missing tokens in code | Figma has `Color/Interactive/Pressed`, code has no equivalent | Add the missing token to CSS immediately |
+
+The resolution process: agree on the naming convention before tokens are used widely. Once components reference a token name, changing it requires a search-and-replace across the entire codebase.
+
+### How to export tokens from Figma
+
+**Token Studio plugin** — A Figma plugin that exports variables as a JSON file in the W3C Design Tokens Community Group format. The JSON can then be processed by a build tool (such as Style Dictionary) to generate CSS custom properties automatically.
+
+**Manual export** — Inspect each variable group in Figma's "Local variables" panel, write down the names and values, and create the CSS token file by hand. This is slow but requires no tooling setup.
+
+**Dev Mode inspection** — In Figma Dev Mode, hovering a component shows which variables are applied. You can read the variable name and value directly and match it to the CSS token.
+
+For most UX Engineer roles that are not specifically focused on design systems tooling, understanding the conceptual mapping and being able to do a manual handoff is sufficient. Automated export pipelines are a nice-to-have.
+
+<VideoEmbed
+  title="Figma Variables to CSS Design Tokens"
+  fallbackSearchUrl="https://www.youtube.com/results?search_query=figma+variables+design+tokens+to+css"
+  suggestedTerms="Figma variables CSS custom properties design tokens handoff naming convention Token Studio"
+  watchFirst={true}
+  duration="~15 min"
+/>
+
+## Step-by-step
+
+### Step 1 — Inspect a Figma file and identify all variable collections
+
+**What:** Open a Figma design file (your own or a public community file) and locate its variable collections.
+
+**Where:** Figma — any file with variables defined. The Figma Community has multiple open design system files. Search "design system tokens" in the Figma Community.
+
+**How:** Open the file. In the left sidebar, look for "Local variables" (accessible from the "Resources" button or the "Edit" menu under "Local variables"). This panel shows all variable collections and their variables. Note the collection names (e.g., "Primitives", "Semantic") and examine a few variables in each.
+
+**Why:** Before you can map Figma variables to CSS, you need to understand what structure the designer has used. A well-organized Figma file will have a two-tier structure; a less mature one may have a single tier with all values as direct hex codes.
+
+**Check:** You can see at least two variable collections and can read the name and value of individual variables.
+
+---
+
+### Step 2 — Map five Figma variables to CSS custom property names
+
+**What:** Translate five Figma variable names from Figma's slash-delimited format to the CSS hyphen-delimited format.
+
+**Where:** Write the mapping in a new file: `docs/token-mapping.md`.
+
+**How:** Create a table with three columns: Figma Variable Name, CSS Custom Property, Notes. For each variable, convert slashes to hyphens, make everything lowercase, and decide whether the final segment ("Default") should be dropped or retained. Add a note for any case where the convention is ambiguous or where you made a judgment call.
+
+Example mapping from a typical Figma design system:
+
+```markdown
+## Token Mapping: Figma to CSS
+
+| Figma Variable | CSS Custom Property | Notes |
+|---|---|---|
+| Color/Primary/Default | --color-primary | "Default" dropped — implied by the base name |
+| Color/Primary/Hover | --color-primary-hover | State suffix retained |
+| Color/Neutral/900 | --color-gray-900 | "Neutral" mapped to "gray" (team agreed) |
+| Space/4 | --space-4 | Direct numeric mapping |
+| Radius/Medium | --radius-md | "Medium" abbreviated to "md" per engineering convention |
+```
+
+**Why:** The mapping table is the living contract between design and engineering. When a designer says "use Color/Primary/Default" and an engineer asks which token that is, this table is the answer. It eliminates ambiguity at the source.
+
+**Check:** Each row has a CSS name that follows a consistent convention. The Notes column explains any judgment calls.
+
+---
+
+### Step 3 — Identify the modes and their CSS equivalents
+
+**What:** Map the Figma variable modes to the CSS class override structure you built in lesson 01.
+
+**Where:** Continuing in `docs/token-mapping.md`.
+
+**How:** Add a "Modes" section to the mapping document. For each Figma mode, write the CSS equivalent.
+
+```markdown
+## Mode Mapping
+
+| Figma Mode | CSS Implementation | Notes |
+|---|---|---|
+| Light (default) | :root { } | Applied unconditionally |
+| Dark | .dark { } on html element | Applied by adding .dark class to html |
+| High Contrast | .high-contrast { } on html element | Not yet implemented in code |
+| Brand / Teal | .brand-teal { } on html element | Override --color-primary tier only |
+```
+
+**Why:** Knowing which Figma mode corresponds to which CSS context is essential for implementing themes correctly. If a designer creates a new mode, the engineer needs to know it maps to a new CSS class block — not a new CSS file, not a new component.
+
+**Check:** Every mode in the Figma file has a corresponding entry showing how it is (or would be) implemented in CSS.
+
+---
+
+### Step 4 — Identify naming discrepancies and propose resolutions
+
+**What:** Compare the Figma variable names with the CSS token names in your existing token file and document any discrepancies.
+
+**Where:** Open both `docs/token-mapping.md` and your CSS token file side by side in Cursor.
+
+**How:** Go through each variable in your CSS token file (`globals.css` from lesson 01). Find the corresponding Figma variable. If the names do not match, document it in a "Discrepancies" section with a proposed resolution.
+
+```markdown
+## Naming Discrepancies
+
+| Issue | Figma Name | CSS Name | Proposed Resolution |
+|---|---|---|---|
+| Different prefix | Color/Brand/Primary | --color-primary | Update Figma to use "Primary" instead of "Brand/Primary" |
+| Missing token in code | Color/Interactive/Pressed | (not defined) | Add --color-interactive-pressed to CSS token file |
+| Abbreviation mismatch | Space/Component/Padding-Horizontal | --space-component-padding-x | Agree on "x" suffix shorthand — update Figma label |
+| Abstraction level | Color/Blue/500 (used directly in components) | --color-blue-500 | Flag to designer: should this be a semantic token? |
+```
+
+**Why:** Unresolved naming discrepancies cause bugs. An engineer who cannot find the CSS equivalent of a Figma variable will either guess (introducing inconsistency) or ask the designer (adding overhead to every handoff). A written discrepancy log accelerates resolution and prevents the same conflicts from recurring.
+
+**Check:** Every discrepancy has a specific proposed resolution — not a generic "align the names" but a specific action item for design, engineering, or both.
+
+---
+
+### Step 5 — Propose a shared naming convention document
+
+**What:** Write a short naming convention document that designers and engineers can both follow to prevent future mismatches.
+
+**Where:** Add a "Naming Convention" section to `docs/token-mapping.md`.
+
+**How:** Write the rules concisely — one rule per bullet. Include both the Figma format and the CSS format for each rule.
+
+```markdown
+## Shared Naming Convention
+
+1. **Category first** — All token names start with their category: Color, Space, Radius, Shadow, Font.
+   - Figma: `Color/...`   CSS: `--color-...`
+
+2. **Semantic before primitive** — Semantic tokens (Primary, Surface, Text) come before primitive tokens (Blue/500, Gray/900) in hierarchy.
+
+3. **No "Default" suffix** — The default state has no suffix. Only non-default states get suffixes: Hover, Pressed, Disabled, Focus.
+
+4. **Abbreviate sizes consistently** — Small = sm, Medium = md, Large = lg. Never "small", "medium", "large", "S", "M", "L".
+
+5. **State as suffix, not prefix** — "PrimaryHover" not "HoverPrimary". In CSS: `--color-primary-hover` not `--color-hover-primary`.
+
+6. **No camelCase in CSS** — CSS custom properties always use hyphen-separated lowercase. JavaScript exports of the same tokens may use camelCase as a separate output format.
+```
+
+**Why:** A naming convention that both design and engineering follow from the start eliminates the entire discrepancy problem. It is much easier to align on conventions at the beginning of a project than to reconcile divergent systems after hundreds of tokens exist on both sides.
+
+**Check:** A designer reading the convention can name a new color token without asking engineering. An engineer reading it can create the CSS equivalent of a new Figma variable without asking design.
+
+## If stuck
+
+- **You cannot find the variables panel in Figma:** Variables are accessible from "Local variables" in the Edit menu, or via the Resources icon (the grid icon) in the left toolbar. If the file does not have variables, use a Figma Community design system file that does — search "design tokens" in the Figma Community.
+- **Figma variables use a completely different naming structure from your CSS tokens:** Start with the CSS names as the source of truth (your code is already in production) and propose Figma updates rather than CSS changes.
+- **A Figma variable has no CSS equivalent:** Add the missing token to your CSS file. Document it in the mapping as "Added to code" in the Notes column.
+- **The designer and engineer disagree on naming:** The rule of thumb: use the most descriptive, least ambiguous name. "primary" beats "brand" (brand implies the token can never be reused outside a brand context) and beats "blue" (blue is a primitive name, not a semantic one).
+
+## Common mistakes
+
+- Treating this as a purely technical exercise. The output of this lesson is a shared document that designers and engineers both agree to follow — it has no value if only one side reads it.
+- Creating a mapping that goes from Figma to CSS but not documenting the reverse. Engineers adding a new CSS token without a corresponding Figma variable creates the same divergence problem in the opposite direction.
+- Using camelCase for CSS custom property names. CSS is case-sensitive and convention is hyphen-delimited. `--colorPrimary` and `--color-primary` are different properties.
+- Dropping useful path segments from the Figma name. `Color/Interactive/Pressed` should become `--color-interactive-pressed`, not `--color-pressed`. The "interactive" segment distinguishes it from, say, `--color-destructive-pressed`.
+- Not including "state" as a suffix rather than a standalone category. `--color-error-hover` is clearer than `--color-hover-error` because it groups error states together.
+- Treating the naming convention document as final. As the design system grows, new token categories will appear. The convention document should be versioned and updated when new rules are needed.
+
+<KeyTerms terms={[
+  "Figma Variables: A Figma feature that allows designers to define named values — colors, numbers, strings, booleans — that can be referenced across components and changed globally, equivalent to CSS custom properties.",
+  "Figma mode: A named set of overrides for a Figma variable collection, equivalent to a CSS theme class override. Common modes are Light and Dark.",
+  "Token handoff: The process of ensuring that design token names in a design tool (such as Figma) match the corresponding token names in code, enabling designers and engineers to reference the same tokens unambiguously.",
+  "Slash-delimited path: The naming format used by Figma Variables, where path segments are separated by forward slashes — for example Color/Primary/Default.",
+  "Token Studio: A Figma plugin that allows designers to define, manage, and export design tokens in a JSON format compatible with build tools such as Style Dictionary.",
+  "Style Dictionary: An open-source build tool that takes design token definitions in JSON format and transforms them into platform-specific outputs — CSS custom properties, iOS Swift constants, Android resource files, and others.",
+  "Naming convention: An agreed set of rules for how tokens are named in both Figma and code, ensuring that the same concept has the same name on both sides of the handoff.",
+  "W3C Design Tokens Community Group: A working group defining a standard JSON format for design token exchange between tools, enabling interoperability between Figma exports and code token systems.",
+  "Figma alias: A Figma variable that references another variable's value rather than storing a raw value directly, equivalent to a CSS var() reference.",
+  "Primitive collection: In a Figma design system, the variable collection that holds raw values (hex codes, pixel values) with no modes, equivalent to the primitive tier of a CSS token system."
+]} />
+
+<QuickSummary points={[
+  "Figma Variables and CSS custom properties are the same concept in different tooling: both are named values that can be overridden by context.",
+  "The naming translation is mechanical: Figma's slash-delimited Color/Primary/Default becomes CSS --color-primary. The 'Default' suffix is dropped when implied.",
+  "Figma modes (Light, Dark, Brand) map directly to CSS class overrides on the html element. A new Figma mode means a new CSS override block.",
+  "The two-tier primitive/semantic structure is as important in Figma as it is in CSS — semantic variables should be aliases, not raw hex values.",
+  "A shared naming convention document, agreed on by both design and engineering, is the most effective way to prevent token naming conflicts across the entire project lifecycle.",
+  "Token Studio can automate Figma-to-CSS export via JSON, but manual mapping is sufficient for most UX Engineer roles and is worth understanding regardless."
+]} />
+
+## Practice task + Definition of done
+
+**Task:** Given the following 10 Figma variable names, write their CSS custom property equivalents using a consistent naming convention. Then document the convention you used in three clear rules.
+
+```
+Color/Primary/Default
+Color/Primary/Hover
+Color/Primary/Subtle
+Color/Neutral/50
+Color/Neutral/900
+Color/Feedback/Error
+Color/Feedback/Success
+Space/Component/Gap
+Border/Radius/Large
+Shadow/Overlay
+```
+
+**Definition of done:**
+
+- All 10 Figma variables have a CSS custom property equivalent that follows a consistent, documented convention.
+- The naming convention is written as three or more explicit rules that a designer could follow to name a new variable without asking engineering.
+- The token mapping document identifies at least one judgment call that was made (for example, why "Neutral" was mapped to "gray" or "neutral", or why a particular segment was abbreviated) and explains the reasoning.
+- A designer and an engineer can both read the final mapping document and use the same token names without ambiguity.

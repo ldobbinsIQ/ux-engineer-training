@@ -1,0 +1,191 @@
+---
+title: "Git Basics for UX Engineers"
+slug: "02-git-basics"
+moduleSlug: "01-workflow"
+order: 2
+hiringSignal: false
+estimatedHours: 1
+tasks:
+  - "Initialize a Git repo and make a first commit"
+  - "Create a feature branch and switch to it"
+  - "Stage, commit, and write a conventional commit message"
+resources:
+  youtube:
+    - url: "https://www.youtube.com/results?search_query=git+branching+basics+for+beginners"
+      label: "Git Branching for Beginners"
+  docs:
+    - url: "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging"
+      label: "Git Branching Basics"
+---
+
+## Goal
+By the end of this lesson, you will be able to initialize a Git repository, commit changes with a conventional commit message, and work on a feature branch without touching main.
+
+## Time + Difficulty
+- **Time:** 45–60 min
+- **Difficulty:** Beginner
+
+## Why this matters for UX Engineers
+- Every professional engineering team uses Git — you cannot submit a PR or collaborate on a codebase without it
+- Conventional commits are a widely-adopted standard that interviewers and senior engineers recognize immediately as a signal of professionalism
+- Feature branches keep your work isolated, so a broken experiment never breaks the main branch
+- Knowing `git status` and `git log` at a glance makes you faster to debug and review your own work
+- UX Engineers often bridge design and engineering teams — clean commit history helps designers and PMs follow what changed and why
+
+## What you will produce
+- A Git repository initialized inside `~/projects/week-1/next-starter`
+- A first commit on the `main` branch with message `chore: initial Next.js scaffold`
+- A feature branch named `feat/update-homepage`
+- A second commit on that branch with a conventional commit message
+
+## Tools + Where you will work
+- **Tools:** Terminal, Cursor
+- **Folder:** `~/projects/week-1/next-starter`
+- **Files you'll edit:** `app/page.tsx`, `README.md` (new)
+- **Commands you'll run:** `git init`, `git status`, `git add`, `git commit`, `git checkout -b`, `git log`, `git checkout main`
+
+## Concept overview
+Git is a version control system that takes snapshots of your project at points in time called commits. A branch is a parallel line of development — you create one to work on a feature or fix without affecting the stable code on `main`. When the feature is ready, the branch gets merged back into `main`. The staging area (`git add`) is a holding zone where you decide exactly which changes go into the next commit before it is saved.
+
+**How this maps to UX thinking:** Branches work like design variants in Figma — you explore an idea in isolation and only merge it into the main file when it is ready. Commit messages are like design annotations — they explain the "why" so anyone reading the history later understands intent.
+
+**Mental model:**
+- `main` branch: the stable, always-working version of your project
+- Feature branch: your personal workspace for one task — isolated from main
+- Working directory: files on disk with unsaved-to-Git changes
+- Staging area: changes you have selected with `git add` to include in the next commit
+- Commit: a permanent snapshot of the staged changes, with a message explaining what and why
+- Conventional commit: a standard message format — `type(scope): description` — that makes history scannable
+- `HEAD`: a pointer to the commit you are currently on; it moves when you switch branches
+
+<Diagram title="Git Branching" src="/diagrams/d2-git-branching.svg" caption="Main branch holds stable code; feature branches isolate your changes until they are ready to merge" alt="Diagram showing main branch with a feature branch and merge" />
+
+## Step-by-step
+
+### Step 1: Initialize a Git repository
+**What:** Turn the `next-starter` project folder into a Git repository.
+**Where:** Terminal (inside `~/projects/week-1/next-starter`)
+**How:**
+```bash
+cd ~/projects/week-1/next-starter
+git init
+git status
+```
+**Why:** `git init` creates a hidden `.git` folder that tracks all changes from this point forward.
+**Check:** `git status` shows "On branch main" (or "master") and lists untracked files — the Next.js scaffold files.
+
+### Step 2: Make the first commit on main
+**What:** Stage all scaffolded files and commit them as the baseline.
+**Where:** Terminal
+**How:**
+```bash
+git add .
+git commit -m "chore: initial Next.js scaffold"
+```
+**Why:** A clean first commit gives you a stable baseline to branch from and return to if something goes wrong.
+**Check:** `git log --oneline` shows one commit with the message `chore: initial Next.js scaffold`.
+
+### Step 3: Create a feature branch
+**What:** Create and switch to a new branch named `feat/update-homepage`.
+**Where:** Terminal
+**How:**
+```bash
+git checkout -b feat/update-homepage
+git status
+```
+**Why:** Working on a branch means any changes you make are completely isolated — `main` stays untouched.
+**Check:** `git status` shows "On branch feat/update-homepage".
+
+### Step 4: Edit the homepage
+**What:** Make a visible change to `app/page.tsx` to simulate a real feature.
+**Where:** Cursor — `app/page.tsx`
+**How:** Open `app/page.tsx` in Cursor. Replace the return statement's first heading or introductory text with a placeholder of your choice, such as changing an `<h1>` or paragraph text to read "Welcome to My Portfolio". Save the file.
+**Why:** You need a real change to stage and commit — this simulates the work a UX Engineer would do on a feature branch.
+**Check:** `git status` shows `app/page.tsx` listed under "Changes not staged for commit".
+
+### Step 5: Stage the change and review the diff
+**What:** Add the modified file to the staging area and inspect what changed.
+**Where:** Terminal
+**How:**
+```bash
+git diff app/page.tsx
+git add app/page.tsx
+git status
+```
+**Why:** Reading the diff before committing is a professional habit — it catches unintended changes and builds confidence that you are committing exactly what you intended.
+**Check:** After `git add`, `git status` shows `app/page.tsx` listed under "Changes to be committed" (green text).
+
+### Step 6: Write a conventional commit message
+**What:** Commit the staged change using the conventional commit format.
+**Where:** Terminal
+**How:**
+```bash
+git commit -m "feat: update homepage welcome heading"
+```
+
+Conventional commit types to know:
+```
+feat:   a new feature or visible UI change
+fix:    a bug fix
+chore:  maintenance tasks (config, deps, tooling)
+style:  formatting or visual-only changes
+docs:   documentation changes
+refactor: code restructuring with no behavior change
+test:   adding or updating tests
+```
+**Why:** Conventional commits make `git log` readable at a glance and are required by many teams' CI pipelines for automated changelogs.
+**Check:** `git log --oneline` shows two commits — the original chore commit and the new feat commit — on the `feat/update-homepage` branch.
+
+### Step 7: Switch back to main and compare
+**What:** Return to `main` and confirm your changes are not there.
+**Where:** Terminal
+**How:**
+```bash
+git checkout main
+git log --oneline
+```
+Then open `app/page.tsx` in Cursor and confirm it shows the original content.
+**Why:** Seeing that `main` is unchanged proves that branching is working correctly — your experiment is isolated.
+**Check:** `git log --oneline` on `main` shows only the original chore commit. The homepage text in Cursor is back to the scaffold default.
+
+## If stuck
+- **"fatal: not a git repository":** You ran `git` from the wrong folder. Run `cd ~/projects/week-1/next-starter` first, then retry.
+- **`git init` shows "Reinitialized existing Git repository":** `create-next-app` may have already initialized Git. This is fine — run `git status` to continue from Step 2.
+- **`git commit` opens a text editor (Vim) instead of accepting the message:** You forgot the `-m` flag. Press Escape, type `:q!`, and press Enter to exit Vim without saving. Then re-run the command with `-m "your message"`.
+- **Commit message rejected with "wrong format":** If your project has commit-lint configured, the message must match `type: description` exactly. Check the exact error and match the format shown in Step 6.
+- **Changes still showing on main after checkout:** Run `git status` — if files are listed as "modified" they are unstaged changes that follow you between branches. Stage and commit them on the feature branch first, then switch.
+
+## Common mistakes
+- Committing directly to `main` instead of a feature branch — get into the habit of checking `git status` first to confirm which branch you are on
+- Using vague commit messages like "update stuff" or "changes" — these are useless in a team's history and are a red flag in take-home reviews
+- Forgetting to `git add` before `git commit` — nothing is staged, so the commit either fails or creates an empty commit
+- Using `git add .` without reviewing `git status` first — you may accidentally stage `node_modules` or `.env` files
+- Creating a branch name with spaces — Git branch names must use hyphens or slashes, not spaces
+- Switching branches with uncommitted changes — Git will sometimes carry those changes over, which causes confusing diffs on the wrong branch
+
+<KeyTerms terms={[
+  { term: "git init", definition: "The command that turns a regular folder into a Git repository by creating a hidden .git directory" },
+  { term: "Commit", definition: "A permanent snapshot of staged changes saved to the repository, identified by a unique hash and a message" },
+  { term: "Branch", definition: "A parallel line of development that lets you work on changes without affecting other branches" },
+  { term: "Staging area", definition: "A holding zone where you select which file changes to include in the next commit using git add" },
+  { term: "git checkout -b", definition: "A command that creates a new branch and switches to it in one step" },
+  { term: "Conventional commit", definition: "A commit message format using a type prefix such as feat:, fix:, or chore: to make history scannable and machine-readable" },
+  { term: "HEAD", definition: "A Git pointer that indicates which branch and commit you are currently working on" },
+]} />
+
+<QuickSummary points={[
+  "git init → git add → git commit is the core loop for saving work to Git",
+  "Always create a feature branch with git checkout -b before starting new work",
+  "Conventional commit format is: type: short description — use feat:, fix:, chore:, docs:, style:, refactor:, or test:",
+  "git status is your compass — run it before and after every git command until the workflow is automatic",
+  "Switching back to main and seeing unchanged files proves your branch is isolated correctly",
+]} />
+
+## Practice task
+Without referring back to the lesson steps, create a feature branch named `feat/add-readme` inside `next-starter`. Create a new file called `README.md` in the project root with at least 3 lines describing the project. Stage it, then commit it with a proper conventional commit message. Switch back to `main` and confirm `README.md` does not exist there.
+
+**Definition of done:**
+- A branch named `feat/add-readme` exists in the repository
+- `README.md` exists on `feat/add-readme` with at least 3 lines of content
+- The commit message on that branch follows conventional commit format
+- After running `git checkout main`, `README.md` is not present in the project root
